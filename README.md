@@ -1,0 +1,1 @@
+# secure-photo-cleaner-app

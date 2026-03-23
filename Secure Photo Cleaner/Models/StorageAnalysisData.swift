@@ -1,0 +1,152 @@
+//
+//  StorageAnalysisData.swift
+//  Secure Photo Cleaner
+//
+//  Created by ZeynepMüslim on 24.01.2026.
+//
+
+import Foundation
+
+struct StorageAnalysisData: Codable {
+    let photosCount: Int
+    let photosBytes: Int64
+    let videosCount: Int
+    let videosBytes: Int64
+    let totalDeviceBytes: Int64
+    let availableBytes: Int64
+    let lastAnalysisDate: Date
+
+    var isPartial: Bool = false
+    var progressPercentage: Double?
+
+    // MARK: - iCloud Storage Data
+    var iCloudEnabled: Bool = false
+    var photosInCloudOnlyCount: Int = 0
+    var photosInCloudOnlyBytes: Int64 = 0
+    var videosInCloudOnlyCount: Int = 0
+    var videosInCloudOnlyBytes: Int64 = 0
+    var totalOriginalBytes: Int64 = 0
+
+    init(
+        photosCount: Int,
+        photosBytes: Int64,
+        videosCount: Int,
+        videosBytes: Int64,
+        totalDeviceBytes: Int64,
+        availableBytes: Int64,
+        lastAnalysisDate: Date,
+        isPartial: Bool = false,
+        progressPercentage: Double? = nil,
+        iCloudEnabled: Bool = false,
+        photosInCloudOnlyCount: Int = 0,
+        photosInCloudOnlyBytes: Int64 = 0,
+        videosInCloudOnlyCount: Int = 0,
+        videosInCloudOnlyBytes: Int64 = 0,
+        totalOriginalBytes: Int64 = 0
+    ) {
+        self.photosCount = photosCount
+        self.photosBytes = photosBytes
+        self.videosCount = videosCount
+        self.videosBytes = videosBytes
+        self.totalDeviceBytes = totalDeviceBytes
+        self.availableBytes = availableBytes
+        self.lastAnalysisDate = lastAnalysisDate
+        self.isPartial = isPartial
+        self.progressPercentage = progressPercentage
+        self.iCloudEnabled = iCloudEnabled
+        self.photosInCloudOnlyCount = photosInCloudOnlyCount
+        self.photosInCloudOnlyBytes = photosInCloudOnlyBytes
+        self.videosInCloudOnlyCount = videosInCloudOnlyCount
+        self.videosInCloudOnlyBytes = videosInCloudOnlyBytes
+        self.totalOriginalBytes = totalOriginalBytes
+    }
+
+    // MARK: - Computed Properties
+    var isStale: Bool {
+        let daysSinceAnalysis = Calendar.current.dateComponents([.day], from: lastAnalysisDate, to: Date()).day ?? 0
+        return daysSinceAnalysis >= 7
+    }
+
+    var totalMediaBytes: Int64 {
+        photosBytes + videosBytes
+    }
+
+    var usedBytes: Int64 {
+        totalDeviceBytes - availableBytes
+    }
+
+    var otherBytes: Int64 {
+        max(0, usedBytes - photosBytes - videosBytes)
+    }
+
+    // MARK: - iCloud Computed Properties
+
+    var totalCloudOnlyBytes: Int64 {
+        photosInCloudOnlyBytes + videosInCloudOnlyBytes
+    }
+
+    var totalCloudOnlyCount: Int {
+        photosInCloudOnlyCount + videosInCloudOnlyCount
+    }
+
+    var hasCloudOnlyItems: Bool {
+        totalCloudOnlyCount > 0
+    }
+
+    var cloudOnlyPercentage: Double {
+        guard totalOriginalBytes > 0 else { return 0 }
+        return Double(totalCloudOnlyBytes) / Double(totalOriginalBytes) * 100
+    }
+
+    var localPhotosBytes: Int64 {
+        photosBytes
+    }
+
+    var localVideosBytes: Int64 {
+        videosBytes
+    }
+
+    var totalLocalMediaBytes: Int64 {
+        photosBytes + videosBytes
+    }
+
+    // MARK: - Freshness Indicator
+    enum Freshness {
+        case fresh      // < 1 day
+        case recent     // 1-6 days
+        case stale      // 7+ days
+    }
+
+    var freshness: Freshness {
+        let daysSinceAnalysis = Calendar.current.dateComponents([.day], from: lastAnalysisDate, to: Date()).day ?? 0
+        if daysSinceAnalysis < 1 {
+            return .fresh
+        } else if daysSinceAnalysis < 7 {
+            return .recent
+        } else {
+            return .stale
+        }
+    }
+
+    // MARK: - Formatted Last Analysis Time
+    var formattedLastAnalysis: String {
+        let now = Date()
+        let components = Calendar.current.dateComponents([.minute, .hour, .day], from: lastAnalysisDate, to: now)
+
+        let minutes = components.minute ?? 0
+        let hours = components.hour ?? 0
+        let days = components.day ?? 0
+
+        if days >= 7 {
+            return "7+ days ago"
+        } else if days >= 1 {
+            return "\(days) day\(days == 1 ? "" : "s") ago"
+        } else if hours >= 1 {
+            return "\(hours) hour\(hours == 1 ? "" : "s") ago"
+        } else if minutes >= 1 {
+            return "\(minutes) minute\(minutes == 1 ? "" : "s") ago"
+        } else {
+            return "Just now"
+        }
+    }
+}

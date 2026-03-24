@@ -165,7 +165,8 @@ extension MonthReviewViewController {
             undoButton.setImage(UIImage(systemName: "arrow.uturn.backward"), for: .normal)
             undoButton.tintColor = .label
             undoButton.backgroundColor = .secondarySystemFill
-            undoButton.layer.cornerRadius = 8
+            undoButton.layer.cornerRadius = GeneralConstants.ButtonSize.large / 2
+            undoButton.clipsToBounds = true
         }
         undoButton.addTarget(self, action: #selector(handleUndo), for: .touchUpInside)
         undoButton.isEnabled = false
@@ -184,7 +185,8 @@ extension MonthReviewViewController {
             historyButton.setImage(UIImage(systemName: "clock.arrow.circlepath"), for: .normal)
             historyButton.tintColor = .label
             historyButton.backgroundColor = .secondarySystemFill
-            historyButton.layer.cornerRadius = 8
+            historyButton.layer.cornerRadius = GeneralConstants.ButtonSize.large / 2
+            historyButton.clipsToBounds = true
         }
         historyButton.addTarget(self, action: #selector(showUndoHistory), for: .touchUpInside)
         historyButton.isEnabled = false

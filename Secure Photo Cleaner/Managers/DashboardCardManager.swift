@@ -28,7 +28,7 @@ final class DashboardCardManager {
     var hasEverGeneratedContent: Bool {
         #if DEBUG
             let value = UserDefaults.standard.bool(forKey: hasGeneratedCardKey)
-            print("[DashboardCardManager] hasEverGeneratedContent: \(value)")
+//            print("[DashboardCardManager] hasEverGeneratedContent: \(value)")
             return value
         #else
             return UserDefaults.standard.bool(forKey: hasGeneratedCardKey)

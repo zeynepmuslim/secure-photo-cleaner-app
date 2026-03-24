@@ -65,9 +65,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         self.window = window
 
         ReminderNotificationService.shared.syncScheduleIfNeeded()
-        #if DEBUG
-            ReminderNotificationService.shared.debugPrintSampleReminders()
-        #endif
+//        #if DEBUG
+//            ReminderNotificationService.shared.debugPrintSampleReminders()
+//        #endif
 
         NotificationCenter.default.addObserver(
             self,

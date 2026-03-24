@@ -9,7 +9,6 @@ import SwiftUI
 import UIKit
 
 // MARK: - Strings
-
 private enum Strings {
     static let navTitle = "Settings"
 
@@ -20,6 +19,7 @@ private enum Strings {
     static let transparencySafety = "TRANSPARENCY & SAFETY"
     static let about = "ABOUT"
     static let version = "Version 1.0.0"
+    static let madeBy = "made by Zeynep Müslim"
 
     static let internetTitle = "Internet Access"
     static let internetSubtitle = "Review iCloud photos at full quality (uses data)"
@@ -52,6 +52,11 @@ private enum Strings {
     static let weekly = "Weekly"
     static let monthly = "Monthly"
 
+    static let support = "SUPPORT"
+    static let supportTitle = "Support This Project"
+    static let supportText =
+        "Secure Photo Cleaner is free and open source. If it helped you organize your photos, you can support the developer by buying her a coffee or even a meal."
+    static let supportButton = "Support on Patreon"
 }
 
 final class SettingsViewController: UIViewController {
@@ -109,7 +114,17 @@ final class SettingsViewController: UIViewController {
     private let transparencyContentStack = UIStackView()
     private let transparencyTopStack = UIStackView()
 
+    private let supportSectionLabel = UILabel()
+    private let supportContainer = UIView()
+    private let supportIconView = UIImageView()
+    private let supportTitleLabel = UILabel()
+    private let supportTextLabel = UILabel()
+    private let patreonButton = UIButton(type: .system)
+    private let supportContentStack = UIStackView()
+    private let supportTopStack = UIStackView()
+
     private let aboutSectionLabel = UILabel()
+    private let madeByLabel = UILabel()
     private let versionLabel = UILabel()
 
     private let settingsStore = SettingsStore.shared
@@ -144,7 +159,7 @@ final class SettingsViewController: UIViewController {
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
         guard traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) else { return }
-        updateGitHubButtonIcon()
+        updateButtonIcons()
     }
 
     deinit {
@@ -449,10 +464,10 @@ final class SettingsViewController: UIViewController {
         githubConfig.imagePadding = 8
         githubConfig.cornerStyle = .medium
         githubConfig.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16)
+        githubConfig.image = UIImage(named: "GitHub_Invertocat")?.resized(to: CGSize(width: 20, height: 20))
         githubButton.configuration = githubConfig
         githubButton.translatesAutoresizingMaskIntoConstraints = false
         githubButton.addTarget(self, action: #selector(openGitHub), for: .touchUpInside)
-        updateGitHubButtonIcon()
 
         transparencyContentStack.axis = .vertical
         transparencyContentStack.spacing = 12
@@ -473,15 +488,77 @@ final class SettingsViewController: UIViewController {
         transparencyContainer.addSubview(transparencyContentStack)
         contentStack.addArrangedSubview(transparencyContainer)
 
+        supportSectionLabel.text = Strings.support
+        supportSectionLabel.font = ThemeManager.Fonts.titleFont(size: 12, weight: .semibold)
+        supportSectionLabel.textColor = .systemGray
+        contentStack.addArrangedSubview(supportSectionLabel)
+
+        supportContainer.backgroundColor = .cardBackground
+        supportContainer.layer.cornerRadius = 14
+        supportContainer.translatesAutoresizingMaskIntoConstraints = false
+
+        let heartConfig = UIImage.SymbolConfiguration(pointSize: 20, weight: .medium)
+        supportIconView.image = UIImage(systemName: "heart.fill", withConfiguration: heartConfig)
+        supportIconView.tintColor = .systemPink
+        supportIconView.contentMode = .scaleAspectFit
+        supportIconView.translatesAutoresizingMaskIntoConstraints = false
+
+        supportTitleLabel.text = Strings.supportTitle
+        supportTitleLabel.font = .systemFont(ofSize: 15, weight: .semibold)
+        supportTitleLabel.textColor = .label
+
+        supportTextLabel.text = Strings.supportText
+        supportTextLabel.font = .systemFont(ofSize: 14, weight: .regular)
+        supportTextLabel.textColor = .secondaryLabel
+        supportTextLabel.numberOfLines = 0
+
+        var patreonConfig = UIButton.Configuration.filled()
+        patreonConfig.baseBackgroundColor = .systemPink.withAlphaComponent(0.15)
+        patreonConfig.baseForegroundColor = .label
+        patreonConfig.title = Strings.supportButton
+        patreonConfig.imagePadding = 8
+        patreonConfig.cornerStyle = .medium
+        patreonConfig.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16)
+        patreonConfig.image = UIImage(named: "patreon_logo")?.resized(to: CGSize(width: 20, height: 20))
+        patreonButton.configuration = patreonConfig
+        patreonButton.translatesAutoresizingMaskIntoConstraints = false
+        patreonButton.addTarget(self, action: #selector(openPatreon), for: .touchUpInside)
+
+        supportContentStack.axis = .vertical
+        supportContentStack.spacing = 12
+        supportContentStack.translatesAutoresizingMaskIntoConstraints = false
+
+        supportTopStack.axis = .horizontal
+        supportTopStack.spacing = 12
+        supportTopStack.alignment = .center
+        supportTopStack.translatesAutoresizingMaskIntoConstraints = false
+
+        supportTopStack.addArrangedSubview(supportIconView)
+        supportTopStack.addArrangedSubview(supportTitleLabel)
+
+        supportContentStack.addArrangedSubview(supportTopStack)
+        supportContentStack.addArrangedSubview(supportTextLabel)
+        supportContentStack.addArrangedSubview(patreonButton)
+
+        supportContainer.addSubview(supportContentStack)
+        contentStack.addArrangedSubview(supportContainer)
+
         aboutSectionLabel.text = Strings.about
         aboutSectionLabel.font = ThemeManager.Fonts.titleFont(size: 12, weight: .semibold)
         aboutSectionLabel.textColor = .systemGray
         contentStack.addArrangedSubview(aboutSectionLabel)
+        contentStack.setCustomSpacing(12, after: aboutSectionLabel)
 
         versionLabel.text = Strings.version
-        versionLabel.font = .systemFont(ofSize: 15)
+        versionLabel.font = .systemFont(ofSize: 15, weight: .bold)
         versionLabel.textColor = .systemGray2
         contentStack.addArrangedSubview(versionLabel)
+        contentStack.setCustomSpacing(4, after: versionLabel)
+
+        madeByLabel.text = Strings.madeBy
+        madeByLabel.font = .systemFont(ofSize: 13)
+        madeByLabel.textColor = .systemGray2
+        contentStack.addArrangedSubview(madeByLabel)
     }
 
     private func setupConstraint() {
@@ -573,13 +650,27 @@ final class SettingsViewController: UIViewController {
             transparencyContentStack.trailingAnchor.constraint(
                 equalTo: transparencyContainer.trailingAnchor, constant: -18),
             transparencyContentStack.bottomAnchor.constraint(
-                equalTo: transparencyContainer.bottomAnchor, constant: -16)
+                equalTo: transparencyContainer.bottomAnchor, constant: -16),
+
+            supportIconView.widthAnchor.constraint(equalToConstant: 24),
+            supportIconView.heightAnchor.constraint(equalToConstant: 24),
+
+            supportContentStack.topAnchor.constraint(equalTo: supportContainer.topAnchor, constant: 16),
+            supportContentStack.leadingAnchor.constraint(equalTo: supportContainer.leadingAnchor, constant: 18),
+            supportContentStack.trailingAnchor.constraint(equalTo: supportContainer.trailingAnchor, constant: -18),
+            supportContentStack.bottomAnchor.constraint(equalTo: supportContainer.bottomAnchor, constant: -16)
         ])
     }
 
+    @objc private func openPatreon() {
+        if let url = URL(string: "https://www.patreon.com/cw/zeynepmuslim") {
+            UIApplication.shared.open(url)
+            HapticFeedbackManager.shared.impact(intensity: .light)
+        }
+    }
+
     @objc private func openGitHub() {
-        // TODO
-        if let url = URL(string: "https://github.com/YOUR_USERNAME/YOUR_REPO_NAME") {
+        if let url = URL(string: "https://github.com/zeynepmuslim/secure-photo-cleaner-app") {
             UIApplication.shared.open(url)
 
             HapticFeedbackManager.shared.impact(intensity: .light)
@@ -662,19 +753,9 @@ final class SettingsViewController: UIViewController {
         HapticFeedbackManager.shared.impact(intensity: .medium)
     }
 
-    private func updateGitHubButtonIcon() {
-        let iconName =
-            traitCollection.userInterfaceStyle == .dark
-            ? "GitHub_Invertocat_White"
-            : "GitHub_Invertocat_Black"
-        let targetSize = CGSize(width: 20, height: 20)
-        let renderer = UIGraphicsImageRenderer(size: targetSize)
-        let icon = UIImage(named: iconName).flatMap { original in
-            renderer.image { _ in
-                original.draw(in: CGRect(origin: .zero, size: targetSize))
-            }.withRenderingMode(.alwaysOriginal)
-        }
-        githubButton.configuration?.image = icon
+    private func updateButtonIcons() {
+        githubButton.configuration?.image = UIImage(named: "GitHub_Invertocat")?.resized(to: CGSize(width: 20, height: 20))
+        patreonButton.configuration?.image = UIImage(named: "patreon_logo")?.resized(to: CGSize(width: 20, height: 20))
     }
 
     private func updateInternetToggleState() {

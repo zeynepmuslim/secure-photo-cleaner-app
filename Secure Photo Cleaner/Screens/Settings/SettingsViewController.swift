@@ -90,46 +90,14 @@ final class SettingsViewController: UIViewController {
     private let scheduleTitleLabel = UILabel()
     private let scheduleButton = UIButton(type: .system)
 
-    private let privacyNoticeContainer = UIView()
-    private let privacyIconView = UIImageView()
-    private let privacyTitleLabel = UILabel()
-    private let privacyTextLabel = UILabel()
-    private let privacyContentStack = UIStackView()
-    private let privacyTopStack = UIStackView()
-
+    private let privacyCard = SettingsInfoCardView()
     private let storeSectionLabel = UILabel()
-    private let storeInfoContainer = UIView()
-    private let storeIconView = UIImageView()
-    private let storeTitleLabel = UILabel()
-    private let storeTextLabel = UILabel()
-    private let storeContentStack = UIStackView()
-    private let storeTopStack = UIStackView()
-
+    private let storeCard = SettingsInfoCardView()
     private let transparencySectionLabel = UILabel()
-    private let transparencyContainer = UIView()
-    private let transparencyIconView = UIImageView()
-    private let transparencyTitleLabel = UILabel()
-    private let transparencyTextLabel = UILabel()
-    private let githubButton = UIButton(type: .system)
-    private let transparencyContentStack = UIStackView()
-    private let transparencyTopStack = UIStackView()
-
+    private let transparencyCard = SettingsInfoCardView()
     private let supportSectionLabel = UILabel()
-    private let supportContainer = UIView()
-    private let supportIconView = UIImageView()
-    private let supportTitleLabel = UILabel()
-    private let supportTextLabel = UILabel()
-    private let patreonButton = UIButton(type: .system)
-    private let supportContentStack = UIStackView()
-    private let supportTopStack = UIStackView()
-
-    private let languageContainer = UIView()
-    private let languageTitleLabel = UILabel()
-    private let languageSubtitleLabel = UILabel()
-    private let languageButton = UIButton(type: .system)
-    private let languageContentStack = UIStackView()
-    private let languageTopStack = UIStackView()
-    private let languageIconView = UIImageView()
+    private let supportCard = SettingsInfoCardView()
+    private let languageCard = SettingsInfoCardView()
 
     private let aboutSectionLabel = UILabel()
     private let madeByLabel = UILabel()
@@ -348,43 +316,59 @@ final class SettingsViewController: UIViewController {
         remindersContentStack.addArrangedSubview(scheduleRow)
         remindersToggleContainer.addSubview(remindersContentStack)
 
-        privacyNoticeContainer.backgroundColor = .cardBackground
-        privacyNoticeContainer.layer.cornerRadius = 14
-        privacyNoticeContainer.layer.borderWidth = 0
-        privacyNoticeContainer.layer.borderColor = UIColor.separator.cgColor
-        privacyNoticeContainer.translatesAutoresizingMaskIntoConstraints = false
+        privacyCard.configure(with: SettingsInfoCardConfig(
+            iconName: "lock.shield", iconColor: .systemBlue,
+            title: Strings.privacyTitle, subtitle: Strings.privacyText
+        ))
 
-        let lockConfig = UIImage.SymbolConfiguration(pointSize: 20, weight: .medium)
-        privacyIconView.image = UIImage(systemName: "lock.shield", withConfiguration: lockConfig)
-        privacyIconView.tintColor = .systemBlue
-        privacyIconView.contentMode = .scaleAspectFit
-        privacyIconView.translatesAutoresizingMaskIntoConstraints = false
+        storeCard.configure(with: SettingsInfoCardConfig(
+            iconName: "archivebox.fill", iconColor: ThemeManager.Colors.statusYellow,
+            title: Strings.storeTitle, subtitle: Strings.storeText
+        ))
+        storeCard.onCardTapped = { [weak self] in
+            HapticFeedbackManager.shared.impact(intensity: .light)
+            let tutorial = StoreTutorialSheetViewController()
+            self?.present(tutorial, animated: true)
+        }
 
-        privacyTitleLabel.text = Strings.privacyTitle
-        privacyTitleLabel.font = .systemFont(ofSize: 15, weight: .semibold)
-        privacyTitleLabel.textColor = .label
+        transparencyCard.configure(with: SettingsInfoCardConfig(
+            iconName: "checkmark.shield.fill", iconColor: .systemGreen,
+            title: Strings.transparencyTitle, subtitle: Strings.transparencyText,
+            themeColor: .systemGreen,
+            buttonTitle: Strings.viewSourceCode, buttonImageName: "GitHub_Invertocat"
+        ))
+        transparencyCard.onButtonTapped = {
+            if let url = URL(string: "https://github.com/zeynepmuslim/secure-photo-cleaner-app") {
+                UIApplication.shared.open(url)
+                HapticFeedbackManager.shared.impact(intensity: .light)
+            }
+        }
 
-        privacyTextLabel.text = Strings.privacyText
-        privacyTextLabel.font = .systemFont(ofSize: 14, weight: .regular)
-        privacyTextLabel.textColor = .secondaryLabel
-        privacyTextLabel.numberOfLines = 0
+        supportCard.configure(with: SettingsInfoCardConfig(
+            iconName: "heart.fill", iconColor: .systemPink,
+            title: Strings.supportTitle, subtitle: Strings.supportText,
+            themeColor: .systemPink,
+            buttonTitle: Strings.supportButton, buttonImageName: "patreon_logo"
+        ))
+        supportCard.onButtonTapped = {
+            if let url = URL(string: "https://www.patreon.com/cw/zeynepmuslim") {
+                UIApplication.shared.open(url)
+                HapticFeedbackManager.shared.impact(intensity: .light)
+            }
+        }
 
-        privacyContentStack.axis = .vertical
-        privacyContentStack.spacing = 8
-        privacyContentStack.translatesAutoresizingMaskIntoConstraints = false
-
-        privacyTopStack.axis = .horizontal
-        privacyTopStack.spacing = 12
-        privacyTopStack.alignment = .center
-        privacyTopStack.translatesAutoresizingMaskIntoConstraints = false
-
-        privacyTopStack.addArrangedSubview(privacyIconView)
-        privacyTopStack.addArrangedSubview(privacyTitleLabel)
-
-        privacyContentStack.addArrangedSubview(privacyTopStack)
-        privacyContentStack.addArrangedSubview(privacyTextLabel)
-
-        privacyNoticeContainer.addSubview(privacyContentStack)
+        languageCard.configure(with: SettingsInfoCardConfig(
+            iconName: "globe", iconColor: .systemBlue,
+            title: Strings.languageTitle, subtitle: Strings.languageSubtitle,
+            themeColor: .systemBlue,
+            buttonTitle: Strings.languageButton, buttonIconName: "gear"
+        ))
+        languageCard.onButtonTapped = {
+            HapticFeedbackManager.shared.impact(intensity: .light)
+            if let url = URL(string: UIApplication.openSettingsURLString) {
+                UIApplication.shared.open(url)
+            }
+        }
 
         storeSectionLabel.text = Strings.features
         storeSectionLabel.font = ThemeManager.Fonts.titleFont(size: 12, weight: .semibold)
@@ -393,215 +377,25 @@ final class SettingsViewController: UIViewController {
 
         contentStack.addArrangedSubview(remindersToggleContainer)
 
-        languageContainer.backgroundColor = .cardBackground
-        languageContainer.layer.cornerRadius = 14
-        languageContainer.translatesAutoresizingMaskIntoConstraints = false
+        contentStack.addArrangedSubview(languageCard)
 
-        let globeConfig = UIImage.SymbolConfiguration(pointSize: 20, weight: .medium)
-        languageIconView.image = UIImage(systemName: "globe", withConfiguration: globeConfig)
-        languageIconView.tintColor = .systemBlue
-        languageIconView.contentMode = .scaleAspectFit
-        languageIconView.translatesAutoresizingMaskIntoConstraints = false
-
-        languageTitleLabel.text = Strings.languageTitle
-        languageTitleLabel.font = .systemFont(ofSize: 15, weight: .semibold)
-        languageTitleLabel.textColor = .label
-
-        languageSubtitleLabel.text = Strings.languageSubtitle
-        languageSubtitleLabel.font = .systemFont(ofSize: 14, weight: .regular)
-        languageSubtitleLabel.textColor = .secondaryLabel
-        languageSubtitleLabel.numberOfLines = 0
-
-        var langConfig = UIButton.Configuration.filled()
-        langConfig.baseBackgroundColor = UIColor.systemBlue.withAlphaComponent(0.15)
-        langConfig.baseForegroundColor = .label
-        langConfig.title = Strings.languageButton
-        langConfig.image = UIImage(systemName: "gear")
-        langConfig.imagePadding = 8
-        langConfig.cornerStyle = .medium
-        langConfig.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16)
-        languageButton.configuration = langConfig
-        languageButton.translatesAutoresizingMaskIntoConstraints = false
-        languageButton.addTarget(self, action: #selector(openLanguageSettings), for: .touchUpInside)
-
-        languageContentStack.axis = .vertical
-        languageContentStack.spacing = 12
-        languageContentStack.alignment = .fill
-        languageContentStack.translatesAutoresizingMaskIntoConstraints = false
-
-        languageTopStack.axis = .horizontal
-        languageTopStack.spacing = 12
-        languageTopStack.alignment = .center
-        languageTopStack.translatesAutoresizingMaskIntoConstraints = false
-
-        languageTopStack.addArrangedSubview(languageIconView)
-        languageTopStack.addArrangedSubview(languageTitleLabel)
-        languageTopStack.addArrangedSubview(UIView.flexibleSpacer())
-
-        languageContentStack.addArrangedSubview(languageTopStack)
-        languageContentStack.addArrangedSubview(languageSubtitleLabel)
-        languageContentStack.addArrangedSubview(languageButton)
-
-        languageContainer.addSubview(languageContentStack)
-        contentStack.addArrangedSubview(languageContainer)
-
-        storeInfoContainer.backgroundColor = .cardBackground
-        storeInfoContainer.layer.cornerRadius = 14
-        storeInfoContainer.layer.borderWidth = 0
-        storeInfoContainer.layer.borderColor = UIColor.separator.cgColor
-        storeInfoContainer.translatesAutoresizingMaskIntoConstraints = false
-
-        let infoConfig = UIImage.SymbolConfiguration(pointSize: 20, weight: .medium)
-        storeIconView.image = UIImage(systemName: "archivebox.fill", withConfiguration: infoConfig)
-        storeIconView.tintColor = ThemeManager.Colors.statusYellow
-        storeIconView.contentMode = .scaleAspectFit
-        storeIconView.translatesAutoresizingMaskIntoConstraints = false
-
-        storeTitleLabel.text = Strings.storeTitle
-        storeTitleLabel.font = .systemFont(ofSize: 15, weight: .semibold)
-        storeTitleLabel.textColor = .label
-
-        storeTextLabel.text = Strings.storeText
-        storeTextLabel.font = .systemFont(ofSize: 14, weight: .regular)
-        storeTextLabel.textColor = .secondaryLabel
-        storeTextLabel.numberOfLines = 0
-
-        storeContentStack.axis = .vertical
-        storeContentStack.spacing = 8
-        storeContentStack.translatesAutoresizingMaskIntoConstraints = false
-
-        storeTopStack.axis = .horizontal
-        storeTopStack.spacing = 12
-        storeTopStack.alignment = .center
-        storeTopStack.translatesAutoresizingMaskIntoConstraints = false
-
-        storeTopStack.addArrangedSubview(storeIconView)
-        storeTopStack.addArrangedSubview(storeTitleLabel)
-
-        storeContentStack.addArrangedSubview(storeTopStack)
-        storeContentStack.addArrangedSubview(storeTextLabel)
-
-        storeInfoContainer.addSubview(storeContentStack)
-
-        let storeTap = UITapGestureRecognizer(target: self, action: #selector(storeInfoTapped))
-        storeInfoContainer.addGestureRecognizer(storeTap)
-        storeInfoContainer.isUserInteractionEnabled = true
-
-        contentStack.addArrangedSubview(storeInfoContainer)
+        contentStack.addArrangedSubview(storeCard)
 
         transparencySectionLabel.text = Strings.transparencySafety
         transparencySectionLabel.font = ThemeManager.Fonts.titleFont(size: 12, weight: .semibold)
         transparencySectionLabel.textColor = .systemGray
         contentStack.addArrangedSubview(transparencySectionLabel)
 
-        contentStack.addArrangedSubview(privacyNoticeContainer)
+        contentStack.addArrangedSubview(privacyCard)
 
-        transparencyContainer.backgroundColor = .cardBackground
-        transparencyContainer.layer.cornerRadius = 14
-        transparencyContainer.layer.borderWidth = 0
-        transparencyContainer.layer.borderColor = UIColor.separator.cgColor
-        transparencyContainer.translatesAutoresizingMaskIntoConstraints = false
-
-        let shieldConfig = UIImage.SymbolConfiguration(pointSize: 20, weight: .medium)
-        transparencyIconView.image = UIImage(systemName: "checkmark.shield.fill", withConfiguration: shieldConfig)
-        transparencyIconView.tintColor = .systemGreen
-        transparencyIconView.contentMode = .scaleAspectFit
-        transparencyIconView.translatesAutoresizingMaskIntoConstraints = false
-
-        transparencyTitleLabel.text = Strings.transparencyTitle
-        transparencyTitleLabel.font = .systemFont(ofSize: 15, weight: .semibold)
-        transparencyTitleLabel.textColor = .label
-
-        transparencyTextLabel.text = Strings.transparencyText
-        transparencyTextLabel.font = .systemFont(ofSize: 14, weight: .regular)
-        transparencyTextLabel.textColor = .secondaryLabel
-        transparencyTextLabel.numberOfLines = 0
-
-        var githubConfig = UIButton.Configuration.filled()
-        githubConfig.baseBackgroundColor = .systemGreen.withAlphaComponent(0.15)
-        githubConfig.baseForegroundColor = .label
-        githubConfig.title = Strings.viewSourceCode
-        githubConfig.imagePadding = 8
-        githubConfig.cornerStyle = .medium
-        githubConfig.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16)
-        githubConfig.image = UIImage(named: "GitHub_Invertocat")?.resized(to: CGSize(width: 20, height: 20))
-        githubButton.configuration = githubConfig
-        githubButton.translatesAutoresizingMaskIntoConstraints = false
-        githubButton.addTarget(self, action: #selector(openGitHub), for: .touchUpInside)
-
-        transparencyContentStack.axis = .vertical
-        transparencyContentStack.spacing = 12
-        transparencyContentStack.translatesAutoresizingMaskIntoConstraints = false
-
-        transparencyTopStack.axis = .horizontal
-        transparencyTopStack.spacing = 12
-        transparencyTopStack.alignment = .center
-        transparencyTopStack.translatesAutoresizingMaskIntoConstraints = false
-
-        transparencyTopStack.addArrangedSubview(transparencyIconView)
-        transparencyTopStack.addArrangedSubview(transparencyTitleLabel)
-
-        transparencyContentStack.addArrangedSubview(transparencyTopStack)
-        transparencyContentStack.addArrangedSubview(transparencyTextLabel)
-        transparencyContentStack.addArrangedSubview(githubButton)
-
-        transparencyContainer.addSubview(transparencyContentStack)
-        contentStack.addArrangedSubview(transparencyContainer)
+        contentStack.addArrangedSubview(transparencyCard)
 
         supportSectionLabel.text = Strings.support
         supportSectionLabel.font = ThemeManager.Fonts.titleFont(size: 12, weight: .semibold)
         supportSectionLabel.textColor = .systemGray
         contentStack.addArrangedSubview(supportSectionLabel)
 
-        supportContainer.backgroundColor = .cardBackground
-        supportContainer.layer.cornerRadius = 14
-        supportContainer.translatesAutoresizingMaskIntoConstraints = false
-
-        let heartConfig = UIImage.SymbolConfiguration(pointSize: 20, weight: .medium)
-        supportIconView.image = UIImage(systemName: "heart.fill", withConfiguration: heartConfig)
-        supportIconView.tintColor = .systemPink
-        supportIconView.contentMode = .scaleAspectFit
-        supportIconView.translatesAutoresizingMaskIntoConstraints = false
-
-        supportTitleLabel.text = Strings.supportTitle
-        supportTitleLabel.font = .systemFont(ofSize: 15, weight: .semibold)
-        supportTitleLabel.textColor = .label
-
-        supportTextLabel.text = Strings.supportText
-        supportTextLabel.font = .systemFont(ofSize: 14, weight: .regular)
-        supportTextLabel.textColor = .secondaryLabel
-        supportTextLabel.numberOfLines = 0
-
-        var patreonConfig = UIButton.Configuration.filled()
-        patreonConfig.baseBackgroundColor = .systemPink.withAlphaComponent(0.15)
-        patreonConfig.baseForegroundColor = .label
-        patreonConfig.title = Strings.supportButton
-        patreonConfig.imagePadding = 8
-        patreonConfig.cornerStyle = .medium
-        patreonConfig.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16)
-        patreonConfig.image = UIImage(named: "patreon_logo")?.resized(to: CGSize(width: 20, height: 20))
-        patreonButton.configuration = patreonConfig
-        patreonButton.translatesAutoresizingMaskIntoConstraints = false
-        patreonButton.addTarget(self, action: #selector(openPatreon), for: .touchUpInside)
-
-        supportContentStack.axis = .vertical
-        supportContentStack.spacing = 12
-        supportContentStack.translatesAutoresizingMaskIntoConstraints = false
-
-        supportTopStack.axis = .horizontal
-        supportTopStack.spacing = 12
-        supportTopStack.alignment = .center
-        supportTopStack.translatesAutoresizingMaskIntoConstraints = false
-
-        supportTopStack.addArrangedSubview(supportIconView)
-        supportTopStack.addArrangedSubview(supportTitleLabel)
-
-        supportContentStack.addArrangedSubview(supportTopStack)
-        supportContentStack.addArrangedSubview(supportTextLabel)
-        supportContentStack.addArrangedSubview(patreonButton)
-
-        supportContainer.addSubview(supportContentStack)
-        contentStack.addArrangedSubview(supportContainer)
+        contentStack.addArrangedSubview(supportCard)
 
         aboutSectionLabel.text = Strings.about
         aboutSectionLabel.font = ThemeManager.Fonts.titleFont(size: 12, weight: .semibold)
@@ -684,75 +478,7 @@ final class SettingsViewController: UIViewController {
             scheduleButton.leadingAnchor.constraint(
                 greaterThanOrEqualTo: scheduleTitleLabel.trailingAnchor, constant: 12),
 
-            languageContentStack.topAnchor.constraint(equalTo: languageContainer.topAnchor, constant: 16),
-            languageContentStack.leadingAnchor.constraint(equalTo: languageContainer.leadingAnchor, constant: 16),
-            languageContentStack.trailingAnchor.constraint(equalTo: languageContainer.trailingAnchor, constant: -16),
-            languageContentStack.bottomAnchor.constraint(equalTo: languageContainer.bottomAnchor, constant: -16),
-            
-            privacyIconView.widthAnchor.constraint(equalToConstant: 24),
-            privacyIconView.heightAnchor.constraint(equalToConstant: 24),
-
-            privacyContentStack.topAnchor.constraint(equalTo: privacyNoticeContainer.topAnchor, constant: 16),
-            privacyContentStack.leadingAnchor.constraint(equalTo: privacyNoticeContainer.leadingAnchor, constant: 18),
-            privacyContentStack.trailingAnchor.constraint(
-                equalTo: privacyNoticeContainer.trailingAnchor, constant: -18),
-            privacyContentStack.bottomAnchor.constraint(equalTo: privacyNoticeContainer.bottomAnchor, constant: -16),
-
-            storeIconView.widthAnchor.constraint(equalToConstant: 24),
-            storeIconView.heightAnchor.constraint(equalToConstant: 24),
-
-            storeContentStack.topAnchor.constraint(equalTo: storeInfoContainer.topAnchor, constant: 16),
-            storeContentStack.leadingAnchor.constraint(equalTo: storeInfoContainer.leadingAnchor, constant: 18),
-            storeContentStack.trailingAnchor.constraint(equalTo: storeInfoContainer.trailingAnchor, constant: -18),
-            storeContentStack.bottomAnchor.constraint(equalTo: storeInfoContainer.bottomAnchor, constant: -16),
-
-            transparencyIconView.widthAnchor.constraint(equalToConstant: 24),
-            transparencyIconView.heightAnchor.constraint(equalToConstant: 24),
-
-            transparencyContentStack.topAnchor.constraint(equalTo: transparencyContainer.topAnchor, constant: 16),
-            transparencyContentStack.leadingAnchor.constraint(
-                equalTo: transparencyContainer.leadingAnchor, constant: 18),
-            transparencyContentStack.trailingAnchor.constraint(
-                equalTo: transparencyContainer.trailingAnchor, constant: -18),
-            transparencyContentStack.bottomAnchor.constraint(
-                equalTo: transparencyContainer.bottomAnchor, constant: -16),
-
-            supportIconView.widthAnchor.constraint(equalToConstant: 24),
-            supportIconView.heightAnchor.constraint(equalToConstant: 24),
-
-            supportContentStack.topAnchor.constraint(equalTo: supportContainer.topAnchor, constant: 16),
-            supportContentStack.leadingAnchor.constraint(equalTo: supportContainer.leadingAnchor, constant: 18),
-            supportContentStack.trailingAnchor.constraint(equalTo: supportContainer.trailingAnchor, constant: -18),
-            supportContentStack.bottomAnchor.constraint(equalTo: supportContainer.bottomAnchor, constant: -16)
         ])
-    }
-
-    @objc private func openLanguageSettings() {
-        HapticFeedbackManager.shared.impact(intensity: .light)
-        if let url = URL(string: UIApplication.openSettingsURLString) {
-            UIApplication.shared.open(url)
-        }
-    }
-
-    @objc private func openPatreon() {
-        if let url = URL(string: "https://www.patreon.com/cw/zeynepmuslim") {
-            UIApplication.shared.open(url)
-            HapticFeedbackManager.shared.impact(intensity: .light)
-        }
-    }
-
-    @objc private func openGitHub() {
-        if let url = URL(string: "https://github.com/zeynepmuslim/secure-photo-cleaner-app") {
-            UIApplication.shared.open(url)
-
-            HapticFeedbackManager.shared.impact(intensity: .light)
-        }
-    }
-
-    @objc private func storeInfoTapped() {
-        HapticFeedbackManager.shared.impact(intensity: .light)
-        let tutorial = StoreTutorialSheetViewController()
-        present(tutorial, animated: true)
     }
 
     func scrollToInternetToggle() {
@@ -826,8 +552,8 @@ final class SettingsViewController: UIViewController {
     }
 
     private func updateButtonIcons() {
-        githubButton.configuration?.image = UIImage(named: "GitHub_Invertocat")?.resized(to: CGSize(width: 20, height: 20))
-        patreonButton.configuration?.image = UIImage(named: "patreon_logo")?.resized(to: CGSize(width: 20, height: 20))
+        transparencyCard.refreshButtonIcon()
+        supportCard.refreshButtonIcon()
     }
 
     private func updateInternetToggleState() {

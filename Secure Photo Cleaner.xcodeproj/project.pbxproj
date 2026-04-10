@@ -142,7 +142,7 @@
 				D71132972F088869006A030E /* Frameworks */,
 				D71132982F088869006A030E /* Resources */,
 				D7E939472F2BFBE0002BE331 /* Embed Foundation Extensions */,
-				D7D664502F88DA5D00C9E13A /* Generate Localizable.xcstrings */,
+				D7D664532F897FF900C9E13A /* Generate Localizable.xcstrings */,
 			);
 			buildRules = (
 			);
@@ -240,7 +240,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		D7D664502F88DA5D00C9E13A /* Generate Localizable.xcstrings */ = {
+		D7D664532F897FF900C9E13A /* Generate Localizable.xcstrings */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -255,6 +255,7 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Localizable.xcstrings",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;

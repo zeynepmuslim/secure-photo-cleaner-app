@@ -186,7 +186,7 @@ extension MonthReviewViewController {
 
         while currentIndex < reviewAssets.count && checkedCount < maxChecks {
             let reviewAsset = reviewAssets[currentIndex]
-            if shouldSkipAsset(reviewAsset) {
+            if shouldSkipAsset(reviewAsset) { 
                 currentIndex += 1
             } else {
                 return

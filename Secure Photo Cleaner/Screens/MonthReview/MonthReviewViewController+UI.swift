@@ -9,8 +9,8 @@ import UIKit
 
 private enum Strings {
     static let delete = CommonStrings.delete
-    static let keep = "Keep"
-    static let store = "Store"
+    static let keep = NSLocalizedString("monthReview.keep", comment: "Keep swipe action label")
+    static let store = NSLocalizedString("monthReview.store", comment: "Store swipe action label")
 }
 
 extension MonthReviewViewController {

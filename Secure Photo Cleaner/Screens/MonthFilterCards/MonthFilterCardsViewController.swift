@@ -9,32 +9,38 @@ import Photos
 import UIKit
 
 private enum Strings {
-    static let reviewed = "Reviewed"
+    static let reviewed = NSLocalizedString("filterCards.reviewed", comment: "Reviewed progress label")
     static let delete = CommonStrings.delete
-    static let keep = "Keep"
-    static let store = "Store"
-    static let similarTitle = "Similar & Duplicated"
-    static let similarSubtitle = "Find and remove duplicate or similar photos"
-    static let largestTitle = "Largest First"
-    static let screenshotsTitle = "Screenshots"
-    static let screenshotsSubtitle = "Quick cleanup"
-    static let eyesClosedTitle = "Eyes Closed"
-    static let eyesClosedSubtitle = "in-device face analysis filter"
-    static let screenRecTitle = "Screen Recordings"
-    static let screenRecSubtitle = "Review screen recordings"
-    static let slowMotionTitle = "Slow Motion"
-    static let slowMotionSubtitle = "High frame-rate videos"
-    static let timeLapseTitle = "Time-lapse"
-    static let timeLapseSubtitle = "Time-lapse videos"
-    static let finished = "Finished"
+    static let keep = NSLocalizedString("filterCards.keep", comment: "Keep action label")
+    static let store = NSLocalizedString("filterCards.store", comment: "Store action label")
+    static let similarTitle = NSLocalizedString("filterCards.similarTitle", comment: "Similar & Duplicated filter title")
+    static let similarSubtitle = NSLocalizedString("filterCards.similarSubtitle", comment: "Similar photos filter description")
+    static let largestTitle = NSLocalizedString("filterCards.largestTitle", comment: "Largest first filter title")
+    static let screenshotsTitle = NSLocalizedString("filterCards.screenshotsTitle", comment: "Screenshots filter title")
+    static let screenshotsSubtitle = NSLocalizedString("filterCards.screenshotsSubtitle", comment: "Screenshots filter description")
+    static let eyesClosedTitle = NSLocalizedString("filterCards.eyesClosedTitle", comment: "Eyes closed filter title")
+    static let eyesClosedSubtitle = NSLocalizedString("filterCards.eyesClosedSubtitle", comment: "Eyes closed filter description")
+    static let screenRecTitle = NSLocalizedString("filterCards.screenRecTitle", comment: "Screen recordings filter title")
+    static let screenRecSubtitle = NSLocalizedString("filterCards.screenRecSubtitle", comment: "Screen recordings filter description")
+    static let slowMotionTitle = NSLocalizedString("filterCards.slowMotionTitle", comment: "Slow motion filter title")
+    static let slowMotionSubtitle = NSLocalizedString("filterCards.slowMotionSubtitle", comment: "Slow motion filter description")
+    static let timeLapseTitle = NSLocalizedString("filterCards.timeLapseTitle", comment: "Time-lapse filter title")
+    static let timeLapseSubtitle = NSLocalizedString("filterCards.timeLapseSubtitle", comment: "Time-lapse filter description")
+    static let finished = NSLocalizedString("filterCards.finished", comment: "Finished state label")
     static func largestSubtitle(isVideo: Bool) -> String {
-        isVideo ? "Review videos sorted by file size" : "Review photos sorted by file size"
+        isVideo
+            ? NSLocalizedString("filterCards.largestSubtitleVideos", comment: "Largest videos filter description")
+            : NSLocalizedString("filterCards.largestSubtitlePhotos", comment: "Largest photos filter description")
     }
     static func allPhotosTitle(isVideo: Bool) -> String {
-        isVideo ? "All Videos" : "All Photos"
+        isVideo
+            ? NSLocalizedString("filterCards.allVideosTitle", comment: "All videos filter title")
+            : NSLocalizedString("filterCards.allPhotosTitle", comment: "All photos filter title")
     }
     static func allPhotosSubtitle(isVideo: Bool) -> String {
-        isVideo ? "Review all videos one by one" : "Review all photos one by one"
+        isVideo
+            ? NSLocalizedString("filterCards.allVideosSubtitle", comment: "All videos filter description")
+            : NSLocalizedString("filterCards.allPhotosSubtitle", comment: "All photos filter description")
     }
 }
 

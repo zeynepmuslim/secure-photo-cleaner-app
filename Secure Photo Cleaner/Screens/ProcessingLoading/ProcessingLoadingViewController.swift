@@ -11,14 +11,14 @@ import UIKit
 
 private enum Strings {
     static let cancel = CommonStrings.cancel
-    static let analyzingFileSizes = "Analyzing File Sizes..."
-    static let calculating = "Calculating..."
-    static let scanningFaces = "Scanning Faces..."
-    static let initializingDetector = "Initializing detector..."
-    static let loadingPhotos = "Loading Photos..."
-    static let warmingUp = "Warming up and checking cache..."
+    static let analyzingFileSizes = NSLocalizedString("processing.analyzingFileSizes", comment: "Analyzing file sizes progress text")
+    static let calculating = NSLocalizedString("processing.calculating", comment: "Calculating progress text")
+    static let scanningFaces = NSLocalizedString("processing.scanningFaces", comment: "Scanning faces progress text")
+    static let initializingDetector = NSLocalizedString("processing.initializingDetector", comment: "Initializing detector progress text")
+    static let loadingPhotos = NSLocalizedString("processing.loadingPhotos", comment: "Loading photos progress text")
+    static let warmingUp = NSLocalizedString("processing.warmingUp", comment: "Warming up progress text")
     static func estimateRemaining(seconds: Double) -> String {
-        String(format: "Est: %.1fs remaining", seconds)
+        String(format: NSLocalizedString("processing.estimateRemaining", comment: "Estimated time remaining, e.g. 'Est: 3.2s remaining'"), seconds)
     }
 }
 

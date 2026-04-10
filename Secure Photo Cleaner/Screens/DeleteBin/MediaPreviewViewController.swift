@@ -41,7 +41,7 @@ final class MediaPreviewViewController: UIViewController {
         let button = DynamicGlassButton()
         button.translatesAutoresizingMaskIntoConstraints = false
         button.configure(
-            title: "Remove from Bin",
+            title: NSLocalizedString("mediaPreview.removeFromBin", comment: "Remove from bin button"),
             systemImage: "trash.slash",
             style: .prominent,
             backgroundColor: .green100
@@ -53,7 +53,7 @@ final class MediaPreviewViewController: UIViewController {
         let button = DynamicGlassButton()
         button.translatesAutoresizingMaskIntoConstraints = false
         button.configure(
-            title: "Delete Now",
+            title: NSLocalizedString("mediaPreview.deleteNow", comment: "Delete now button"),
             systemImage: "trash.fill",
             style: .prominent,
             backgroundColor: .systemRed
@@ -302,7 +302,7 @@ final class MediaPreviewViewController: UIViewController {
     private func showActionState() {
         deleteNowButton.isUserInteractionEnabled = true
         actionButton.animateConfigure(
-            title: "Remove from Bin",
+            title: NSLocalizedString("mediaPreview.removeFromBin", comment: "Remove from bin button"),
             systemImage: "trash.slash",
             style: .prominent,
             backgroundColor: .green100

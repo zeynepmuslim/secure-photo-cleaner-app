@@ -10,34 +10,34 @@ import UIKit
 // MARK: - Strings
 
 private enum Strings {
-    static let analyzing = "Analyzing..."
-    static let unableToAnalyze = "Unable to analyze storage"
-    static let tryAgain = "Try Again"
-    static let notAnalyzedYet = "Storage has not been analyzed yet"
-    static let analyzeStorage = "Analyze Storage"
-    static let storageBreakdown = "Storage Breakdown"
-    static let onThisDevice = "On This Device"
-    static let iCloudOnly = "iCloud Only"
-    static let totalLibrary = "Total Library"
-    static let allPhotosAndVideos = "All photos and videos"
-    static let used = "Used"
-    static let available = "Available"
-    static let saved = "Saved"
-    static let photos = "Photos"
-    static let videos = "Videos"
-    static let other = "Other"
-    static let generalStorageInfoOnly = "General storage info only"
+    static let analyzing = NSLocalizedString("storageAnalysis.analyzing", comment: "Analyzing progress text")
+    static let unableToAnalyze = NSLocalizedString("storageAnalysis.unableToAnalyze", comment: "Error when analysis fails")
+    static let tryAgain = NSLocalizedString("storageAnalysis.tryAgain", comment: "Try again button")
+    static let notAnalyzedYet = NSLocalizedString("storageAnalysis.notAnalyzedYet", comment: "Not yet analyzed message")
+    static let analyzeStorage = NSLocalizedString("storageAnalysis.analyzeStorage", comment: "Analyze storage button")
+    static let storageBreakdown = NSLocalizedString("storageAnalysis.storageBreakdown", comment: "Storage breakdown section title")
+    static let onThisDevice = NSLocalizedString("storageAnalysis.onThisDevice", comment: "On this device section")
+    static let iCloudOnly = NSLocalizedString("storageAnalysis.iCloudOnly", comment: "iCloud only section")
+    static let totalLibrary = NSLocalizedString("storageAnalysis.totalLibrary", comment: "Total library section")
+    static let allPhotosAndVideos = NSLocalizedString("storageAnalysis.allPhotosAndVideos", comment: "All photos and videos subtitle")
+    static let used = NSLocalizedString("storageAnalysis.used", comment: "Used storage label")
+    static let available = NSLocalizedString("storageAnalysis.available", comment: "Available storage label")
+    static let saved = NSLocalizedString("storageAnalysis.saved", comment: "Saved storage label")
+    static let photos = NSLocalizedString("storageAnalysis.photos", comment: "Photos label")
+    static let videos = NSLocalizedString("storageAnalysis.videos", comment: "Videos label")
+    static let other = NSLocalizedString("storageAnalysis.other", comment: "Other storage label")
+    static let generalStorageInfoOnly = NSLocalizedString("storageAnalysis.generalStorageInfoOnly", comment: "General storage info footer")
     static func iCloudBannerText(count: Int, size: String, percentage: Int) -> String {
-        "iCloud Photo Library detected. \(count) items (\(size), \(percentage)%) are stored only in iCloud and not on this device."
+        String(format: NSLocalizedString("storageAnalysis.iCloudBannerText", comment: "iCloud banner, e.g. 'iCloud Photo Library detected. 500 items (2.3 GB, 45%%) are stored only in iCloud.'"), count, size, percentage)
     }
     static func lastAnalyzed(date: String) -> String {
-        "Last analyzed: \(date)"
+        String(format: NSLocalizedString("storageAnalysis.lastAnalyzed", comment: "Last analyzed date"), date)
     }
     static func lastAnalyzedStale(date: String) -> String {
-        "\(date) - Tap to refresh"
+        String(format: NSLocalizedString("storageAnalysis.lastAnalyzedStale", comment: "Stale analysis date with refresh hint"), date)
     }
     static func mediaCountSubtitle(photosCount: Int, videosCount: Int) -> String {
-        "\(photosCount) photos, \(videosCount) videos"
+        String(format: NSLocalizedString("storageAnalysis.mediaCountSubtitle", comment: "Media count, e.g. '500 photos, 30 videos'"), photosCount, videosCount)
     }
 }
 

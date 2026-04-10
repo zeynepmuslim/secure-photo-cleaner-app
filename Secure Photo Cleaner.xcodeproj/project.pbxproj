@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D7DBE3832F72E5D5000147CF /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = D7DBE3822F72E5D5000147CF /* Localizable.xcstrings */; };
+		D7DBE3842F72E5D5000147CF /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = D7DBE3822F72E5D5000147CF /* Localizable.xcstrings */; };
 		D7E939312F2BFBDD002BE331 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D7E939302F2BFBDD002BE331 /* WidgetKit.framework */; };
 		D7E939332F2BFBDD002BE331 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D7E939322F2BFBDD002BE331 /* SwiftUI.framework */; };
 		D7E939422F2BFBE0002BE331 /* StorageAnalysisWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D7E9392E2F2BFBDD002BE331 /* StorageAnalysisWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -38,6 +40,7 @@
 
 /* Begin PBXFileReference section */
 		D711329A2F088869006A030E /* Secure Photo Cleaner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Secure Photo Cleaner.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		D7DBE3822F72E5D5000147CF /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		D7E9392E2F2BFBDD002BE331 /* StorageAnalysisWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = StorageAnalysisWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		D7E939302F2BFBDD002BE331 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		D7E939322F2BFBDD002BE331 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -102,6 +105,7 @@
 		D71132912F088869006A030E = {
 			isa = PBXGroup;
 			children = (
+				D7DBE3822F72E5D5000147CF /* Localizable.xcstrings */,
 				D711329C2F088869006A030E /* Secure Photo Cleaner */,
 				D7E939342F2BFBDD002BE331 /* StorageAnalysisWidget */,
 				D7E9392F2F2BFBDD002BE331 /* Frameworks */,
@@ -138,6 +142,7 @@
 				D71132972F088869006A030E /* Frameworks */,
 				D71132982F088869006A030E /* Resources */,
 				D7E939472F2BFBE0002BE331 /* Embed Foundation Extensions */,
+				D7D664502F88DA5D00C9E13A /* Generate Localizable.xcstrings */,
 			);
 			buildRules = (
 			);
@@ -200,6 +205,7 @@
 			knownRegions = (
 				en,
 				Base,
+				tr,
 			);
 			mainGroup = D71132912F088869006A030E;
 			minimizedProjectReferenceProxies = 1;
@@ -219,6 +225,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D7DBE3832F72E5D5000147CF /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -226,10 +233,34 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D7DBE3842F72E5D5000147CF /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		D7D664502F88DA5D00C9E13A /* Generate Localizable.xcstrings */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/Localization/translations.csv",
+				"$(SRCROOT)/Localization/csv_to_xcstrings.py",
+			);
+			name = "Generate Localizable.xcstrings";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\npython3 \"${SRCROOT}/Localization/csv_to_xcstrings.py\" --csv \"${SRCROOT}/Localization/translations.csv\" --output \"${SRCROOT}/Localizable.xcstrings\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		D71132962F088869006A030E /* Sources */ = {
@@ -265,6 +296,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9N5WN36F7P;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Secure Photo Cleaner/Application/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Secure Photo Cleaner";
@@ -303,6 +335,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9N5WN36F7P;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Secure Photo Cleaner/Application/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Secure Photo Cleaner";
@@ -338,6 +371,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -394,6 +428,7 @@
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
@@ -403,6 +438,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -452,6 +488,7 @@
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;

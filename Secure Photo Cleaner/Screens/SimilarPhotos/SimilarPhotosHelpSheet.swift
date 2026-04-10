@@ -8,16 +8,16 @@
 import UIKit
 
 private enum Strings {
-    static let tapToToggle = "Tap photos\nto toggle"
-    static let keep = "Keep"
-    static let keepDesc = "Won't be affect"
-    static let delete = "Delete"
-    static let deleteDesc = "Moves to bin"
-    static let store = "Store"
-    static let storeDesc = "Saves to album"
-    static let storeHint = "Tap the button to\nselect for store"
-    static let confirmHint = "Tap Confirm to apply your choices"
-    static let gotIt = "Got it!"
+    static let tapToToggle = NSLocalizedString("similarHelp.tapToToggle", comment: "Instruction to tap photos to toggle state")
+    static let keep = NSLocalizedString("similarHelp.keep", comment: "Keep action label")
+    static let keepDesc = NSLocalizedString("similarHelp.keepDesc", comment: "Keep action description")
+    static let delete = NSLocalizedString("similarHelp.delete", comment: "Delete action label")
+    static let deleteDesc = NSLocalizedString("similarHelp.deleteDesc", comment: "Delete action description")
+    static let store = NSLocalizedString("similarHelp.store", comment: "Store action label")
+    static let storeDesc = NSLocalizedString("similarHelp.storeDesc", comment: "Store action description")
+    static let storeHint = NSLocalizedString("similarHelp.storeHint", comment: "Hint for store button")
+    static let confirmHint = NSLocalizedString("similarHelp.confirmHint", comment: "Hint to tap confirm")
+    static let gotIt = NSLocalizedString("similarHelp.gotIt", comment: "Got it button")
 }
 
 final class SimilarPhotosHelpSheet: UIViewController {

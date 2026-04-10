@@ -11,14 +11,27 @@ import SwiftUI
 import UIKit
 
 private enum Strings {
-    static func screenshotsTitle(month: String) -> String { "Screenshots · \(month)" }
-    static func largeFilesTitle(month: String, isVideo: Bool) -> String {
-        isVideo ? "Large Videos · \(month)" : "Large Photos · \(month)"
+    static func screenshotsTitle(month: String) -> String {
+        String(format: NSLocalizedString("monthReview.screenshotsTitle", comment: "Screenshots filter title with month, e.g. 'Screenshots · January 2025'"), month)
     }
-    static func eyesClosedTitle(month: String) -> String { "Eyes Closed · \(month)" }
-    static func screenRecordingsTitle(month: String) -> String { "Screen Recordings · \(month)" }
-    static func slowMotionTitle(month: String) -> String { "Slow Motion · \(month)" }
-    static func timeLapseTitle(month: String) -> String { "Time-lapse · \(month)" }
+    static func largeFilesTitle(month: String, isVideo: Bool) -> String {
+        let format = isVideo
+            ? NSLocalizedString("monthReview.largeVideosTitle", comment: "Large videos filter title with month")
+            : NSLocalizedString("monthReview.largePhotosTitle", comment: "Large photos filter title with month")
+        return String(format: format, month)
+    }
+    static func eyesClosedTitle(month: String) -> String {
+        String(format: NSLocalizedString("monthReview.eyesClosedTitle", comment: "Eyes closed filter title with month"), month)
+    }
+    static func screenRecordingsTitle(month: String) -> String {
+        String(format: NSLocalizedString("monthReview.screenRecordingsTitle", comment: "Screen recordings filter title with month"), month)
+    }
+    static func slowMotionTitle(month: String) -> String {
+        String(format: NSLocalizedString("monthReview.slowMotionTitle", comment: "Slow motion filter title with month"), month)
+    }
+    static func timeLapseTitle(month: String) -> String {
+        String(format: NSLocalizedString("monthReview.timeLapseTitle", comment: "Time-lapse filter title with month"), month)
+    }
 }
 
 enum FilterContext {

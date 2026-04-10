@@ -10,26 +10,26 @@ import UIKit
 // MARK: - Strings
 
 private enum Strings {
-    static let storageLabel = "Storage"
-    static let analyzing = "Analyzing..."
-    static let unableToAnalyze = "Unable to analyze storage"
-    static let tryAgain = "Try Again"
-    static let notAnalyzedYet = "Storage has not been analyzed yet"
-    static let analyzeStorage = "Analyze Storage"
-    static let used = "Used"
-    static let available = "Available"
-    static let photos = "Photos"
-    static let videos = "Videos"
-    static let other = "Other"
-    static let generalStorageInfo = "General storage info"
+    static let storageLabel = NSLocalizedString("storageLite.storage", comment: "Storage section title")
+    static let analyzing = NSLocalizedString("storageLite.analyzing", comment: "Analyzing progress text")
+    static let unableToAnalyze = NSLocalizedString("storageLite.unableToAnalyze", comment: "Error message when analysis fails")
+    static let tryAgain = NSLocalizedString("storageLite.tryAgain", comment: "Try again button")
+    static let notAnalyzedYet = NSLocalizedString("storageLite.notAnalyzedYet", comment: "Message when storage not yet analyzed")
+    static let analyzeStorage = NSLocalizedString("storageLite.analyzeStorage", comment: "Analyze storage button")
+    static let used = NSLocalizedString("storageLite.used", comment: "Used storage label")
+    static let available = NSLocalizedString("storageLite.available", comment: "Available storage label")
+    static let photos = NSLocalizedString("storageLite.photos", comment: "Photos label")
+    static let videos = NSLocalizedString("storageLite.videos", comment: "Videos label")
+    static let other = NSLocalizedString("storageLite.other", comment: "Other storage label")
+    static let generalStorageInfo = NSLocalizedString("storageLite.generalStorageInfo", comment: "General storage info footer")
     static func usageLabel(usedGB: String, totalGB: String) -> String {
-        "Usage: \(usedGB) / \(totalGB)"
+        String(format: NSLocalizedString("storageLite.usageLabel", comment: "Usage label, e.g. 'Usage: 32 GB / 64 GB'"), usedGB, totalGB)
     }
     static func savedLabel(formatted: String) -> String {
-        "Saved: \(formatted)"
+        String(format: NSLocalizedString("storageLite.savedLabel", comment: "Saved space label, e.g. 'Saved: 2.3 GB'"), formatted)
     }
     static func lastAnalyzed(date: String) -> String {
-        "Last analyzed: \(date)"
+        String(format: NSLocalizedString("storageLite.lastAnalyzed", comment: "Last analyzed date, e.g. 'Last analyzed: 5 minutes ago'"), date)
     }
 }
 

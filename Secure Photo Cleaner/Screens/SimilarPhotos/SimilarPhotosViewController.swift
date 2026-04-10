@@ -10,39 +10,52 @@ import SwiftUI
 import UIKit
 
 private enum Strings {
-    static let scanningMessage = "Scanning library for similar photos...\nThis may take a moment."
-    static let similarPhotosTitle = "Similar Photos"
+    static let scanningMessage = NSLocalizedString("similarPhotos.scanningMessage", comment: "Scanning for similar photos progress message")
+    static let similarPhotosTitle = NSLocalizedString("similarPhotos.title", comment: "Similar photos screen title")
     static let cancel = CommonStrings.cancel
-    static let noSimilarTitle = "No Similar Photos"
-    static let noSimilarMessage = "Great! No duplicate or similar photos were found in your library."
-    static let scanAgain = "Scan Again"
-    static let tryAnotherMonth = "Try Another Month"
-    static let photosAccessDenied = "Please allow access to Photos in Settings."
-    static let alreadyProcessedTitle = "Already Processed"
-    static let alreadyProcessedMessage = "This group has already been processed."
-    static let confirmTitle = "Confirm Actions"
-    static let confirm = "Confirm"
+    static let noSimilarTitle = NSLocalizedString("similarPhotos.noSimilarTitle", comment: "No similar photos found title")
+    static let noSimilarMessage = NSLocalizedString("similarPhotos.noSimilarMessage", comment: "No similar photos found message")
+    static let scanAgain = NSLocalizedString("similarPhotos.scanAgain", comment: "Scan again button")
+    static let tryAnotherMonth = NSLocalizedString("similarPhotos.tryAnotherMonth", comment: "Try another month button")
+    static let photosAccessDenied = NSLocalizedString("similarPhotos.photosAccessDenied", comment: "Photos access denied message")
+    static let alreadyProcessedTitle = NSLocalizedString("similarPhotos.alreadyProcessedTitle", comment: "Already processed alert title")
+    static let alreadyProcessedMessage = NSLocalizedString("similarPhotos.alreadyProcessedMessage", comment: "Already processed alert message")
+    static let confirmTitle = NSLocalizedString("similarPhotos.confirmTitle", comment: "Confirm actions alert title")
+    static let confirm = NSLocalizedString("similarPhotos.confirm", comment: "Confirm button")
     static let ok = CommonStrings.ok
     static func similarPhotosNavTitle(month: String) -> String {
-        "Similar Photos · \(month)"
+        String(format: NSLocalizedString("similarPhotos.navTitle", comment: "Similar photos nav title with month"), month)
     }
     static func confirmMessage(keepCount: Int, deleteCount: Int, storeCount: Int) -> String {
         var parts: [String] = []
-        if keepCount > 0 { parts.append("Keep \(keepCount) photo\(keepCount == 1 ? "" : "s")") }
-        if deleteCount > 0 { parts.append("Delete \(deleteCount) photo\(deleteCount == 1 ? "" : "s")") }
-        if storeCount > 0 { parts.append("Store \(storeCount) photo\(storeCount == 1 ? "" : "s")") }
+        if keepCount > 0 {
+            parts.append(String.localizedStringWithFormat(NSLocalizedString("similarPhotos.keepCount", comment: "Keep photo count, e.g. 'Keep 3 photos'"), keepCount))
+        }
+        if deleteCount > 0 {
+            parts.append(String.localizedStringWithFormat(NSLocalizedString("similarPhotos.deleteCount", comment: "Delete photo count, e.g. 'Delete 2 photos'"), deleteCount))
+        }
+        if storeCount > 0 {
+            parts.append(String.localizedStringWithFormat(NSLocalizedString("similarPhotos.storeCount", comment: "Store photo count, e.g. 'Store 1 photo'"), storeCount))
+        }
         return parts.joined(separator: "\n")
     }
-    static let batchConfirmTitle = "Confirm All Groups"
-    static let batchConfirmAction = "Add to Bin"
-    static let noUnprocessedGroups = "All groups have been processed."
-    static let batchBinTitle = "Confirm All Groups"
+    static let batchConfirmTitle = NSLocalizedString("similarPhotos.batchConfirmTitle", comment: "Confirm all groups title")
+    static let batchConfirmAction = NSLocalizedString("similarPhotos.batchConfirmAction", comment: "Add to bin button")
+    static let noUnprocessedGroups = NSLocalizedString("similarPhotos.noUnprocessedGroups", comment: "All groups processed message")
+    static let batchBinTitle = NSLocalizedString("similarPhotos.batchBinTitle", comment: "Batch confirm title")
     static func batchConfirmMessage(keepCount: Int, deleteCount: Int, storeCount: Int, groupCount: Int) -> String {
         var parts: [String] = []
-        if keepCount > 0 { parts.append("Keep \(keepCount) photo\(keepCount == 1 ? "" : "s")") }
-        if deleteCount > 0 { parts.append("Delete \(deleteCount) photo\(deleteCount == 1 ? "" : "s")") }
-        if storeCount > 0 { parts.append("Store \(storeCount) photo\(storeCount == 1 ? "" : "s")") }
-        return parts.joined(separator: "\n") + "\n\nFrom \(groupCount) group\(groupCount == 1 ? "" : "s")"
+        if keepCount > 0 {
+            parts.append(String.localizedStringWithFormat(NSLocalizedString("similarPhotos.keepCount", comment: "Keep photo count"), keepCount))
+        }
+        if deleteCount > 0 {
+            parts.append(String.localizedStringWithFormat(NSLocalizedString("similarPhotos.deleteCount", comment: "Delete photo count"), deleteCount))
+        }
+        if storeCount > 0 {
+            parts.append(String.localizedStringWithFormat(NSLocalizedString("similarPhotos.storeCount", comment: "Store photo count"), storeCount))
+        }
+        let fromGroups = String.localizedStringWithFormat(NSLocalizedString("similarPhotos.fromGroups", comment: "From group count, e.g. 'From 3 groups'"), groupCount)
+        return parts.joined(separator: "\n") + "\n\n" + fromGroups
     }
 }
 
@@ -293,7 +306,7 @@ class SimilarPhotosViewController: UIViewController {
         // Show "Undo All" if there are still batch-confirmed groups
         if !lastBatchConfirmedIndices.isEmpty {
             binController?.configureWideBinButton(
-                title: "Undo All",
+                title: NSLocalizedString("similarPhotos.undoAll", comment: "Undo all button"),
                 monthKey: monthKey,
                 monthTitle: monthTitle,
                 tapHandler: { [weak self] in self?.handleBatchUndo() }
@@ -394,7 +407,7 @@ class SimilarPhotosViewController: UIViewController {
 
         if !batchIndices.isEmpty {
             binController?.configureWideBinButton(
-                title: "Undo All",
+                title: NSLocalizedString("similarPhotos.undoAll", comment: "Undo all button"),
                 monthKey: monthKey,
                 monthTitle: monthTitle,
                 tapHandler: { [weak self] in self?.handleBatchUndo() }

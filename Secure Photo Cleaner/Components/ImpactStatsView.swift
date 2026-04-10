@@ -10,15 +10,15 @@ import UIKit
 final class ImpactStatsView: UIView {
 
     private enum Strings {
-        static let spaceSaved = "Space Saved"
-        static let itemsStored = "Items Stored"
-        static let totalReviewed = "Total Reviewed"
-        static let photos = "Photos"
-        static let videos = "Videos"
-        static let emptyStats = "Start reviewing photos or videos to see your impact!"
+        static let spaceSaved = NSLocalizedString("impactStats.spaceSaved", comment: "Space saved stat label")
+        static let itemsStored = NSLocalizedString("impactStats.itemsStored", comment: "Items stored stat label")
+        static let totalReviewed = NSLocalizedString("impactStats.totalReviewed", comment: "Total reviewed stat label")
+        static let photos = NSLocalizedString("impactStats.photos", comment: "Photos label")
+        static let videos = NSLocalizedString("impactStats.videos", comment: "Videos label")
+        static let emptyStats = NSLocalizedString("impactStats.emptyStats", comment: "Empty state message for impact stats")
 
         static func reviewedDeleted(reviewed: Int, deleted: Int) -> String {
-            "\(reviewed) reviewed  •  \(deleted) deleted"
+            String(format: NSLocalizedString("impactStats.reviewedDeleted", comment: "Stats summary, e.g. '5 reviewed • 3 deleted'"), reviewed, deleted)
         }
     }
 

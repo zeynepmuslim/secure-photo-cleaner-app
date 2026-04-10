@@ -10,10 +10,10 @@ import UIKit
 // MARK: - Strings
 
 private enum Strings {
-    static let sheetTitle = "Storage Analysis"
-    static let analyzing  = "Analyzing..."
+    static let sheetTitle = NSLocalizedString("storageSheet.title", comment: "Storage analysis sheet title")
+    static let analyzing  = NSLocalizedString("storageSheet.analyzing", comment: "Analyzing progress label")
     static func progressLabel(phase: String, progress: Int) -> String {
-        "\(phase.capitalized)... \(progress)%"
+        String(format: NSLocalizedString("storageSheet.progressLabel", comment: "Progress label, e.g. 'Photos... 45%%'"), phase.capitalized, progress)
     }
 }
 

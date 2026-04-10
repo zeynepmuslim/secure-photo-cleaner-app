@@ -192,8 +192,8 @@ final class EmptyStateView: UIView {
     emptyState.autoresizingMask = [.flexibleWidth, .flexibleHeight]
     emptyState.configure(
         icon: "photo.on.rectangle.angled",
-        title: "No Photos",
-        message: "Your photo library is empty or access hasn't been granted."
+        title: NSLocalizedString("monthReview.noResultsTitle", comment: ""),
+        message: NSLocalizedString("monthReview.noResultsMessage", comment: "")
     )
     emptyState.show(animated: false)
     vc.view.addSubview(emptyState)
@@ -207,9 +207,9 @@ final class EmptyStateView: UIView {
     emptyState.autoresizingMask = [.flexibleWidth, .flexibleHeight]
     emptyState.configure(
         icon: "trash.slash",
-        title: "Bin is Empty",
-        message: "You haven't marked any photos for deletion yet.",
-        actionTitle: "Start Reviewing",
+        title: NSLocalizedString("deleteBin.emptyMessage", comment: ""),
+        message: NSLocalizedString("deleteBin.yourDeleteBin", comment: ""),
+        actionTitle: NSLocalizedString("dashboard.getStarted", comment: ""),
         onAction: {}
     )
     emptyState.show(animated: false)
@@ -242,8 +242,8 @@ final class EmptyStateView: UIView {
     let emptyState = EmptyStateView(frame: vc.view.bounds)
     emptyState.autoresizingMask = [.flexibleWidth, .flexibleHeight]
     emptyState.configure(
-        title: "Nothing Here",
-        message: "No items match your current filter criteria."
+        title: NSLocalizedString("similarPhotos.noSimilarTitle", comment: ""),
+        message: NSLocalizedString("similarPhotos.noSimilarMessage", comment: "")
     )
     emptyState.show(animated: false)
     vc.view.addSubview(emptyState)

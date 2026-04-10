@@ -9,19 +9,19 @@ import Photos
 import UIKit
 
 private enum Strings {
-    static let noResultsTitle = "No Results"
-    static let noResultsMessage = "No photos match the current filter.\nTry a different filter or review all photos."
-    static let clearFilter = "Clear Filter"
-    static let backToMonths = "Back to Months"
-    static let tryAnotherMonth = "Try Another Month"
-    static let monthEmptyMessage = "This month doesn't have any photos yet."
-    static let monthCompleteTitle = "Month Complete"
-    static let viewDeleteBin = "View Delete Bin"
+    static let noResultsTitle = NSLocalizedString("monthHelpers.noResultsTitle", comment: "No results title")
+    static let noResultsMessage = NSLocalizedString("monthHelpers.noResultsMessage", comment: "No results message with suggestion")
+    static let clearFilter = NSLocalizedString("monthHelpers.clearFilter", comment: "Clear filter button")
+    static let backToMonths = NSLocalizedString("monthHelpers.backToMonths", comment: "Back to months button")
+    static let tryAnotherMonth = NSLocalizedString("monthHelpers.tryAnotherMonth", comment: "Try another month button")
+    static let monthEmptyMessage = NSLocalizedString("monthHelpers.monthEmptyMessage", comment: "Month empty message")
+    static let monthCompleteTitle = NSLocalizedString("monthHelpers.monthCompleteTitle", comment: "Month complete title")
+    static let viewDeleteBin = NSLocalizedString("monthHelpers.viewDeleteBin", comment: "View delete bin button")
     static func noPhotosInMonth(monthTitle: String) -> String {
-        "No Photos in \(monthTitle)"
+        String(format: NSLocalizedString("monthHelpers.noPhotosInMonth", comment: "No photos in month title, e.g. 'No Photos in January 2025'"), monthTitle)
     }
     static func monthCompleteMessage(count: Int, monthTitle: String) -> String {
-        "You've reviewed all \(count) photos in \(monthTitle)."
+        String(format: NSLocalizedString("monthHelpers.monthCompleteMessage", comment: "Month complete message, e.g. 'You reviewed all 42 photos in January 2025.'"), count, monthTitle)
     }
 }
 

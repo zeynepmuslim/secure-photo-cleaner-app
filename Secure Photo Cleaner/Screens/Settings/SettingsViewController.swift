@@ -10,53 +10,53 @@ import UIKit
 
 // MARK: - Strings
 private enum Strings {
-    static let navTitle = "Settings"
+    static let navTitle = NSLocalizedString("settings.navTitle", comment: "Settings navigation title")
 
-    static let yourImpact = "YOUR IMPACT"
-    static let storageAnalysis = "STORAGE ANALYSIS"
-    static let photoManagement = "PHOTO MANAGEMENT"
-    static let features = "FEATURES"
-    static let transparencySafety = "TRANSPARENCY & SAFETY"
-    static let about = "ABOUT"
-    static let version = "Version 1.0.0"
-    static let madeBy = "made by Zeynep Müslim"
+    static let yourImpact = NSLocalizedString("settings.yourImpact", comment: "Your impact section header")
+    static let storageAnalysis = NSLocalizedString("settings.storageAnalysis", comment: "Storage analysis section header")
+    static let photoManagement = NSLocalizedString("settings.photoManagement", comment: "Photo management section header")
+    static let features = NSLocalizedString("settings.features", comment: "Features section header")
+    static let transparencySafety = NSLocalizedString("settings.transparencySafety", comment: "Transparency & safety section header")
+    static let about = NSLocalizedString("settings.about", comment: "About section header")
+    static let version = NSLocalizedString("settings.version", comment: "App version label")
+    static let madeBy = NSLocalizedString("settings.madeBy", comment: "Made by credit")
 
-    static let internetTitle = "Internet Access"
-    static let internetSubtitle = "Review iCloud photos at full quality (uses data)"
-    static let skipICloudTitle = "Skip iCloud Photos"
-    static let skipICloudSubtitle = "Only review locally stored photos"
-    static let remindersTitle = "Reminders"
+    static let internetTitle = NSLocalizedString("settings.internetTitle", comment: "Internet access toggle title")
+    static let internetSubtitle = NSLocalizedString("settings.internetSubtitle", comment: "Internet access toggle subtitle")
+    static let skipICloudTitle = NSLocalizedString("settings.skipICloudTitle", comment: "Skip iCloud photos toggle title")
+    static let skipICloudSubtitle = NSLocalizedString("settings.skipICloudSubtitle", comment: "Skip iCloud photos toggle subtitle")
+    static let remindersTitle = NSLocalizedString("settings.remindersTitle", comment: "Reminders section title")
 
-    static let privacyTitle = "Privacy First"
-    static let privacyText =
-        "This app works completely offline by default. Photos are displayed using locally cached previews, which may appear in lower quality. Enable internet access to download full-resolution versions from iCloud."
-    static let storeTitle = "Store Feature"
-    static let storeText =
-        "Swipe up to store photos in a native album. Selected items are added to a \"Will Be Stored\" album in your Photos app, so you can manage them all from one place."
-    static let transparencyTitle = "How can I know it's fully safe?"
-    static let transparencyText =
-        "This app is completely open source on GitHub. You can review every line of code to verify that your photos never leave your device and no data is collected. The internet access toggle only allows downloading photos from iCloud when needed—nothing is ever uploaded."
-    static let viewSourceCode = "View Source Code"
+    static let privacyTitle = NSLocalizedString("settings.privacyTitle", comment: "Privacy first info title")
+    static let privacyText = NSLocalizedString("settings.privacyText", comment: "Privacy first explanation")
+    static let storeTitle = NSLocalizedString("settings.storeTitle", comment: "Store feature info title")
+    static let storeText = NSLocalizedString("settings.storeText", comment: "Store feature explanation")
+    static let transparencyTitle = NSLocalizedString("settings.transparencyTitle", comment: "Transparency info title")
+    static let transparencyText = NSLocalizedString("settings.transparencyText", comment: "Transparency explanation")
+    static let viewSourceCode = NSLocalizedString("settings.viewSourceCode", comment: "View source code button")
 
-    static let internetOnMessage = "Internet access enabled. iCloud photos will download."
-    static let internetOffMessage = "Internet access disabled. Offline mode active."
-    static let skipICloudOnMessage = "iCloud photos will be skipped during review."
-    static let skipICloudOffMessage = "All photos will be shown during review."
+    static let internetOnMessage = NSLocalizedString("settings.internetOnMessage", comment: "Internet enabled toast")
+    static let internetOffMessage = NSLocalizedString("settings.internetOffMessage", comment: "Internet disabled toast")
+    static let skipICloudOnMessage = NSLocalizedString("settings.skipICloudOnMessage", comment: "Skip iCloud enabled toast")
+    static let skipICloudOffMessage = NSLocalizedString("settings.skipICloudOffMessage", comment: "Skip iCloud disabled toast")
 
-    static let notificationsDisabled = "Notifications Disabled"
-    static let notificationsDeniedMessage = "Enable notifications in Settings to receive photo clean reminders."
+    static let notificationsDisabled = NSLocalizedString("settings.notificationsDisabled", comment: "Notifications disabled alert title")
+    static let notificationsDeniedMessage = NSLocalizedString("settings.notificationsDeniedMessage", comment: "Notifications denied message")
     static let ok = CommonStrings.ok
 
-    static let schedule = "Schedule"
-    static let daily = "Daily"
-    static let weekly = "Weekly"
-    static let monthly = "Monthly"
+    static let schedule = NSLocalizedString("settings.schedule", comment: "Schedule label")
+    static let daily = NSLocalizedString("settings.daily", comment: "Daily frequency option")
+    static let weekly = NSLocalizedString("settings.weekly", comment: "Weekly frequency option")
+    static let monthly = NSLocalizedString("settings.monthly", comment: "Monthly frequency option")
 
-    static let support = "SUPPORT"
-    static let supportTitle = "Support This Project"
-    static let supportText =
-        "Secure Photo Cleaner is free and open source. If it helped you organize your photos, you can support the developer by buying her a coffee or even a meal."
-    static let supportButton = "Support on Patreon"
+    static let support = NSLocalizedString("settings.support", comment: "Support section header")
+    static let supportTitle = NSLocalizedString("settings.supportTitle", comment: "Support project title")
+    static let supportText = NSLocalizedString("settings.supportText", comment: "Support project description")
+    static let supportButton = NSLocalizedString("settings.supportButton", comment: "Support on Patreon button")
+
+    static let languageTitle = NSLocalizedString("settings.languageTitle", comment: "App language title")
+    static let languageSubtitle = NSLocalizedString("settings.languageSubtitle", comment: "Available languages subtitle")
+    static let languageButton = NSLocalizedString("settings.languageButton", comment: "Change language in settings button")
 }
 
 final class SettingsViewController: UIViewController {
@@ -122,6 +122,14 @@ final class SettingsViewController: UIViewController {
     private let patreonButton = UIButton(type: .system)
     private let supportContentStack = UIStackView()
     private let supportTopStack = UIStackView()
+
+    private let languageContainer = UIView()
+    private let languageTitleLabel = UILabel()
+    private let languageSubtitleLabel = UILabel()
+    private let languageButton = UIButton(type: .system)
+    private let languageContentStack = UIStackView()
+    private let languageTopStack = UIStackView()
+    private let languageIconView = UIImageView()
 
     private let aboutSectionLabel = UILabel()
     private let madeByLabel = UILabel()
@@ -385,6 +393,58 @@ final class SettingsViewController: UIViewController {
 
         contentStack.addArrangedSubview(remindersToggleContainer)
 
+        languageContainer.backgroundColor = .cardBackground
+        languageContainer.layer.cornerRadius = 14
+        languageContainer.translatesAutoresizingMaskIntoConstraints = false
+
+        let globeConfig = UIImage.SymbolConfiguration(pointSize: 20, weight: .medium)
+        languageIconView.image = UIImage(systemName: "globe", withConfiguration: globeConfig)
+        languageIconView.tintColor = .systemBlue
+        languageIconView.contentMode = .scaleAspectFit
+        languageIconView.translatesAutoresizingMaskIntoConstraints = false
+
+        languageTitleLabel.text = Strings.languageTitle
+        languageTitleLabel.font = .systemFont(ofSize: 15, weight: .semibold)
+        languageTitleLabel.textColor = .label
+
+        languageSubtitleLabel.text = Strings.languageSubtitle
+        languageSubtitleLabel.font = .systemFont(ofSize: 14, weight: .regular)
+        languageSubtitleLabel.textColor = .secondaryLabel
+        languageSubtitleLabel.numberOfLines = 0
+
+        var langConfig = UIButton.Configuration.filled()
+        langConfig.baseBackgroundColor = UIColor.systemBlue.withAlphaComponent(0.15)
+        langConfig.baseForegroundColor = .label
+        langConfig.title = Strings.languageButton
+        langConfig.image = UIImage(systemName: "gear")
+        langConfig.imagePadding = 8
+        langConfig.cornerStyle = .medium
+        langConfig.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16)
+        languageButton.configuration = langConfig
+        languageButton.translatesAutoresizingMaskIntoConstraints = false
+        languageButton.addTarget(self, action: #selector(openLanguageSettings), for: .touchUpInside)
+
+        languageContentStack.axis = .vertical
+        languageContentStack.spacing = 12
+        languageContentStack.alignment = .fill
+        languageContentStack.translatesAutoresizingMaskIntoConstraints = false
+
+        languageTopStack.axis = .horizontal
+        languageTopStack.spacing = 12
+        languageTopStack.alignment = .center
+        languageTopStack.translatesAutoresizingMaskIntoConstraints = false
+
+        languageTopStack.addArrangedSubview(languageIconView)
+        languageTopStack.addArrangedSubview(languageTitleLabel)
+        languageTopStack.addArrangedSubview(UIView.flexibleSpacer())
+
+        languageContentStack.addArrangedSubview(languageTopStack)
+        languageContentStack.addArrangedSubview(languageSubtitleLabel)
+        languageContentStack.addArrangedSubview(languageButton)
+
+        languageContainer.addSubview(languageContentStack)
+        contentStack.addArrangedSubview(languageContainer)
+
         storeInfoContainer.backgroundColor = .cardBackground
         storeInfoContainer.layer.cornerRadius = 14
         storeInfoContainer.layer.borderWidth = 0
@@ -549,7 +609,7 @@ final class SettingsViewController: UIViewController {
         contentStack.addArrangedSubview(aboutSectionLabel)
         contentStack.setCustomSpacing(12, after: aboutSectionLabel)
 
-        versionLabel.text = Strings.version
+        versionLabel.text = "\(Strings.version) 1.0"
         versionLabel.font = .systemFont(ofSize: 15, weight: .bold)
         versionLabel.textColor = .systemGray2
         contentStack.addArrangedSubview(versionLabel)
@@ -624,6 +684,11 @@ final class SettingsViewController: UIViewController {
             scheduleButton.leadingAnchor.constraint(
                 greaterThanOrEqualTo: scheduleTitleLabel.trailingAnchor, constant: 12),
 
+            languageContentStack.topAnchor.constraint(equalTo: languageContainer.topAnchor, constant: 16),
+            languageContentStack.leadingAnchor.constraint(equalTo: languageContainer.leadingAnchor, constant: 16),
+            languageContentStack.trailingAnchor.constraint(equalTo: languageContainer.trailingAnchor, constant: -16),
+            languageContentStack.bottomAnchor.constraint(equalTo: languageContainer.bottomAnchor, constant: -16),
+            
             privacyIconView.widthAnchor.constraint(equalToConstant: 24),
             privacyIconView.heightAnchor.constraint(equalToConstant: 24),
 
@@ -660,6 +725,13 @@ final class SettingsViewController: UIViewController {
             supportContentStack.trailingAnchor.constraint(equalTo: supportContainer.trailingAnchor, constant: -18),
             supportContentStack.bottomAnchor.constraint(equalTo: supportContainer.bottomAnchor, constant: -16)
         ])
+    }
+
+    @objc private func openLanguageSettings() {
+        HapticFeedbackManager.shared.impact(intensity: .light)
+        if let url = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(url)
+        }
     }
 
     @objc private func openPatreon() {

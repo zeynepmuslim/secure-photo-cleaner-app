@@ -22,7 +22,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let dashboardViewController = HomeViewController()
         let dashboardNavController = UINavigationController(rootViewController: dashboardViewController)
         dashboardNavController.tabBarItem = UITabBarItem(
-            title: "Home",
+            title: NSLocalizedString("tab.home", comment: "Home tab title"),
             image: UIImage(systemName: "house"),
             selectedImage: UIImage(systemName: "house.fill")
         )
@@ -31,7 +31,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let photosViewController = MonthsListViewController(mediaType: .image)
         let photosNavController = UINavigationController(rootViewController: photosViewController)
         photosNavController.tabBarItem = UITabBarItem(
-            title: "Photos",
+            title: NSLocalizedString("tab.photos", comment: "Photos tab title"),
             image: UIImage(systemName: "photo"),
             selectedImage: UIImage(systemName: "photo.fill")
         )
@@ -40,7 +40,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let videosViewController = MonthsListViewController(mediaType: .video)
         let videosNavController = UINavigationController(rootViewController: videosViewController)
         videosNavController.tabBarItem = UITabBarItem(
-            title: "Videos",
+            title: NSLocalizedString("tab.videos", comment: "Videos tab title"),
             image: UIImage(systemName: "video"),
             selectedImage: UIImage(systemName: "video.fill")
         )
@@ -49,7 +49,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let settingsViewController = SettingsViewController()
         let settingsNavController = UINavigationController(rootViewController: settingsViewController)
         settingsNavController.tabBarItem = UITabBarItem(
-            title: "Settings",
+            title: NSLocalizedString("tab.settings", comment: "Settings tab title"),
             image: UIImage(systemName: "gearshape"),
             selectedImage: UIImage(systemName: "gearshape.fill")
         )

@@ -172,7 +172,7 @@ final class DashboardCardManager {
         }
 
         return DashboardCardContent.motivation(
-            title: "Continue Where You Left Off",
+            title: NSLocalizedString("dashboard.continueWhereLeftOff", comment: "Continue where you left off card title"),
             subtitle: inProgress.formattedProgress,
             action: .resumeMonth(monthKey: inProgress.monthKey, mediaType: inProgress.mediaType)
         )
@@ -257,8 +257,8 @@ final class DashboardCardManager {
 
         if data.totalReviewed == 0 {
             return DashboardCardContent.analytics(
-                title: "Your Impact",
-                subtitle: "Start reviewing your photos and videos to see your impact here.",
+                title: NSLocalizedString("dashboard.yourImpact", comment: "Your impact card title"),
+                subtitle: NSLocalizedString("dashboard.startReviewingImpact", comment: "Empty impact card subtitle"),
                 action: .browsePhotos
             )
         }
@@ -269,12 +269,12 @@ final class DashboardCardManager {
 
         let subtitle =
             AnalyticsTemplate.generate(from: data)
-            ?? "You've cleaned up \(data.totalDeleted) items, freeing \(data.formattedTotalSaved) of space."
+            ?? String(format: NSLocalizedString("dashboard.cleanedUpFallback", comment: "Fallback analytics subtitle, e.g. 'You cleaned up 120 items, freeing 3.2 GB of space.'"), data.totalDeleted, data.formattedTotalSaved)
 
         let action = suggestNextAction(from: context, analytics: data)
 
         return DashboardCardContent.analytics(
-            title: "Your Impact",
+            title: NSLocalizedString("dashboard.yourImpact", comment: "Your impact card title"),
             subtitle: subtitle,
             action: action
         )

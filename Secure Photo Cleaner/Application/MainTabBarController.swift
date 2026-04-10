@@ -15,7 +15,7 @@ extension Notification.Name {
 // MARK: - Strings
 
 private enum Strings {
-    static let deleteAll = "Delete All"
+    static let deleteAll = NSLocalizedString("mainTabBar.deleteAll", comment: "Delete All button title")
     static let delete = CommonStrings.delete
 }
 

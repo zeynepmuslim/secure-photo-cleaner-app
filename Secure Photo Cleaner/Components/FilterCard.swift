@@ -238,8 +238,8 @@ final class FilterCard: UIControl {
     let card = FilterCard()
     card.configure(
         icon: "photo.on.rectangle.angled",
-        title: "Similar & Duplicated",
-        subtitle: "Find and remove duplicate or similar photos",
+        title: NSLocalizedString("filterCards.similarTitle", comment: ""),
+        subtitle: NSLocalizedString("filterCards.similarSubtitle", comment: ""),
         tintColor: FilterCard.CardColor.similar
     )
     card.setStatus(.inProgress(percent: 42))

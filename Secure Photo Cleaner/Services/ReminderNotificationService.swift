@@ -55,14 +55,14 @@ final class ReminderNotificationService: NSObject {
     }
 
     private let fallbackMessages = [
-        "Your photo library could use a quick cleanup.",
-        "Take a minute to tidy up your photos today.",
-        "A few swipes can free up space on your device.",
-        "Old screenshots and duplicates add up. Time to clean!",
-        "Review your recent photos and clear out the clutter.",
-        "Keep your library organized — start a quick review.",
-        "Free up storage by removing photos you no longer need.",
-        "Your photos deserve a fresh start. Swipe to clean!"
+        NSLocalizedString("notification.fallback1", comment: "Fallback notification: library cleanup"),
+        NSLocalizedString("notification.fallback2", comment: "Fallback notification: tidy up"),
+        NSLocalizedString("notification.fallback3", comment: "Fallback notification: free up space"),
+        NSLocalizedString("notification.fallback4", comment: "Fallback notification: screenshots and duplicates"),
+        NSLocalizedString("notification.fallback5", comment: "Fallback notification: review recent"),
+        NSLocalizedString("notification.fallback6", comment: "Fallback notification: stay organized"),
+        NSLocalizedString("notification.fallback7", comment: "Fallback notification: remove unneeded"),
+        NSLocalizedString("notification.fallback8", comment: "Fallback notification: fresh start"),
     ]
 
     private let requestIdPrefix = "cleanupReminder"
@@ -140,7 +140,7 @@ final class ReminderNotificationService: NSObject {
 
     private func makeContent(message: String) -> UNNotificationContent {
         let content = UNMutableNotificationContent()
-        content.title = "Photo Clean Reminder"
+        content.title = NSLocalizedString("notification.title", comment: "Notification title for cleanup reminders")
         content.body = message
         content.sound = .default
         content.categoryIdentifier = Self.categoryIdentifier
@@ -189,12 +189,12 @@ final class ReminderNotificationService: NSObject {
     func registerCategories() {
         let cleanNowAction = UNNotificationAction(
             identifier: Self.actionCleanNow,
-            title: "Clean Now",
+            title: NSLocalizedString("notification.cleanNow", comment: "Clean now notification action"),
             options: .foreground
         )
         let snoozeAction = UNNotificationAction(
             identifier: Self.actionSnooze,
-            title: "Snooze",
+            title: NSLocalizedString("notification.snooze", comment: "Snooze notification action"),
             options: []
         )
         let category = UNNotificationCategory(

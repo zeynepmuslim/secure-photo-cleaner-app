@@ -233,7 +233,7 @@ class DynamicGlassButton: UIButton {
     #Preview("Prominent Glass") {
         VStack(spacing: 30) {
             GlassButtonPreview(
-                title: "Accept",
+                title: NSLocalizedString("similarPhotos.confirm", comment: ""),
                 systemImage: "checkmark",
                 backgroundColor: .systemGreen,
                 borderColor: .white.withAlphaComponent(0.5),
@@ -245,7 +245,7 @@ class DynamicGlassButton: UIButton {
             .fixedSize()
 
             GlassButtonPreview(
-                title: "Delete",
+                title: NSLocalizedString("common.remove", comment: ""),
                 systemImage: "trash.fill",
                 backgroundColor: .systemRed,
                 borderColor: .red.withAlphaComponent(0.3),
@@ -257,7 +257,7 @@ class DynamicGlassButton: UIButton {
             .fixedSize()
 
             GlassButtonPreview(
-                title: "Continue",
+                title: NSLocalizedString("dashboard.getStarted", comment: ""),
                 systemImage: "arrow.right",
                 backgroundColor: .systemBlue,
                 borderColor: .white,
@@ -274,7 +274,7 @@ class DynamicGlassButton: UIButton {
 
     #Preview("Regular Glass") {
         GlassButtonPreview(
-            title: "Regular",
+            title: NSLocalizedString("similarPhotos.gotIt", comment: ""),
             systemImage: "star",
             style: .regular,
             backgroundColor: .clear
@@ -299,7 +299,7 @@ class DynamicGlassButton: UIButton {
 
     #Preview("Large Custom") {
         GlassButtonPreview(
-            title: "Big Button",
+            title: NSLocalizedString("similarPhotos.gotIt", comment: ""),
             systemImage: "plus",
             style: .prominent,
             backgroundColor: .systemGreen,

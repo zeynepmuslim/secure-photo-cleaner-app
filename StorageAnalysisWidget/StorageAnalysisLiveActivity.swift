@@ -37,7 +37,7 @@ struct StorageAnalysisLiveActivity: Widget {
                             HStack(spacing: 4) {
                                 Image(systemName: "photo.stack.fill")
                                     .foregroundColor(.green)
-                                Text("Storage")
+                                Text(NSLocalizedString("widget.storage", comment: "Widget storage label"))
                                     .font(.caption)
                                     .fontWeight(.medium)
                             }
@@ -131,7 +131,7 @@ struct StorageAnalysisLockScreenView: View {
                     .font(.title3)
                     .foregroundColor(.green)
 
-                Text("Storage Analysis")
+                Text(NSLocalizedString("widget.storageAnalysis", comment: "Widget storage analysis title"))
                     .font(.headline)
                     .fontWeight(.semibold)
 
@@ -166,7 +166,7 @@ struct StorageAnalysisLockScreenView: View {
                         .font(.subheadline)
                         .fontWeight(.medium)
 
-                    Text("analyzed")
+                    Text(NSLocalizedString("widget.analyzed", comment: "Widget analyzed label"))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -179,11 +179,11 @@ struct StorageAnalysisLockScreenView: View {
     private var phaseDescription: String {
         switch context.state.phase {
         case .photos:
-            return "Scanning photo library..."
+            return NSLocalizedString("widget.scanningPhotos", comment: "Widget scanning photos phase")
         case .videos:
-            return "Scanning video library..."
+            return NSLocalizedString("widget.scanningVideos", comment: "Widget scanning videos phase")
         case .complete:
-            return "Analysis complete"
+            return NSLocalizedString("widget.analysisComplete", comment: "Widget analysis complete phase")
         }
     }
 

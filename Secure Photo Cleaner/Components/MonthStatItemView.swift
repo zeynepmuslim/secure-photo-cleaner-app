@@ -92,19 +92,19 @@ final class MonthStatItemView: UIView {
     stack.translatesAutoresizingMaskIntoConstraints = false
 
     let reviewed = MonthStatItemView()
-    reviewed.configure(title: "Reviewed", color: .systemGray)
+    reviewed.configure(title: NSLocalizedString("filterCards.reviewed", comment: ""), color: .systemGray)
     reviewed.setValue("12/40")
 
     let deleted = MonthStatItemView()
-    deleted.configure(title: "Delete", color: .systemRed)
+    deleted.configure(title: NSLocalizedString("filterCards.delete", comment: ""), color: .systemRed)
     deleted.setValue(5)
 
     let kept = MonthStatItemView()
-    kept.configure(title: "Keep", color: .systemGreen)
+    kept.configure(title: NSLocalizedString("filterCards.keep", comment: ""), color: .systemGreen)
     kept.setValue(7)
 
     let stored = MonthStatItemView()
-    stored.configure(title: "Store", color: .systemYellow)
+    stored.configure(title: NSLocalizedString("filterCards.store", comment: ""), color: .systemYellow)
     stored.setValue(0)
 
     [reviewed, deleted, kept, stored].forEach { stack.addArrangedSubview($0) }

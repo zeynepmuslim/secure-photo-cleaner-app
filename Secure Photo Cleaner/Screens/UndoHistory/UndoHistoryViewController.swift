@@ -51,14 +51,14 @@ final class UndoHistoryViewController: UIViewController {
         }
 
         keepButton = createButton(
-            title: "Keep", systemImage: "checkmark.circle.fill", color: .systemGreen,
+            title: NSLocalizedString("undoHistory.keep", comment: "Keep button"), systemImage: "checkmark.circle.fill", color: .systemGreen,
             action: #selector(handleKeepSelected))
         deleteButton = createButton(
-            title: "Delete", systemImage: "trash.fill", color: .systemRed, action: #selector(handleDeleteSelected))
+            title: NSLocalizedString("undoHistory.delete", comment: "Delete button"), systemImage: "trash.fill", color: .systemRed, action: #selector(handleDeleteSelected))
         storeButton = createButton(
-            title: "Store", systemImage: "archivebox.fill", color: .systemYellow, action: #selector(handleStoreSelected))
+            title: NSLocalizedString("undoHistory.store", comment: "Store button"), systemImage: "archivebox.fill", color: .systemYellow, action: #selector(handleStoreSelected))
         undoButton = createButton(
-            title: "Undo", systemImage: "arrow.uturn.backward", color: .systemGray,
+            title: NSLocalizedString("undoHistory.undo", comment: "Undo button"), systemImage: "arrow.uturn.backward", color: .systemGray,
             action: #selector(handleUndoSelected))
 
         selectionToolbar.addArrangedSubview(keepButton)
@@ -192,7 +192,7 @@ final class UndoHistoryViewController: UIViewController {
         let attributedString = NSMutableAttributedString()
 
         let countText = NSAttributedString(
-            string: "\(totalCount) item\(totalCount == 1 ? "" : "s")  •  ",
+            string: String.localizedStringWithFormat(NSLocalizedString("undoHistory.itemCount", comment: "Item count with bullet, e.g. '5 items  •  '"), totalCount),
             attributes: [.foregroundColor: UIColor.secondaryLabel]
         )
         attributedString.append(countText)
@@ -229,14 +229,14 @@ final class UndoHistoryViewController: UIViewController {
 
     private func setupOptionsMenu() {
         let selectAction = UIAction(
-            title: "Select Multiple",
+            title: NSLocalizedString("undoHistory.selectMultiple", comment: "Select multiple button"),
             image: UIImage(systemName: "checkmark.circle")
         ) { [weak self] _ in
             self?.toggleEditMode()
         }
 
         let undoAllAction = UIAction(
-            title: "Undo All",
+            title: NSLocalizedString("undoHistory.undoAllTitle", comment: "Undo all button"),
             image: UIImage(systemName: "arrow.uturn.backward.circle"),
             attributes: .destructive
         ) { [weak self] _ in
@@ -292,14 +292,14 @@ final class UndoHistoryViewController: UIViewController {
 
     private func handleUndoAll() {
         let alert = UIAlertController(
-            title: "Undo All",
-            message: "This will restore all items to their original state. Are you sure?",
+            title: NSLocalizedString("undoHistory.undoAllTitle", comment: "Undo all alert title"),
+            message: NSLocalizedString("undoHistory.undoAllMessage", comment: "Undo all confirmation message"),
             preferredStyle: .alert
         )
 
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: CommonStrings.cancel, style: .cancel))
         alert.addAction(
-            UIAlertAction(title: "Undo All", style: .destructive) { [weak self] _ in
+            UIAlertAction(title: NSLocalizedString("undoHistory.undoAllTitle", comment: "Undo all button"), style: .destructive) { [weak self] _ in
                 self?.performUndoAll()
             })
 

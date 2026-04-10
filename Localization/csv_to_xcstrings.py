@@ -30,22 +30,51 @@ def parse_args():
     return parser.parse_args()
 
 
+PLURAL_CATEGORIES = ("zero", "one", "two", "few", "many", "other")
+
+
+def detect_languages(headers):
+    """Auto-detect language codes from CSV headers.
+
+    Bare columns (not DEV_KEY) are static language columns.
+    Columns like {lang}_{category} where category is a CLDR plural form
+    also contribute their language code.
+    """
+    languages = set()
+    for header in headers:
+        if header == "DEV_KEY":
+            continue
+        # Check if this is a plural column like "en_one", "ar_few", etc.
+        parts = header.rsplit("_", 1)
+        if len(parts) == 2 and parts[1] in PLURAL_CATEGORIES:
+            languages.add(parts[0])
+        else:
+            languages.add(header)
+    return sorted(languages)
+
+
 def build_string_unit(state, value):
     return {"stringUnit": {"state": state, "value": value}}
 
 
-def build_plural_variation(one_value, other_value):
+def build_plural_variation(category_values):
+    """Build plural variation from a dict of {category: value}."""
     variation = {"plural": {}}
-    if one_value:
-        variation["plural"]["one"] = build_string_unit("translated", one_value)
-    if other_value:
-        variation["plural"]["other"] = build_string_unit("translated", other_value)
+    for category in PLURAL_CATEGORIES:
+        value = category_values.get(category)
+        if value:
+            variation["plural"][category] = build_string_unit("translated", value)
     return {"variations": variation}
 
 
-def is_plural(row):
-    """Detect plural keys by checking if en_one or en_other columns are non-empty."""
-    return bool(row.get("en_one", "").strip()) or bool(row.get("en_other", "").strip())
+def is_plural(row, languages):
+    """Detect plural keys by checking if any language has non-empty _one or _other columns."""
+    for lang in languages:
+        if bool(row.get(f"{lang}_one", "").strip()) or bool(
+            row.get(f"{lang}_other", "").strip()
+        ):
+            return True
+    return False
 
 
 def process_csv(csv_path):
@@ -53,6 +82,8 @@ def process_csv(csv_path):
 
     with open(csv_path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f, delimiter=";")
+        languages = detect_languages(reader.fieldnames)
+
         for row in reader:
             key = row.get("DEV_KEY", "").strip()
             if not key:
@@ -60,34 +91,24 @@ def process_csv(csv_path):
 
             entry = {"extractionState": "manual", "localizations": {}}
 
-            if is_plural(row):
-                # Plural string
-                en_one = row.get("en_one", "").strip()
-                en_other = row.get("en_other", "").strip()
-                tr_one = row.get("tr_one", "").strip()
-                tr_other = row.get("tr_other", "").strip()
-
-                if en_one or en_other:
-                    entry["localizations"]["en"] = build_plural_variation(
-                        en_one, en_other
-                    )
-                if tr_one or tr_other:
-                    entry["localizations"]["tr"] = build_plural_variation(
-                        tr_one, tr_other
-                    )
+            if is_plural(row, languages):
+                for lang in languages:
+                    category_values = {}
+                    for category in PLURAL_CATEGORIES:
+                        val = row.get(f"{lang}_{category}", "").strip()
+                        if val:
+                            category_values[category] = val
+                    if category_values:
+                        entry["localizations"][lang] = build_plural_variation(
+                            category_values
+                        )
             else:
-                # Static string
-                en_value = row.get("en", "").strip()
-                tr_value = row.get("tr", "").strip()
-
-                if en_value:
-                    entry["localizations"]["en"] = build_string_unit(
-                        "translated", en_value
-                    )
-                if tr_value:
-                    entry["localizations"]["tr"] = build_string_unit(
-                        "translated", tr_value
-                    )
+                for lang in languages:
+                    value = row.get(lang, "").strip()
+                    if value:
+                        entry["localizations"][lang] = build_string_unit(
+                            "translated", value
+                        )
 
             strings[key] = entry
 

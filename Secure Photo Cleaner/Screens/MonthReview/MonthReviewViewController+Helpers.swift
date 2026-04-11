@@ -723,8 +723,11 @@ extension MonthReviewViewController {
             })
         alert.addAction(
             UIAlertAction(title: Strings.viewDeleteBin, style: .default) { [weak self] _ in
+                guard let self = self, let nav = self.navigationController else { return }
                 let binViewController = DeleteBinViewController()
-                self?.navigationController?.pushViewController(binViewController, animated: true)
+                nav.pushViewController(binViewController, animated: true)
+                // Remove MonthReviewVC from stack -> bin's back button go to month list/filter
+                nav.viewControllers.removeAll { $0 === self }
             })
         present(alert, animated: true)
     }

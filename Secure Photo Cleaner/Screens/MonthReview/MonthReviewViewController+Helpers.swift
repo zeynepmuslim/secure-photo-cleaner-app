@@ -36,7 +36,7 @@ extension MonthReviewViewController {
             if showTryAnother {
                 emptyStateView.configure(
                     icon: "line.3.horizontal.decrease.circle",
-                    iconColor: .systemOrange,
+                    iconColor: .systemGreen,
                     title: Strings.noResultsTitle,
                     message: Strings.noResultsMessage,
                     actionTitle: Strings.tryAnotherMonth,
@@ -45,7 +45,7 @@ extension MonthReviewViewController {
             } else {
                 emptyStateView.configure(
                     icon: "line.3.horizontal.decrease.circle",
-                    iconColor: .systemOrange,
+                    iconColor: .systemGreen,
                     title: Strings.noResultsTitle,
                     message: Strings.noResultsMessage,
                     actionTitle: Strings.clearFilter,
@@ -81,6 +81,7 @@ extension MonthReviewViewController {
         emptyStateView.show(animated: true)
 
         cleanupVideo()
+        cardContainerView.alpha = 0
         videoController.playPauseButton.alpha = 0
         videoController.controlsContainer.alpha = 0
     }

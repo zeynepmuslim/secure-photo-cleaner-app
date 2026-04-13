@@ -15,6 +15,11 @@ final class StorageAnalysisManager {
 
     private let defaults = UserDefaults.standard
     private let sessionIdKey = "storageAnalysisSessionId"
+    private let iCloudSyncKey = "iCloudPhotosSyncOn"
+
+    var iCloudPhotosSyncOn: Bool {
+        defaults.bool(forKey: iCloudSyncKey)
+    }
 
     private let storageQueue = DispatchQueue(label: "com.galary.StorageAnalysisManager.storage")
     private let cacheFileURL: URL = {
@@ -150,6 +155,7 @@ final class StorageAnalysisManager {
 
     func saveCachedData(_ data: StorageAnalysisData) {
         cachedData = data
+        defaults.set(data.iCloudPhotosSyncOn, forKey: iCloudSyncKey)
         let url = cacheFileURL
         storageQueue.async {
             if let encoded = try? JSONEncoder().encode(data) {
@@ -163,9 +169,60 @@ final class StorageAnalysisManager {
     func invalidateCache() {
         cachedData = nil
         currentState = .idle
+        defaults.removeObject(forKey: iCloudSyncKey)
         let url = cacheFileURL
         storageQueue.async {
             try? FileManager.default.removeItem(at: url)
+        }
+    }
+
+    // MARK: - iCloud Detection
+    static func checkICloudPhotosSyncStatus() -> Bool {
+        let syncPath = "/var/mobile/Media/PhotoData/CPL/syncstatus.plist"
+        guard let dict = NSDictionary(contentsOfFile: syncPath) else {
+            return false
+        }
+        let iCloudExists = dict["iCloudLibraryExists"] as? Int ?? 0
+        let counts = dict["cloudAssetCountPerType"] as? [String: Any]
+        let photoCount = counts?["public.image"] as? Int ?? 0
+        let videoCount = counts?["public.movie"] as? Int ?? 0
+        return iCloudExists == 1 && (photoCount > 0 || videoCount > 0)
+    }
+
+    /// Used/Available only
+    func performBasicOnlyAnalysis() {
+        lastAnalysisAttempt = Date()
+
+        currentState = .loading
+        NotificationCenter.default.post(name: .storageAnalysisDidStart, object: nil)
+
+        do {
+            let homeURL = URL(fileURLWithPath: NSHomeDirectory())
+            let values = try homeURL.resourceValues(forKeys: [
+                .volumeTotalCapacityKey,
+                .volumeAvailableCapacityForImportantUsageKey
+            ])
+            let total = Int64(values.volumeTotalCapacity ?? 0)
+            let available = values.volumeAvailableCapacityForImportantUsage ?? 0
+
+            let analysisData = StorageAnalysisData(
+                photosCount: 0, photosBytes: 0,
+                videosCount: 0, videosBytes: 0,
+                totalDeviceBytes: total,
+                availableBytes: available,
+                lastAnalysisDate: Date(),
+                iCloudPhotosSyncOn: true
+            )
+
+            saveCachedData(analysisData)
+            clearProgress()
+            currentState = .loaded(analysisData)
+            NotificationCenter.default.post(
+                name: .storageAnalysisDidComplete, object: nil, userInfo: ["data": analysisData])
+
+        } catch {
+            currentState = .error(error)
+            NotificationCenter.default.post(name: .storageAnalysisDidFail, object: nil, userInfo: ["error": error])
         }
     }
 

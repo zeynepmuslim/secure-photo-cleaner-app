@@ -5175,6 +5175,23 @@
         }
       }
     },
+    "storageAnalysis.iCloudActiveInfo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud Photos enabled on device"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cihazda iCloud Fotoğraflar etkin"
+          }
+        }
+      }
+    },
     "storageAnalysis.iCloudBannerText" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5511,6 +5528,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Depolama bilgileri cihaz tahminlerine dayanır ve farklılık gösterebilir."
+          }
+        }
+      }
+    },
+    "storageLite.iCloudActiveInfo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud Photos enabled on device"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cihazda iCloud Fotoğraflar etkin"
           }
         }
       }

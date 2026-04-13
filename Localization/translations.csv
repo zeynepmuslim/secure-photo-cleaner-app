@@ -276,6 +276,7 @@ storageAnalysis.allPhotosAndVideos;All Photos and Videos;Tüm Fotoğraflar ve Vi
 storageAnalysis.analyzing;Analyzing...;Analiz ediliyor...;;;;
 storageAnalysis.available;Available;Kullanılabilir;;;;
 storageAnalysis.generalStorageInfoOnly;Storage information is based on device estimates and may vary slightly.;Depolama bilgileri cihaz tahminlerine dayanır ve biraz farklılık gösterebilir.;;;;
+storageAnalysis.iCloudActiveInfo;iCloud Photos enabled on device;Cihazda iCloud Fotoğraflar etkin;;;;
 storageAnalysis.iCloudBannerText;iCloud Photo Library detected. %1$d items (%2$@, %3$d%%) are stored only in iCloud.;iCloud Fotoğraf Kütüphanesi algılandı. %1$d öge (%2$@, %%%3$d) yalnızca iCloud'da saklanıyor.;;;;
 storageAnalysis.iCloudOnly;iCloud Only;Yalnızca iCloud;;;;
 storageAnalysis.lastAnalyzed;Last analyzed: %@;Son analiz: %@;;;;
@@ -297,6 +298,7 @@ storageLite.analyzeStorage;Analyze Storage;Depolamayı Analiz Et;;;;
 storageLite.analyzing;Analyzing...;Analiz ediliyor...;;;;
 storageLite.available;Available;Kullanılabilir;;;;
 storageLite.generalStorageInfo;Storage information is based on device estimates and may vary.;Depolama bilgileri cihaz tahminlerine dayanır ve farklılık gösterebilir.;;;;
+storageLite.iCloudActiveInfo;iCloud Photos enabled on device;Cihazda iCloud Fotoğraflar etkin;;;;
 storageLite.lastAnalyzed;Last analyzed: %@;Son analiz: %@;;;;
 storageLite.notAnalyzedYet;Not analyzed yet;Henüz analiz edilmedi;;;;
 storageLite.other;Other;Diğer;;;;

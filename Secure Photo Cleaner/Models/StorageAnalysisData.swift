@@ -20,7 +20,7 @@ struct StorageAnalysisData: Codable {
     var progressPercentage: Double?
 
     // MARK: - iCloud Storage Data
-    var iCloudEnabled: Bool = false
+    var iCloudPhotosSyncOn: Bool = false
     var photosInCloudOnlyCount: Int = 0
     var photosInCloudOnlyBytes: Int64 = 0
     var videosInCloudOnlyCount: Int = 0
@@ -37,7 +37,7 @@ struct StorageAnalysisData: Codable {
         lastAnalysisDate: Date,
         isPartial: Bool = false,
         progressPercentage: Double? = nil,
-        iCloudEnabled: Bool = false,
+        iCloudPhotosSyncOn: Bool = false,
         photosInCloudOnlyCount: Int = 0,
         photosInCloudOnlyBytes: Int64 = 0,
         videosInCloudOnlyCount: Int = 0,
@@ -53,7 +53,7 @@ struct StorageAnalysisData: Codable {
         self.lastAnalysisDate = lastAnalysisDate
         self.isPartial = isPartial
         self.progressPercentage = progressPercentage
-        self.iCloudEnabled = iCloudEnabled
+        self.iCloudPhotosSyncOn = iCloudPhotosSyncOn
         self.photosInCloudOnlyCount = photosInCloudOnlyCount
         self.photosInCloudOnlyBytes = photosInCloudOnlyBytes
         self.videosInCloudOnlyCount = videosInCloudOnlyCount

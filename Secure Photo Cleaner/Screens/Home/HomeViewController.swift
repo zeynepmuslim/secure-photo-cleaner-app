@@ -285,6 +285,10 @@ final class HomeViewController: UIViewController {
     }
 
     @objc private func handleStorageAnalysisTap() {
+        if storageManager.iCloudPhotosSyncOn {
+            return
+        }
+
         HapticFeedbackManager.shared.impact(intensity: .medium)
 
         DispatchQueue.main.async { [weak self] in   // to prevent freeze

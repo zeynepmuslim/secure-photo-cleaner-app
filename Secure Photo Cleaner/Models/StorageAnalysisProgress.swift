@@ -23,7 +23,7 @@ struct StorageAnalysisProgress: Codable {
     var sessionDate: Date
 
     // iCloud tracking
-    var iCloudEnabled: Bool
+    var iCloudPhotosSyncOn: Bool
     var photosInCloudOnlyCount: Int
     var photosInCloudOnlyBytes: Int64
     var videosInCloudOnlyCount: Int
@@ -58,7 +58,7 @@ struct StorageAnalysisProgress: Codable {
             lastProcessedPhotoIndex: -1,
             lastProcessedVideoIndex: -1,
             sessionDate: Date(),
-            iCloudEnabled: false,
+            iCloudPhotosSyncOn: false,
             photosInCloudOnlyCount: 0,
             photosInCloudOnlyBytes: 0,
             videosInCloudOnlyCount: 0,

@@ -90,7 +90,34 @@ extension StorageAnalysisManager {
             return
         }
 
-        var detectedICloud = progress.iCloudEnabled
+        // Warmup fetch makes plist readable
+        let warmupOptions = PHFetchOptions()
+        warmupOptions.fetchLimit = 1
+        _ = PHAsset.fetchAssets(with: warmupOptions)
+
+        if Self.checkICloudPhotosSyncStatus() {
+            let analysisData = StorageAnalysisData(
+                photosCount: 0, photosBytes: 0,
+                videosCount: 0, videosBytes: 0,
+                totalDeviceBytes: progress.totalDeviceBytes,
+                availableBytes: progress.availableBytes,
+                lastAnalysisDate: Date(),
+                iCloudPhotosSyncOn: true
+            )
+            DispatchQueue.main.async { [weak self] in
+                self?.saveCachedData(analysisData)
+                self?.setCurrentState(.loaded(analysisData))
+                self?.clearProgress()
+                self?.setIsAnalysisRunning(false)
+                self?.endUIBackgroundTask()
+                self?.endLiveActivityIfAvailable(showComplete: true)
+                NotificationCenter.default.post(
+                    name: .storageAnalysisDidComplete, object: nil, userInfo: ["data": analysisData])
+            }
+            return
+        }
+
+        var detectedICloud = progress.iCloudPhotosSyncOn
 
         if !progress.isPhotosComplete {
             processAssets(
@@ -106,7 +133,7 @@ extension StorageAnalysisManager {
             if isCancelled || sessionId != activeSessionId { return }
         }
 
-        progress.iCloudEnabled = detectedICloud
+        progress.iCloudPhotosSyncOn = detectedICloud
 
         completeAnalysis(progress: progress, startTime: startTime, detectedICloud: detectedICloud, sessionId: sessionId)
     }
@@ -137,7 +164,7 @@ extension StorageAnalysisManager {
                 lastAnalysisDate: Date(),
                 isPartial: true,
                 progressPercentage: progress.overallProgress,
-                iCloudEnabled: progress.iCloudEnabled,
+                iCloudPhotosSyncOn: progress.iCloudPhotosSyncOn,
                 photosInCloudOnlyCount: progress.photosInCloudOnlyCount,
                 photosInCloudOnlyBytes: progress.photosInCloudOnlyBytes,
                 videosInCloudOnlyCount: progress.videosInCloudOnlyCount,
@@ -394,7 +421,7 @@ extension StorageAnalysisManager {
             totalDeviceBytes: progress.totalDeviceBytes,
             availableBytes: progress.availableBytes,
             lastAnalysisDate: Date(),
-            iCloudEnabled: detectedICloud,
+            iCloudPhotosSyncOn: detectedICloud,
             photosInCloudOnlyCount: progress.photosInCloudOnlyCount,
             photosInCloudOnlyBytes: progress.photosInCloudOnlyBytes,
             videosInCloudOnlyCount: progress.videosInCloudOnlyCount,

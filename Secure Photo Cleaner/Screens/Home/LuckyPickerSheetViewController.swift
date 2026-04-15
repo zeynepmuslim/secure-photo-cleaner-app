@@ -11,26 +11,26 @@ import UIKit
 // MARK: - Strings
 
 private enum Strings {
-    static let title              = "I Feel Lucky"
-    static let subtitle           = "Pick your random target"
-    static let shuffleAgain       = "Shuffle Again"
-    static let media              = "Media"
-    static let month              = "Month"
-    static let filter             = "Filter"
-    static let noMonthsAvailable  = "No Months Available"
-    static let noMonth            = "No Month"
-    static let mediaOptionPhotos  = "Photos"
-    static let mediaOptionVideos  = "Videos"
-    static let filterAll          = "All"
-    static let screenshots        = "Screenshots"
-    static let largePhotos        = "Large Photos"
-    static let largeVideos        = "Large Videos"
-    static let eyesClosed         = "Eyes Closed"
-    static let screenRecordings   = "Screen Recordings"
-    static let slowMotion         = "Slow Motion"
-    static let timeLapse          = "Time-lapse"
+    static let title              = NSLocalizedString("luckyPicker.title", comment: "I Feel Lucky sheet title")
+    static let subtitle           = NSLocalizedString("luckyPicker.subtitle", comment: "Lucky picker subtitle")
+    static let shuffleAgain       = NSLocalizedString("luckyPicker.shuffleAgain", comment: "Shuffle again button")
+    static let media              = NSLocalizedString("luckyPicker.media", comment: "Media section label")
+    static let month              = NSLocalizedString("luckyPicker.month", comment: "Month section label")
+    static let filter             = NSLocalizedString("luckyPicker.filter", comment: "Filter section label")
+    static let noMonthsAvailable  = NSLocalizedString("luckyPicker.noMonthsAvailable", comment: "No months available message")
+    static let noMonth            = NSLocalizedString("luckyPicker.noMonth", comment: "No month placeholder")
+    static let mediaOptionPhotos  = NSLocalizedString("luckyPicker.photos", comment: "Photos media option")
+    static let mediaOptionVideos  = NSLocalizedString("luckyPicker.videos", comment: "Videos media option")
+    static let filterAll          = NSLocalizedString("luckyPicker.filterAll", comment: "All filter option")
+    static let screenshots        = NSLocalizedString("luckyPicker.screenshots", comment: "Screenshots filter option")
+    static let largePhotos        = NSLocalizedString("luckyPicker.largePhotos", comment: "Large photos filter option")
+    static let largeVideos        = NSLocalizedString("luckyPicker.largeVideos", comment: "Large videos filter option")
+    static let eyesClosed         = NSLocalizedString("luckyPicker.eyesClosed", comment: "Eyes closed filter option")
+    static let screenRecordings   = NSLocalizedString("luckyPicker.screenRecordings", comment: "Screen recordings filter option")
+    static let slowMotion         = NSLocalizedString("luckyPicker.slowMotion", comment: "Slow motion filter option")
+    static let timeLapse          = NSLocalizedString("luckyPicker.timeLapse", comment: "Time-lapse filter option")
     static func goToButton(media: String, monthTitle: String) -> String {
-        "Go to \(media) · \(monthTitle)"
+        String(format: NSLocalizedString("luckyPicker.goToButton", comment: "Go to button, e.g. 'Go to Photos · January 2025'"), media, monthTitle)
     }
 }
 

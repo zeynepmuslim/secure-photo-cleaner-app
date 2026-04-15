@@ -23,7 +23,7 @@ final class OnboardingInfoStackView: UIStackView {
         label.font = .systemFont(ofSize: 18, weight: .bold)
         label.textColor = .textPrimary
         label.textAlignment = .center
-        label.numberOfLines = 2
+        label.numberOfLines = 0
         return label
     }()
 
@@ -32,7 +32,7 @@ final class OnboardingInfoStackView: UIStackView {
         label.font = .systemFont(ofSize: 12, weight: .regular)
         label.textColor = .textPrimary
         label.textAlignment = .center
-        label.numberOfLines = 2
+        label.numberOfLines = 0
         return label
     }()
 
@@ -69,23 +69,23 @@ final class OnboardingInfoStackView: UIStackView {
     import SwiftUI
 
     @available(iOS 17.0, *)
-    #Preview("Scan Library") {
+    #Preview("Swipe Up") {
         let view = OnboardingInfoStackView(
-            iconName: "photo.on.rectangle.angled",
-            title: "Scan Library",
-            info: "Analysing your gallery",
-            color: .systemBlue
+            iconName: "arrow.up.circle.fill",
+            title: NSLocalizedString("onboarding.swipeUpTitle", comment: ""),
+            info: NSLocalizedString("onboarding.swipeUpInfo", comment: ""),
+            color: .yellow100
         )
         return view
     }
 
     @available(iOS 17.0, *)
-    #Preview("Clean Up") {
+    #Preview("Swipe Left") {
         let view = OnboardingInfoStackView(
-            iconName: "trash",
-            title: "Clean Up",
-            info: "Remove duplicates",
-            color: .systemRed
+            iconName: "arrow.left.circle.fill",
+            title: NSLocalizedString("onboarding.swipeLeftTitle", comment: ""),
+            info: NSLocalizedString("onboarding.swipeLeftInfo", comment: ""),
+            color: .red100
         )
         return view
     }

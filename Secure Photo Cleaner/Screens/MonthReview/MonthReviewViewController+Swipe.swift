@@ -8,7 +8,7 @@
 import Photos
 import UIKit
 
-private let alwaysShowStoreTutorial = true
+private let alwaysShowStoreTutorial = false
 
 extension MonthReviewViewController {
     

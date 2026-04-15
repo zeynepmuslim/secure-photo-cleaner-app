@@ -8,15 +8,15 @@
 import UIKit
 
 private enum Strings {
-    static let title = "Welcome Secure Swipe!"
-    static let subtitle = "Totally free, safe and simple"
-    static let gotIt = "Got it!"
-    static let swipeUpTitle = "Swipe Up\nto Store"
-    static let swipeUpInfo = "Stores photos in a separate album\nfor easy bulk transfer later"
-    static let swipeLeftTitle = "Swipe Left\nto Delete"
-    static let swipeLeftInfo = "Add to bin for\ndelete all at once"
-    static let swipeRightTitle = "Swipe Right\nto Keep"
-    static let swipeRightInfo = "Saves photo safely\nin your library"
+    static let title = NSLocalizedString("onboarding.title", comment: "Onboarding welcome title")
+    static let subtitle = NSLocalizedString("onboarding.subtitle", comment: "Onboarding subtitle")
+    static let gotIt = NSLocalizedString("onboarding.gotIt", comment: "Got it button")
+    static let swipeUpTitle = NSLocalizedString("onboarding.swipeUpTitle", comment: "Swipe up instruction title")
+    static let swipeUpInfo = NSLocalizedString("onboarding.swipeUpInfo", comment: "Swipe up instruction description")
+    static let swipeLeftTitle = NSLocalizedString("onboarding.swipeLeftTitle", comment: "Swipe left instruction title")
+    static let swipeLeftInfo = NSLocalizedString("onboarding.swipeLeftInfo", comment: "Swipe left instruction description")
+    static let swipeRightTitle = NSLocalizedString("onboarding.swipeRightTitle", comment: "Swipe right instruction title")
+    static let swipeRightInfo = NSLocalizedString("onboarding.swipeRightInfo", comment: "Swipe right instruction description")
 }
 
 final class OnboardingViewController: UIViewController {
@@ -64,6 +64,7 @@ final class OnboardingViewController: UIViewController {
         label.font = .systemFont(ofSize: isSmallScreen ? 22 : 28, weight: .bold)
         label.textColor = .textPrimary
         label.textAlignment = .center
+        label.numberOfLines = 0
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
@@ -75,6 +76,7 @@ final class OnboardingViewController: UIViewController {
         label.font = .systemFont(ofSize: isSmallScreen ? 14 : 16, weight: .medium)
         label.textColor = .textSecondary
         label.textAlignment = .center
+        label.numberOfLines = 0
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
@@ -205,18 +207,25 @@ final class OnboardingViewController: UIViewController {
 
             titleLabel.centerXAnchor.constraint(equalTo: titleContainerView.centerXAnchor),
             titleLabel.topAnchor.constraint(equalTo: titleContainerView.topAnchor),
+            titleLabel.leadingAnchor.constraint(greaterThanOrEqualTo: titleContainerView.leadingAnchor, constant: 24),
+            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: titleContainerView.trailingAnchor, constant: -24),
             subtitleLabel.centerXAnchor.constraint(equalTo: titleContainerView.centerXAnchor),
             subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
             subtitleLabel.bottomAnchor.constraint(equalTo: titleContainerView.bottomAnchor),
+            subtitleLabel.leadingAnchor.constraint(greaterThanOrEqualTo: titleContainerView.leadingAnchor, constant: 24),
+            subtitleLabel.trailingAnchor.constraint(lessThanOrEqualTo: titleContainerView.trailingAnchor, constant: -24),
 
             topStack.centerXAnchor.constraint(equalTo: gradientContainerView.centerXAnchor),
             topStack.topAnchor.constraint(equalTo: gradientContainerView.topAnchor, constant: stackSpacing),
+            topStack.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor, multiplier: 0.7),
 
             leftStack.leadingAnchor.constraint(equalTo: gradientContainerView.leadingAnchor, constant: 24),
             leftStack.centerYAnchor.constraint(equalTo: gradientContainerView.centerYAnchor),
+            leftStack.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor, multiplier: 0.3),
 
             rightStack.trailingAnchor.constraint(equalTo: gradientContainerView.trailingAnchor, constant: -24),
             rightStack.centerYAnchor.constraint(equalTo: gradientContainerView.centerYAnchor),
+            rightStack.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor, multiplier: 0.3),
 
             swipeIconView.centerXAnchor.constraint(equalTo: gradientContainerView.centerXAnchor),
             swipeIconView.centerYAnchor.constraint(equalTo: gradientContainerView.centerYAnchor),

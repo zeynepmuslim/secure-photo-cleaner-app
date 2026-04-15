@@ -200,8 +200,8 @@ class DashboardCard: UIView {
     #Preview("Motivation Card", traits: .sizeThatFitsLayout) {
         DashboardCardPreview { view in
             let content = DashboardCardContent.motivation(
-                title: "Make room for new memories",
-                subtitle: "Would you like to start with the oldest files in your gallery?",
+                title: NSLocalizedString("motivation.newMemories", comment: ""),
+                subtitle: NSLocalizedString("suggestion.oldestFiles", comment: ""),
                 action: .viewOldestYear(year: "2017")
             )
             view.configure(with: content) { _ in }
@@ -213,8 +213,8 @@ class DashboardCard: UIView {
     #Preview("Analytics Card", traits: .sizeThatFitsLayout) {
         DashboardCardPreview { view in
             let content = DashboardCardContent.analytics(
-                title: "Your Impact",
-                subtitle: "You've cleaned up 120 items, freeing 3.2 GB of space."
+                title: NSLocalizedString("dashboard.yourImpact", comment: ""),
+                subtitle: NSLocalizedString("analytics.itemsCleaned", comment: "")
             )
             view.configure(with: content) { _ in }
         }
@@ -225,8 +225,8 @@ class DashboardCard: UIView {
     #Preview("Resume Card", traits: .sizeThatFitsLayout) {
         DashboardCardPreview { view in
             let content = DashboardCardContent.motivation(
-                title: "Continue Where You Left Off",
-                subtitle: "You left October 2024 at 45% (23/50 reviewed)",
+                title: NSLocalizedString("dashboard.continueWhereLeftOff", comment: ""),
+                subtitle: NSLocalizedString("dashboard.continueMonth", comment: ""),
                 action: .resumeMonth(monthKey: "2024-10", mediaType: .image)
             )
             view.configure(with: content) { _ in }

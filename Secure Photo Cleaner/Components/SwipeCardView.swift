@@ -8,19 +8,19 @@
 import UIKit
 
 private enum Strings {
-    static let enableInternetAccess = "Enable Internet Access"
-    static let lowQuality = "Low Quality"
+    static let enableInternetAccess = NSLocalizedString("swipeCard.enableInternetAccess", comment: "Enable internet access button")
+    static let lowQuality = NSLocalizedString("swipeCard.lowQuality", comment: "Low quality badge label")
     static func iCloudNotDownloaded(mediaTypeName: String) -> String {
-        "iCloud \(mediaTypeName) Not Downloaded"
+        String(format: NSLocalizedString("swipeCard.iCloudNotDownloaded", comment: "iCloud not downloaded title, e.g. 'iCloud Photo Not Downloaded'"), mediaTypeName)
     }
     static func iCloudSubtitle(mediaTypeName: String) -> String {
-        "This \(mediaTypeName.lowercased()) is stored in iCloud and requires internet to download."
+        String(format: NSLocalizedString("swipeCard.iCloudSubtitle", comment: "iCloud subtitle explaining download requirement"), mediaTypeName.lowercased())
     }
     static func contentUnavailableTitle(mediaTypeName: String) -> String {
-        "\(mediaTypeName) Unavailable"
+        String(format: NSLocalizedString("swipeCard.contentUnavailableTitle", comment: "Content unavailable title, e.g. 'Photo Unavailable'"), mediaTypeName)
     }
     static func contentUnavailableSubtitle(mediaTypeName: String) -> String {
-        "Unable to load this \(mediaTypeName.lowercased())."
+        String(format: NSLocalizedString("swipeCard.contentUnavailableSubtitle", comment: "Content unavailable message"), mediaTypeName.lowercased())
     }
 }
 

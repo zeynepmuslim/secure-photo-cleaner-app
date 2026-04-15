@@ -68,15 +68,15 @@ final class HistoryDetailBottomSheet: UIViewController {
     }()
     
     private lazy var keepButton: DynamicGlassButton = {
-        createActionButton(title: "Keep", color: .systemGreen)
+        createActionButton(title: NSLocalizedString("historyDetail.keep", comment: "Keep action button"), color: .systemGreen)
     }()
 
     private lazy var deleteButton: DynamicGlassButton = {
-        createActionButton(title: "Delete", color: .systemRed)
+        createActionButton(title: NSLocalizedString("historyDetail.delete", comment: "Delete action button"), color: .systemRed)
     }()
 
     private lazy var storeButton: DynamicGlassButton = {
-        createActionButton(title: "Store", color: .systemYellow)
+        createActionButton(title: NSLocalizedString("historyDetail.store", comment: "Store action button"), color: .systemYellow)
     }()
 
     private let videoOverlayIcon: UIImageView = {

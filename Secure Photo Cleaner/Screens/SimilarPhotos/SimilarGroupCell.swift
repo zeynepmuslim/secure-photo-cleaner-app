@@ -9,12 +9,14 @@ import Photos
 import UIKit
 
 private enum Strings {
-    static let undoAction = "Undo Action"
-    static let confirm = "Confirm"
-    static let keep = "keep"
-    static let delete = "delete"
-    static let store = "store"
-    static func setTitle(index: Int) -> String { "Set #\(index + 1)" }
+    static let undoAction = NSLocalizedString("similarGroup.undoAction", comment: "Undo action button")
+    static let confirm = NSLocalizedString("similarGroup.confirm", comment: "Confirm button")
+    static let keep = NSLocalizedString("similarGroup.keep", comment: "Keep state label")
+    static let delete = NSLocalizedString("similarGroup.delete", comment: "Delete state label")
+    static let store = NSLocalizedString("similarGroup.store", comment: "Store state label")
+    static func setTitle(index: Int) -> String {
+        String(format: NSLocalizedString("similarGroup.setTitle", comment: "Set title with number, e.g. 'Set #1'"), index + 1)
+    }
 }
 
 protocol SimilarGroupCellDelegate: AnyObject {

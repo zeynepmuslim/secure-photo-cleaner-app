@@ -10,26 +10,27 @@ import UIKit
 // MARK: - Strings
 
 private enum Strings {
-    static let storageLabel = "Storage"
-    static let analyzing = "Analyzing..."
-    static let unableToAnalyze = "Unable to analyze storage"
-    static let tryAgain = "Try Again"
-    static let notAnalyzedYet = "Storage has not been analyzed yet"
-    static let analyzeStorage = "Analyze Storage"
-    static let used = "Used"
-    static let available = "Available"
-    static let photos = "Photos"
-    static let videos = "Videos"
-    static let other = "Other"
-    static let generalStorageInfo = "General storage info"
+    static let storageLabel = NSLocalizedString("storageLite.storage", comment: "Storage section title")
+    static let analyzing = NSLocalizedString("storageLite.analyzing", comment: "Analyzing progress text")
+    static let unableToAnalyze = NSLocalizedString("storageLite.unableToAnalyze", comment: "Error message when analysis fails")
+    static let tryAgain = NSLocalizedString("storageLite.tryAgain", comment: "Try again button")
+    static let notAnalyzedYet = NSLocalizedString("storageLite.notAnalyzedYet", comment: "Message when storage not yet analyzed")
+    static let analyzeStorage = NSLocalizedString("storageLite.analyzeStorage", comment: "Analyze storage button")
+    static let used = NSLocalizedString("storageLite.used", comment: "Used storage label")
+    static let available = NSLocalizedString("storageLite.available", comment: "Available storage label")
+    static let photos = NSLocalizedString("storageLite.photos", comment: "Photos label")
+    static let videos = NSLocalizedString("storageLite.videos", comment: "Videos label")
+    static let other = NSLocalizedString("storageLite.other", comment: "Other storage label")
+    static let generalStorageInfo = NSLocalizedString("storageLite.generalStorageInfo", comment: "General storage info footer")
+    static let iCloudActiveInfo = NSLocalizedString("storageLite.iCloudActiveInfo", comment: "Info shown when iCloud Photos is enabled")
     static func usageLabel(usedGB: String, totalGB: String) -> String {
-        "Usage: \(usedGB) / \(totalGB)"
+        String(format: NSLocalizedString("storageLite.usageLabel", comment: "Usage label, e.g. 'Usage: 32 GB / 64 GB'"), usedGB, totalGB)
     }
     static func savedLabel(formatted: String) -> String {
-        "Saved: \(formatted)"
+        String(format: NSLocalizedString("storageLite.savedLabel", comment: "Saved space label, e.g. 'Saved: 2.3 GB'"), formatted)
     }
     static func lastAnalyzed(date: String) -> String {
-        "Last analyzed: \(date)"
+        String(format: NSLocalizedString("storageLite.lastAnalyzed", comment: "Last analyzed date, e.g. 'Last analyzed: 5 minutes ago'"), date)
     }
 }
 
@@ -474,6 +475,24 @@ final class StorageAnalysisLiteView: UIView {
 
         var segments: [SegmentedBarView.Segment] = []
 
+        if data.iCloudPhotosSyncOn {
+            let usedPercentage = CGFloat(data.usedBytes) / CGFloat(data.totalDeviceBytes)
+            let availablePercentage = CGFloat(data.availableBytes) / CGFloat(data.totalDeviceBytes)
+            segments.append(.init(color: .storageUsed, percentage: usedPercentage))
+            if availablePercentage > 0 {
+                segments.append(.init(color: .storageFree, percentage: availablePercentage))
+            }
+            storageBar.configure(segments: segments)
+            updateSavedSpaceOverlay(data: data, availablePercentage: availablePercentage)
+
+            updateLegend(with: data)
+            containerStack.addArrangedSubview(legendStack)
+
+            updateStatus(with: data)
+            containerStack.addArrangedSubview(statusStack)
+            return
+        }
+
         let photosPercentage = data.photosBytes > 0 ? CGFloat(data.photosBytes) / CGFloat(data.totalDeviceBytes) : 0
         if photosPercentage > 0 {
             segments.append(.init(color: .photo100, percentage: photosPercentage))
@@ -510,6 +529,40 @@ final class StorageAnalysisLiteView: UIView {
         legendStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
 
         var items: [UIView] = []
+
+        if data.iCloudPhotosSyncOn {
+            let usedItem = createLegendItem(
+                color: .storageUsed,
+                text: Strings.used
+            )
+            items.append(usedItem)
+
+            let availableItem = createLegendItem(
+                color: .storageFree,
+                text: Strings.available
+            )
+            items.append(availableItem)
+
+            let spaceSaved = debugSavedBytesOverride ?? statsStore.spaceSavedBytes
+            if spaceSaved > 0 {
+                let savedItem = createLegendItem(
+                    color: .storageSavedLabel,
+                    text: Strings.savedLabel(formatted: spaceSaved.formattedBytes(allowedUnits: [.useGB, .useMB])),
+                    font: .systemFont(ofSize: 13, weight: .semibold),
+                    textColor: .storageSavedLabel
+                )
+                items.append(savedItem)
+            }
+
+            let row = UIStackView()
+            row.axis = .horizontal
+            row.distribution = .equalSpacing
+            for item in items {
+                row.addArrangedSubview(item)
+            }
+            legendStack.addArrangedSubview(row)
+            return
+        }
 
         if data.photosBytes > 0 || data.videosBytes > 0 {
             if data.photosBytes > 0 {
@@ -631,6 +684,14 @@ final class StorageAnalysisLiteView: UIView {
     }
 
     private func updateStatus(with data: StorageAnalysisData) {
+        if data.iCloudPhotosSyncOn {
+            statusLabel.text = Strings.iCloudActiveInfo
+            refreshButton.isHidden = true
+            return
+        }
+
+        refreshButton.isHidden = false
+
         let hasDetailedData = data.photosBytes > 0 || data.videosBytes > 0
 
         if hasDetailedData {
@@ -697,7 +758,7 @@ final class StorageAnalysisLiteView: UIView {
         let availableStartX = (barWidth * usedPercentage) + separatorWidth
 
         let calculatedWidth = barWidth * savedPercentage
-        let overlayWidth = min(max(calculatedWidth, 6), barWidth)
+        let overlayWidth = min(max(calculatedWidth, 0), barWidth)
 
         // When overlay fits within available, left-align within available segment.
         // When it overflows, grow leftward from right edge of bar into other segments.
@@ -862,6 +923,44 @@ final class StorageAnalysisLiteView: UIView {
                     availableBytes: 30_000_000_000
                 ))
             view.setDebugProgress(phase: "photos", progress: 65)
+        }
+        .padding()
+    }
+
+    @available(iOS 17.0, *)
+    #Preview("Lite - iCloud Basic", traits: .sizeThatFitsLayout) {
+        StorageAnalysisLiteViewPreview { view in
+            let data = StorageAnalysisData(
+                photosCount: 0,
+                photosBytes: 0,
+                videosCount: 0,
+                videosBytes: 0,
+                totalDeviceBytes: 128_000_000_000,
+                availableBytes: 36_000_000_000,
+                lastAnalysisDate: Date(),
+                iCloudPhotosSyncOn: true
+            )
+            view.update(with: .loaded(data))
+        }
+        .padding()
+    }
+
+    @available(iOS 17.0, *)
+    #Preview("Lite - iCloud Basic with Saved", traits: .sizeThatFitsLayout) {
+        StorageAnalysisLiteViewPreview { view in
+            view.setDebugSavedBytesOverride(8_000_000_000)
+
+            let data = StorageAnalysisData(
+                photosCount: 0,
+                photosBytes: 0,
+                videosCount: 0,
+                videosBytes: 0,
+                totalDeviceBytes: 128_000_000_000,
+                availableBytes: 44_000_000_000,
+                lastAnalysisDate: Date(),
+                iCloudPhotosSyncOn: true
+            )
+            view.update(with: .loaded(data))
         }
         .padding()
     }

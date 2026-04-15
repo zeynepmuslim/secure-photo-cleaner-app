@@ -27,11 +27,11 @@ struct UndoAction: Codable {
     var displayTitle: String {
         switch actionType {
         case .delete:
-            return "Marked for Deletion"
+            return NSLocalizedString("undoAction.markedForDeletion", comment: "Undo action: marked for deletion")
         case .keep:
-            return "Kept Photo"
+            return NSLocalizedString("undoAction.keptPhoto", comment: "Undo action: kept photo")
         case .store:
-            return "Will Be Stored"
+            return NSLocalizedString("undoAction.willBeStored", comment: "Undo action: will be stored")
         }
     }
 
@@ -63,16 +63,16 @@ extension Date {
         let seconds = Int(Date().timeIntervalSince(self))
 
         if seconds < 60 {
-            return "Just now"
+            return NSLocalizedString("timeAgo.justNow", comment: "Just now time label")
         } else if seconds < 3600 {
             let minutes = seconds / 60
-            return "\(minutes) minute\(minutes == 1 ? "" : "s") ago"
+            return String.localizedStringWithFormat(NSLocalizedString("timeAgo.minutesAgo", comment: "Minutes ago, e.g. '5 minutes ago'"), minutes)
         } else if seconds < 86400 {
             let hours = seconds / 3600
-            return "\(hours) hour\(hours == 1 ? "" : "s") ago"
+            return String.localizedStringWithFormat(NSLocalizedString("timeAgo.hoursAgo", comment: "Hours ago, e.g. '2 hours ago'"), hours)
         } else {
             let days = seconds / 86400
-            return "\(days) day\(days == 1 ? "" : "s") ago"
+            return String.localizedStringWithFormat(NSLocalizedString("timeAgo.daysAgo", comment: "Days ago, e.g. '3 days ago'"), days)
         }
     }
 }

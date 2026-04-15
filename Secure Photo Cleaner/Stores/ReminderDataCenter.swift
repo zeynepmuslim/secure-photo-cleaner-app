@@ -284,9 +284,9 @@ final class ReminderDataCenter {
             days >= 30
         {
             let options = [
-                "It's been over a month since your last cleanup. Time for a fresh start!",
-                "Your photos have been piling up for a month. Let's tidy up!",
-                "A month without cleaning? Your library deserves some love."
+                NSLocalizedString("reminder.monthSinceCleanup1", comment: "Notification: over a month since cleanup"),
+                NSLocalizedString("reminder.monthSinceCleanup2", comment: "Notification: photos piling up"),
+                NSLocalizedString("reminder.monthSinceCleanup3", comment: "Notification: month without cleaning"),
             ]
             messages.append(options.randomElement()!)
         }
@@ -295,37 +295,35 @@ final class ReminderDataCenter {
         let binCount = DeleteBinStore.shared.count
         if binCount > 0 {
             let count = binCount
-            let s = count == 1 ? "" : "s"
             let options = [
-                "Your Delete Bin has \(count) item\(s). Clear it now to free up space!",
-                "\(count) item\(s) waiting in your bin. Tap to clean up!",
-                "You've got \(count) item\(s) ready to delete. Finish the job!"
+                String.localizedStringWithFormat(NSLocalizedString("reminder.binHasItems1", comment: "Notification: bin has items, clear now"), count),
+                String.localizedStringWithFormat(NSLocalizedString("reminder.binHasItems2", comment: "Notification: items waiting in bin"), count),
+                String.localizedStringWithFormat(NSLocalizedString("reminder.binHasItems3", comment: "Notification: items ready to delete"), count),
             ]
             messages.append(options.randomElement()!)
         }
 
         // Signal 3: Last cleaned count
         if lastCleanedCount > 0 {
-            let s = lastCleanedCount == 1 ? "" : "s"
-            messages.append("Last time you cleaned \(lastCleanedCount) item\(s) — ready to beat that?")
+            messages.append(String.localizedStringWithFormat(NSLocalizedString("reminder.lastCleanedCount", comment: "Notification: last cleaned count challenge"), lastCleanedCount))
         }
 
         // Signal 4: Last cleaned bytes
         if lastCleanedBytes > 0 {
             let formatted = lastCleanedBytes.formattedBytes(allowedUnits: [.useMB, .useGB])
-            messages.append("You freed \(formatted) last time. Ready for another round?")
+            messages.append(String(format: NSLocalizedString("reminder.freedLastTime", comment: "Notification: freed space last time"), formatted))
         }
 
         // Signal 5: Potential savings
         if lastPotentialSavingsBytes > 0 {
             let formatted = lastPotentialSavingsBytes.formattedBytes(allowedUnits: [.useMB, .useGB])
-            messages.append("You could free up \(formatted) right now. Just a few taps!")
+            messages.append(String(format: NSLocalizedString("reminder.potentialSavings", comment: "Notification: potential savings"), formatted))
         }
 
         // Signal 6: Storage saved last time
         if lastStorageSavedBytes > 0 {
             let formatted = lastStorageSavedBytes.formattedBytes(allowedUnits: [.useMB, .useGB])
-            messages.append("You saved \(formatted) last time. Want more free space?")
+            messages.append(String(format: NSLocalizedString("reminder.savedLastTime", comment: "Notification: saved space last time"), formatted))
         }
 
         // Signal 7: 7+ days inactive
@@ -333,7 +331,7 @@ final class ReminderDataCenter {
             let days = daysSince(date: lastReviewDate),
             days >= 7
         {
-            messages.append("It's been \(days) days since your last review. Your photos miss you!")
+            messages.append(String.localizedStringWithFormat(NSLocalizedString("reminder.daysInactive", comment: "Notification: days since last review"), days))
         }
 
         // Signal 8: In-progress month
@@ -343,12 +341,12 @@ final class ReminderDataCenter {
         {
             let percent = Int(progress * 100)
             let displayMonth = formattedMonthName(monthKey)
-            messages.append("Almost there! You're \(percent)% through \(displayMonth).")
+            messages.append(String(format: NSLocalizedString("reminder.inProgressMonth", comment: "Notification: in-progress month with percent"), percent, displayMonth))
         }
 
         // Signal 9: Review streak
         if lastReviewStreakDays >= 3 {
-            messages.append("You're on a \(lastReviewStreakDays)-day review streak. Keep it going!")
+            messages.append(String(format: NSLocalizedString("reminder.reviewStreak", comment: "Notification: review streak days"), lastReviewStreakDays))
         }
 
         // Signal 10: Similar photos overdue
@@ -356,7 +354,7 @@ final class ReminderDataCenter {
             let days = daysSince(date: lastSimilarReviewDate),
             days >= 14
         {
-            messages.append("Similar photos are waiting. Clean duplicates in minutes.")
+            messages.append(NSLocalizedString("reminder.similarPhotosOverdue", comment: "Notification: similar photos waiting"))
         }
 
         // Motivational signals from all-time stats
@@ -364,15 +362,15 @@ final class ReminderDataCenter {
 
         if stats.spaceSavedBytes > 0 {
             let formatted = stats.spaceSavedBytes.formattedBytes(allowedUnits: [.useMB, .useGB])
-            messages.append("You've saved \(formatted) so far. Keep your library clean!")
+            messages.append(String(format: NSLocalizedString("reminder.totalSaved", comment: "Notification: total saved so far"), formatted))
         }
 
         if stats.totalDeleted > 0 {
-            messages.append("You've cleaned \(stats.totalDeleted) photos so far. Nice work!")
+            messages.append(String(format: NSLocalizedString("reminder.totalDeleted", comment: "Notification: total deleted photos"), stats.totalDeleted))
         }
 
         if stats.totalReviewed >= 50 {
-            messages.append("You've reviewed \(stats.totalReviewed) photos. Keep the momentum!")
+            messages.append(String(format: NSLocalizedString("reminder.totalReviewed", comment: "Notification: total reviewed photos"), stats.totalReviewed))
         }
 
         if messages.isEmpty {

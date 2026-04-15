@@ -10,63 +10,66 @@ import SwiftUI
 import UIKit
 
 private enum Strings {
-    static let navTitle = "Delete Bin"
-    static let editMode = "Edit Mode"
-    static let goToGeneralBin = "Go To General Bin"
+    static let navTitle = NSLocalizedString("deleteBin.navTitle", comment: "Delete bin navigation title")
+    static let editMode = NSLocalizedString("deleteBin.editMode", comment: "Edit mode button")
+    static let goToGeneralBin = NSLocalizedString("deleteBin.goToGeneralBin", comment: "Go to general bin button")
     static let remove = CommonStrings.remove
     static let cancel = CommonStrings.cancel
     static let delete = CommonStrings.delete
     static let ok = CommonStrings.ok
-    static let deletingProgress = "Deleting..."
-    static let deleteCannotUndo = "Items will be moved to the \"Recently Deleted\" folder in your Photos library, where you can recover them for up to 30 days."
-    static let yourDeleteBin = "Your Delete Bin"
-    static let deleteBinEmptyMessage =
-        "This is where photos you want to delete will be collected.\n\nSwipe left on any photo during review to add it here. When you're ready, tap \"Delete All\" to permanently remove them."
-    static let successTitle = "Success!"
-    static let allDeletedMessage = "All items have been moved to the \"Recently Deleted\" folder."
-    static let errorTitle = "Something went wrong"
-    static let errorMessage = "Unable to delete items. Please try again."
+    static let deletingProgress = NSLocalizedString("deleteBin.deletingProgress", comment: "Deleting progress label")
+    static let deleteCannotUndo = NSLocalizedString("deleteBin.deleteCannotUndo", comment: "Delete warning about Recently Deleted folder")
+    static let yourDeleteBin = NSLocalizedString("deleteBin.yourDeleteBin", comment: "Your Delete Bin title")
+    static let deleteBinEmptyMessage = NSLocalizedString("deleteBin.emptyMessage", comment: "Empty delete bin explanation message")
+    static let successTitle = NSLocalizedString("deleteBin.successTitle", comment: "Success alert title")
+    static let allDeletedMessage = NSLocalizedString("deleteBin.allDeletedMessage", comment: "All items deleted success message")
+    static let errorTitle = NSLocalizedString("deleteBin.errorTitle", comment: "Error alert title")
+    static let errorMessage = NSLocalizedString("deleteBin.errorMessage", comment: "Delete error message")
 
     private static func mediaDescription(for assets: [PHAsset]) -> String {
         let photoCount = assets.filter { $0.mediaType == .image }.count
         let videoCount = assets.filter { $0.mediaType == .video }.count
 
         switch (photoCount, videoCount) {
-        case (let p, 0): return "\(p) photo\(p == 1 ? "" : "s")"
-        case (0, let v): return "\(v) video\(v == 1 ? "" : "s")"
+        case (let p, 0):
+            return String.localizedStringWithFormat(NSLocalizedString("deleteBin.photoCount", comment: "Number of photos, e.g. '3 photos'"), p)
+        case (0, let v):
+            return String.localizedStringWithFormat(NSLocalizedString("deleteBin.videoCount", comment: "Number of videos, e.g. '2 videos'"), v)
         case (let p, let v):
-            return "\(p) photo\(p == 1 ? "" : "s") and \(v) video\(v == 1 ? "" : "s")"
+            let photos = String.localizedStringWithFormat(NSLocalizedString("deleteBin.photoCount", comment: "Number of photos"), p)
+            let videos = String.localizedStringWithFormat(NSLocalizedString("deleteBin.videoCount", comment: "Number of videos"), v)
+            return String(format: NSLocalizedString("deleteBin.photoAndVideoCount", comment: "Combined photo and video count, e.g. '3 photos and 2 videos'"), photos, videos)
         }
     }
 
     static func removeConfirmTitle(assets: [PHAsset]) -> String {
-        "Remove \(mediaDescription(for: assets))?"
+        String(format: NSLocalizedString("deleteBin.removeConfirmTitle", comment: "Remove confirmation title, e.g. 'Remove 3 photos?'"), mediaDescription(for: assets))
     }
     static func removeConfirmMessage(assets: [PHAsset]) -> String {
-        "\(assets.count == 1 ? "This item" : "These items") will be restored and won't be deleted."
+        String.localizedStringWithFormat(NSLocalizedString("deleteBin.removeConfirmMessage", comment: "Remove confirmation message about restoring items"), assets.count)
     }
     static func deleteConfirmTitle(assets: [PHAsset]) -> String {
-        "Delete \(mediaDescription(for: assets))?"
+        String(format: NSLocalizedString("deleteBin.deleteConfirmTitle", comment: "Delete confirmation title, e.g. 'Delete 3 photos?'"), mediaDescription(for: assets))
     }
     static func photoCount(assets: [PHAsset]) -> String {
         mediaDescription(for: assets)
     }
     static func photoCountWithSize(assets: [PHAsset], size: String) -> String {
-        "\(mediaDescription(for: assets)) · ~\(size)"
+        String(format: NSLocalizedString("deleteBin.photoCountWithSize", comment: "Media count with size, e.g. '3 photos · ~2.5 GB'"), mediaDescription(for: assets), size)
     }
     static func monthBinTitle(monthTitle: String) -> String {
-        "\(monthTitle) Bin"
+        String(format: NSLocalizedString("deleteBin.monthBinTitle", comment: "Month bin title, e.g. 'January 2025 Bin'"), monthTitle)
     }
     static func binCountTitle(count: Int) -> String {
-        "Bin · \(count)"
+        String(format: NSLocalizedString("deleteBin.binCountTitle", comment: "Bin count title, e.g. 'Bin · 5'"), count)
     }
-    static let allCleanedTitle = "All Cleaned Up!"
-    static let goBack = "Go Back"
+    static let allCleanedTitle = NSLocalizedString("deleteBin.allCleanedTitle", comment: "All cleaned up title")
+    static let goBack = NSLocalizedString("deleteBin.goBack", comment: "Go back button")
     static func freshEmptyMessage(assets: [PHAsset], size: String) -> String {
-        "You freed up \(size) by deleting \(mediaDescription(for: assets))."
+        String(format: NSLocalizedString("deleteBin.freshEmptyMessage", comment: "Success message with size, e.g. 'You freed up 2.5 GB by deleting 3 photos.'"), size, mediaDescription(for: assets))
     }
     static func freshEmptyMessageNoSize(assets: [PHAsset]) -> String {
-        "You deleted \(mediaDescription(for: assets)) from your library."
+        String(format: NSLocalizedString("deleteBin.freshEmptyMessageNoSize", comment: "Success message without size, e.g. 'You deleted 3 photos from your library.'"), mediaDescription(for: assets))
     }
 }
 

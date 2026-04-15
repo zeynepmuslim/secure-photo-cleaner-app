@@ -192,10 +192,10 @@ final class MonthListCell: UITableViewCell {
             attachment.image = image
             attachment.bounds = CGRect(x: 0, y: -2, width: 14, height: 14)
             let attributedString = NSMutableAttributedString(attachment: attachment)
-            attributedString.append(NSAttributedString(string: "  All caught up!", attributes: textAttributes))
+            attributedString.append(NSAttributedString(string: "  " + NSLocalizedString("monthCell.allCaughtUp", comment: "All caught up message"), attributes: textAttributes))
             detailLabel.attributedText = attributedString
         } else {
-            detailLabel.attributedText = NSAttributedString(string: "All caught up!", attributes: textAttributes)
+            detailLabel.attributedText = NSAttributedString(string: NSLocalizedString("monthCell.allCaughtUp", comment: "All caught up message"), attributes: textAttributes)
         }
     }
 
@@ -210,9 +210,10 @@ final class MonthListCell: UITableViewCell {
             .font: UIFont.systemFont(ofSize: 13, weight: .regular)
         ]
 
-        let typeString = mediaType == .video ? "videos" : "photos"
-        detailLabel.attributedText = NSAttributedString(
-            string: "\(totalCount) \(typeString) to review", attributes: textAttributes)
+        let text = mediaType == .video
+            ? String.localizedStringWithFormat(NSLocalizedString("monthCell.videosToReview", comment: "Videos to review count"), totalCount)
+            : String.localizedStringWithFormat(NSLocalizedString("monthCell.photosToReview", comment: "Photos to review count"), totalCount)
+        detailLabel.attributedText = NSAttributedString(string: text, attributes: textAttributes)
     }
 
     private func configureInProgress(item: MonthItem, total: Int) {

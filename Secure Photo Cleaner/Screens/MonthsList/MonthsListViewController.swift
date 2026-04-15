@@ -16,14 +16,14 @@ extension Notification.Name {
 }
 
 private enum Strings {
-    static let allowAccessMessage = "Allow access to your photos to group them by month."
-    static let allowPhotoAccess = "Allow Photo Access"
-    static let accessDenied = "Photo access is denied. Enable access in Settings."
-    static let openSettings = "Open Settings"
-    static let status = "Status"
-    static let allYears = "All Years"
-    static let year = "Year"
-    static let filter = "Filter"
+    static let allowAccessMessage = NSLocalizedString("monthsList.allowAccessMessage", comment: "Message asking user to allow photo access")
+    static let allowPhotoAccess = NSLocalizedString("monthsList.allowPhotoAccess", comment: "Allow photo access button")
+    static let accessDenied = NSLocalizedString("monthsList.accessDenied", comment: "Photo access denied message")
+    static let openSettings = NSLocalizedString("monthsList.openSettings", comment: "Open Settings button")
+    static let status = NSLocalizedString("monthsList.status", comment: "Status section header")
+    static let allYears = NSLocalizedString("monthsList.allYears", comment: "All years filter option")
+    static let year = NSLocalizedString("monthsList.year", comment: "Year filter label")
+    static let filter = NSLocalizedString("monthsList.filter", comment: "Filter button label")
 }
 
 final class MonthsListViewController: UIViewController {

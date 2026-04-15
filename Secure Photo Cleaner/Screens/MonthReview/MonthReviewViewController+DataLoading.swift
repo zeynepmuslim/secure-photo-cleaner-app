@@ -186,7 +186,7 @@ extension MonthReviewViewController {
 
         while currentIndex < reviewAssets.count && checkedCount < maxChecks {
             let reviewAsset = reviewAssets[currentIndex]
-            if shouldSkipAsset(reviewAsset) {
+            if shouldSkipAsset(reviewAsset) { 
                 currentIndex += 1
             } else {
                 return
@@ -206,7 +206,7 @@ extension MonthReviewViewController {
 
         let hiddenCount = cardStack.filter { $0.isHidden }.count
         print(
-            "🔍 [REFRESH DEBUG] After refreshStack: \(hiddenCount)/\(cardStack.count) cards hidden, currentIndex: \(currentIndex)"
+            "[REFRESH DEBUG] After refreshStack: \(hiddenCount)/\(cardStack.count) cards hidden, currentIndex: \(currentIndex)"
         )
 
         layoutCards()
@@ -302,9 +302,6 @@ extension MonthReviewViewController {
         }
 
         // file size badge
-        
-        
-        
         let isLargeFilesMode = filterContext == .largeFiles
         let isVideo = asset.mediaType == .video
 

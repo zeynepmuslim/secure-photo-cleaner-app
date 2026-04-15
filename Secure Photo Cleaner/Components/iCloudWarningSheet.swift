@@ -13,8 +13,8 @@ enum MediaType {
 
     var displayName: String {
         switch self {
-        case .photo: return "Photo"
-        case .video: return "Video"
+        case .photo: return NSLocalizedString("mediaType.photo", comment: "Photo media type name")
+        case .video: return NSLocalizedString("mediaType.video", comment: "Video media type name")
         }
     }
 }
@@ -26,23 +26,22 @@ enum iCloudWarningType {
     var title: String {
         switch self {
         case .initial:
-            return "Viewing in Low Quality"
+            return NSLocalizedString("iCloudWarning.viewingLowQuality", comment: "Viewing in low quality title")
         case .perCard(let mediaType):
-            return "\(mediaType.displayName) Unavailable"
+            return String(format: NSLocalizedString("iCloudWarning.mediaUnavailable", comment: "Media unavailable title, e.g. 'Photo Unavailable'"), mediaType.displayName)
         }
     }
 
     var message: String {
         switch self {
         case .initial:
-            return
-                "Some content is stored in iCloud and is shown in low quality. You can still review them, but enable internet access to see full quality versions."
+            return NSLocalizedString("iCloudWarning.lowQualityMessage", comment: "Low quality iCloud content message")
         case .perCard(let mediaType):
             switch mediaType {
             case .video:
-                return "This video is stored in iCloud.\n\nEnable internet access to play it with full quality, or skip."
+                return NSLocalizedString("iCloudWarning.videoUnavailableMessage", comment: "Video unavailable iCloud message")
             case .photo:
-                return "This photo is stored only in iCloud and has no local preview available.\n\nEnable internet access to download it, or skip."
+                return NSLocalizedString("iCloudWarning.photoUnavailableMessage", comment: "Photo unavailable iCloud message")
             }
         }
     }

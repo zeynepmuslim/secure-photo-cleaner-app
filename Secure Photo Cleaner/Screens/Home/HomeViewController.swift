@@ -11,10 +11,10 @@ import UIKit
 // MARK: - Strings
 
 private enum Strings {
-    static let navTitle = "Home"
-    static let photosTitle = "Photos"
-    static let videosTitle = "Videos"
-    static let browseByMonth = "Browse by month"
+    static let navTitle = NSLocalizedString("home.navTitle", comment: "Home tab title")
+    static let photosTitle = NSLocalizedString("home.photosTitle", comment: "Photos section title")
+    static let videosTitle = NSLocalizedString("home.videosTitle", comment: "Videos section title")
+    static let browseByMonth = NSLocalizedString("home.browseByMonth", comment: "Browse by month section header")
 }
 
 final class HomeViewController: UIViewController {
@@ -285,6 +285,10 @@ final class HomeViewController: UIViewController {
     }
 
     @objc private func handleStorageAnalysisTap() {
+        if storageManager.iCloudPhotosSyncOn {
+            return
+        }
+
         HapticFeedbackManager.shared.impact(intensity: .medium)
 
         DispatchQueue.main.async { [weak self] in   // to prevent freeze

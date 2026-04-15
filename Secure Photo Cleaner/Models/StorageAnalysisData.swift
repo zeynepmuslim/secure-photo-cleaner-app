@@ -20,7 +20,7 @@ struct StorageAnalysisData: Codable {
     var progressPercentage: Double?
 
     // MARK: - iCloud Storage Data
-    var iCloudEnabled: Bool = false
+    var iCloudPhotosSyncOn: Bool = false
     var photosInCloudOnlyCount: Int = 0
     var photosInCloudOnlyBytes: Int64 = 0
     var videosInCloudOnlyCount: Int = 0
@@ -37,7 +37,7 @@ struct StorageAnalysisData: Codable {
         lastAnalysisDate: Date,
         isPartial: Bool = false,
         progressPercentage: Double? = nil,
-        iCloudEnabled: Bool = false,
+        iCloudPhotosSyncOn: Bool = false,
         photosInCloudOnlyCount: Int = 0,
         photosInCloudOnlyBytes: Int64 = 0,
         videosInCloudOnlyCount: Int = 0,
@@ -53,7 +53,7 @@ struct StorageAnalysisData: Codable {
         self.lastAnalysisDate = lastAnalysisDate
         self.isPartial = isPartial
         self.progressPercentage = progressPercentage
-        self.iCloudEnabled = iCloudEnabled
+        self.iCloudPhotosSyncOn = iCloudPhotosSyncOn
         self.photosInCloudOnlyCount = photosInCloudOnlyCount
         self.photosInCloudOnlyBytes = photosInCloudOnlyBytes
         self.videosInCloudOnlyCount = videosInCloudOnlyCount
@@ -130,23 +130,10 @@ struct StorageAnalysisData: Codable {
 
     // MARK: - Formatted Last Analysis Time
     var formattedLastAnalysis: String {
-        let now = Date()
-        let components = Calendar.current.dateComponents([.minute, .hour, .day], from: lastAnalysisDate, to: now)
-
-        let minutes = components.minute ?? 0
-        let hours = components.hour ?? 0
-        let days = components.day ?? 0
-
+        let days = Calendar.current.dateComponents([.day], from: lastAnalysisDate, to: Date()).day ?? 0
         if days >= 7 {
-            return "7+ days ago"
-        } else if days >= 1 {
-            return "\(days) day\(days == 1 ? "" : "s") ago"
-        } else if hours >= 1 {
-            return "\(hours) hour\(hours == 1 ? "" : "s") ago"
-        } else if minutes >= 1 {
-            return "\(minutes) minute\(minutes == 1 ? "" : "s") ago"
-        } else {
-            return "Just now"
+            return NSLocalizedString("timeAgo.sevenPlusDays", comment: "7+ days ago")
         }
+        return lastAnalysisDate.timeAgo()
     }
 }

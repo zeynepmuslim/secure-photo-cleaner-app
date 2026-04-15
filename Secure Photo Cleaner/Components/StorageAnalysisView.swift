@@ -10,34 +10,35 @@ import UIKit
 // MARK: - Strings
 
 private enum Strings {
-    static let analyzing = "Analyzing..."
-    static let unableToAnalyze = "Unable to analyze storage"
-    static let tryAgain = "Try Again"
-    static let notAnalyzedYet = "Storage has not been analyzed yet"
-    static let analyzeStorage = "Analyze Storage"
-    static let storageBreakdown = "Storage Breakdown"
-    static let onThisDevice = "On This Device"
-    static let iCloudOnly = "iCloud Only"
-    static let totalLibrary = "Total Library"
-    static let allPhotosAndVideos = "All photos and videos"
-    static let used = "Used"
-    static let available = "Available"
-    static let saved = "Saved"
-    static let photos = "Photos"
-    static let videos = "Videos"
-    static let other = "Other"
-    static let generalStorageInfoOnly = "General storage info only"
+    static let analyzing = NSLocalizedString("storageAnalysis.analyzing", comment: "Analyzing progress text")
+    static let unableToAnalyze = NSLocalizedString("storageAnalysis.unableToAnalyze", comment: "Error when analysis fails")
+    static let tryAgain = NSLocalizedString("storageAnalysis.tryAgain", comment: "Try again button")
+    static let notAnalyzedYet = NSLocalizedString("storageAnalysis.notAnalyzedYet", comment: "Not yet analyzed message")
+    static let analyzeStorage = NSLocalizedString("storageAnalysis.analyzeStorage", comment: "Analyze storage button")
+    static let storageBreakdown = NSLocalizedString("storageAnalysis.storageBreakdown", comment: "Storage breakdown section title")
+    static let onThisDevice = NSLocalizedString("storageAnalysis.onThisDevice", comment: "On this device section")
+    static let iCloudOnly = NSLocalizedString("storageAnalysis.iCloudOnly", comment: "iCloud only section")
+    static let totalLibrary = NSLocalizedString("storageAnalysis.totalLibrary", comment: "Total library section")
+    static let allPhotosAndVideos = NSLocalizedString("storageAnalysis.allPhotosAndVideos", comment: "All photos and videos subtitle")
+    static let used = NSLocalizedString("storageAnalysis.used", comment: "Used storage label")
+    static let available = NSLocalizedString("storageAnalysis.available", comment: "Available storage label")
+    static let saved = NSLocalizedString("storageAnalysis.saved", comment: "Saved storage label")
+    static let photos = NSLocalizedString("storageAnalysis.photos", comment: "Photos label")
+    static let videos = NSLocalizedString("storageAnalysis.videos", comment: "Videos label")
+    static let other = NSLocalizedString("storageAnalysis.other", comment: "Other storage label")
+    static let generalStorageInfoOnly = NSLocalizedString("storageAnalysis.generalStorageInfoOnly", comment: "General storage info footer")
+    static let iCloudActiveInfo = NSLocalizedString("storageAnalysis.iCloudActiveInfo", comment: "Info shown when iCloud Photos is enabled")
     static func iCloudBannerText(count: Int, size: String, percentage: Int) -> String {
-        "iCloud Photo Library detected. \(count) items (\(size), \(percentage)%) are stored only in iCloud and not on this device."
+        String(format: NSLocalizedString("storageAnalysis.iCloudBannerText", comment: "iCloud banner, e.g. 'iCloud Photo Library detected. 500 items (2.3 GB, 45%%) are stored only in iCloud.'"), count, size, percentage)
     }
     static func lastAnalyzed(date: String) -> String {
-        "Last analyzed: \(date)"
+        String(format: NSLocalizedString("storageAnalysis.lastAnalyzed", comment: "Last analyzed date"), date)
     }
     static func lastAnalyzedStale(date: String) -> String {
-        "\(date) - Tap to refresh"
+        String(format: NSLocalizedString("storageAnalysis.lastAnalyzedStale", comment: "Stale analysis date with refresh hint"), date)
     }
     static func mediaCountSubtitle(photosCount: Int, videosCount: Int) -> String {
-        "\(photosCount) photos, \(videosCount) videos"
+        String(format: NSLocalizedString("storageAnalysis.mediaCountSubtitle", comment: "Media count, e.g. '500 photos, 30 videos'"), photosCount, videosCount)
     }
 }
 
@@ -528,7 +529,35 @@ final class StorageAnalysisView: UIView {
         emptyStack.isHidden = true
         errorStack.isHidden = true
 
-        if data.iCloudEnabled && data.hasCloudOnlyItems {
+        if data.iCloudPhotosSyncOn {
+            iCloudBanner.isHidden = true
+            detailsStack.isHidden = true
+
+            containerStack.addArrangedSubview(storageBar)
+            containerStack.setNeedsLayout()
+            containerStack.layoutIfNeeded()
+
+            let usedPercentage = CGFloat(data.usedBytes) / CGFloat(data.totalDeviceBytes)
+            let availablePercentage = CGFloat(data.availableBytes) / CGFloat(data.totalDeviceBytes)
+
+            var segments: [SegmentedBarView.Segment] = []
+            segments.append(.init(color: .storageUsed, percentage: usedPercentage))
+            if availablePercentage > 0 {
+                segments.append(.init(color: .storageFree, percentage: availablePercentage))
+            }
+            storageBar.configure(segments: segments)
+
+            updateSavedSpaceOverlay(data: data, availablePercentage: availablePercentage)
+
+            updateLegend(with: data)
+            containerStack.addArrangedSubview(legendStack)
+
+            updateStatus(with: data)
+            containerStack.addArrangedSubview(statusStack)
+            return
+        }
+
+        if data.iCloudPhotosSyncOn && data.hasCloudOnlyItems {
             updateICloudBanner(with: data)
             iCloudBanner.isHidden = false
             containerStack.addArrangedSubview(iCloudBanner)
@@ -571,7 +600,7 @@ final class StorageAnalysisView: UIView {
         updateLegend(with: data)
         containerStack.addArrangedSubview(legendStack)
 
-        if data.iCloudEnabled {
+        if data.iCloudPhotosSyncOn {
             updateDetailsStack(with: data)
             detailsStack.isHidden = false
             containerStack.addArrangedSubview(detailsStack)
@@ -687,9 +716,44 @@ final class StorageAnalysisView: UIView {
     private func updateLegend(with data: StorageAnalysisData) {
         legendStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
 
-        let suffix = data.iCloudEnabled ? " (local)" : ""
-
         var items: [UIView] = []
+
+        if data.iCloudPhotosSyncOn {
+            let usedItem = createLegendItem(
+                color: .storageUsed,
+                title: Strings.used,
+                value: data.usedBytes.formattedBytes(allowedUnits: [.useGB, .useMB])
+            )
+            items.append(usedItem)
+
+            let availableItem = createLegendItem(
+                color: .storageAvailable,
+                title: Strings.available,
+                value: data.availableBytes.formattedBytes(allowedUnits: [.useGB, .useMB])
+            )
+            items.append(availableItem)
+
+            let spaceSaved = debugSavedBytesOverride ?? statsStore.spaceSavedBytes
+            if spaceSaved > 0 {
+                let savedItem = createLegendItem(
+                    color: .storageSavedLabel,
+                    title: Strings.saved,
+                    value: spaceSaved.formattedBytes(allowedUnits: [.useGB, .useMB])
+                )
+                items.append(savedItem)
+            }
+
+            let row = UIStackView()
+            row.axis = .horizontal
+            row.distribution = .equalSpacing
+            for item in items {
+                row.addArrangedSubview(item)
+            }
+            legendStack.addArrangedSubview(row)
+            return
+        }
+
+        let suffix = data.iCloudPhotosSyncOn ? " (local)" : ""
 
         if data.photosBytes > 0 {
             let photosItem = createLegendItem(
@@ -821,6 +885,16 @@ final class StorageAnalysisView: UIView {
     }
 
     private func updateStatus(with data: StorageAnalysisData) {
+        if data.iCloudPhotosSyncOn {
+            statusDot.backgroundColor = .systemBlue
+            statusLabel.text = Strings.iCloudActiveInfo
+            statusLabel.textColor = .secondaryLabel
+            refreshButton.isHidden = true
+            return
+        }
+
+        refreshButton.isHidden = false
+
         let hasDetailedData = data.photosBytes > 0 || data.videosBytes > 0
 
         guard hasDetailedData else {
@@ -918,7 +992,7 @@ final class StorageAnalysisView: UIView {
 
         let availableStartX = (barWidth * usedPercentage) + separatorWidth
         let calculatedWidth = barWidth * savedPercentage
-        let overlayWidth = min(max(calculatedWidth, 6), barWidth)
+        let overlayWidth = min(max(calculatedWidth, 0), barWidth)
 
         let startX: CGFloat
         if availableStartX + overlayWidth <= barWidth {
@@ -1007,5 +1081,41 @@ final class StorageAnalysisView: UIView {
 #Preview("Never Analyzed") {
     let view = StorageAnalysisView()
     view.update(with: .idle)
+    return view
+}
+
+@available(iOS 17.0, *)
+#Preview("iCloud Basic") {
+    let view = StorageAnalysisView()
+    let data = StorageAnalysisData(
+        photosCount: 0,
+        photosBytes: 0,
+        videosCount: 0,
+        videosBytes: 0,
+        totalDeviceBytes: 128_000_000_000,
+        availableBytes: 36_000_000_000,
+        lastAnalysisDate: Date(),
+        iCloudPhotosSyncOn: true
+    )
+    view.update(with: .loaded(data))
+    return view
+}
+
+@available(iOS 17.0, *)
+#Preview("iCloud Basic with Saved") {
+    let view = StorageAnalysisView()
+    view.setDebugSavedBytesOverride(8_000_000_000)
+
+    let data = StorageAnalysisData(
+        photosCount: 0,
+        photosBytes: 0,
+        videosCount: 0,
+        videosBytes: 0,
+        totalDeviceBytes: 128_000_000_000,
+        availableBytes: 44_000_000_000,
+        lastAnalysisDate: Date(),
+        iCloudPhotosSyncOn: true
+    )
+    view.update(with: .loaded(data))
     return view
 }

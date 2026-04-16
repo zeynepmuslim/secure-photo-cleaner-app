@@ -40,9 +40,9 @@ final class FilterCard: UIControl {
         let label = UILabel()
         label.font = ThemeManager.Fonts.titleFont(size: 15, weight: .semibold)
         label.textColor = .textPrimary
-        label.numberOfLines = 2
+        label.numberOfLines = 3
         label.adjustsFontSizeToFitWidth = true
-        label.minimumScaleFactor = 0.8
+        label.minimumScaleFactor = 0.7
         label.isUserInteractionEnabled = false
         return label
     }()

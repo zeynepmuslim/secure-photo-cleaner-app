@@ -21,12 +21,14 @@ private enum Strings {
 }
 
 final class SimilarPhotosHelpSheet: UIViewController {
+    private let isSmallScreen = UIScreen.main.bounds.height <= 667
+
     private let contentStack: UIStackView = {
         let stack = UIStackView()
         stack.axis = .vertical
         stack.alignment = .fill
         stack.distribution = .fill
-        stack.spacing = 24
+        stack.spacing = 16
         stack.translatesAutoresizingMaskIntoConstraints = false
         return stack
     }()
@@ -41,7 +43,7 @@ final class SimilarPhotosHelpSheet: UIViewController {
     }()
 
     private let titleIcon: UIImageView = {
-        let config = UIImage.SymbolConfiguration(pointSize: 40, weight: .medium)
+        let config = UIImage.SymbolConfiguration(pointSize: 28, weight: .medium)
         let view = UIImageView(image: UIImage(systemName: "hand.tap", withConfiguration: config))
         view.tintColor = .label
         view.contentMode = .scaleAspectFit
@@ -112,7 +114,7 @@ final class SimilarPhotosHelpSheet: UIViewController {
         label.font = .systemFont(ofSize: 14, weight: .semibold)
         label.textColor = .label
         label.textAlignment = .center
-        label.numberOfLines = 2
+        label.numberOfLines = 0
         return label
     }()
 
@@ -187,7 +189,7 @@ final class SimilarPhotosHelpSheet: UIViewController {
         modalPresentationStyle = .pageSheet
 
         if let sheet = sheetPresentationController {
-            sheet.detents = [.medium()]
+            sheet.detents = isSmallScreen ? [.large()] : [.medium()]
             sheet.prefersGrabberVisible = true
             sheet.prefersScrollingExpandsWhenScrolledToEdge = false
             sheet.prefersEdgeAttachedInCompactHeight = true
@@ -208,46 +210,60 @@ final class SimilarPhotosHelpSheet: UIViewController {
     private func setupUI() {
         view.backgroundColor = .systemBackground
 
-        titleSection.addArrangedSubview(titleIcon)
-        titleSection.addArrangedSubview(titleLabel)
-        titleSection.translatesAutoresizingMaskIntoConstraints = false
-        row1Left.addSubview(titleSection)
-
         keepCard = createStateCard(
             icon: "checkmark.circle.fill", color: ThemeManager.Colors.statusGreen, label: Strings.keep,
             subtitle: Strings.keepDesc)
         deleteCard = createStateCard(
             icon: "xmark.circle.fill", color: ThemeManager.Colors.statusRed, label: Strings.delete,
             subtitle: Strings.deleteDesc)
-
-        row1Right.addArrangedSubview(keepCard)
-        row1Right.addArrangedSubview(deleteCard)
-
-        row1.addArrangedSubview(row1Left)
-        row1.addArrangedSubview(row1Right)
-
         storeCard = createStateCard(
             icon: "archivebox.fill", color: ThemeManager.Colors.statusYellow, label: Strings.store,
             subtitle: Strings.storeDesc)
 
+        titleSection.addArrangedSubview(titleIcon)
+        titleSection.addArrangedSubview(titleLabel)
+
         storeHintSection.addArrangedSubview(storeHintIcon)
         storeHintSection.addArrangedSubview(storeHintLabel)
-        storeHintSection.translatesAutoresizingMaskIntoConstraints = false
-        row2Left.addSubview(storeHintSection)
-
-        storeCard.translatesAutoresizingMaskIntoConstraints = false
-        row2Right.addSubview(storeCard)
-
-        row2.addArrangedSubview(row2Left)
-        row2.addArrangedSubview(row2Right)
 
         confirmStack.addArrangedSubview(confirmIcon)
         confirmStack.addArrangedSubview(confirmLabel)
         confirmStack.translatesAutoresizingMaskIntoConstraints = false
         confirmContainer.addSubview(confirmStack)
 
-        contentStack.addArrangedSubview(row1)
-        contentStack.addArrangedSubview(row2)
+        if isSmallScreen { // keep-delte title on top, cards wider below
+            titleSection.translatesAutoresizingMaskIntoConstraints = false
+            contentStack.addArrangedSubview(titleSection)
+
+            row1Right.addArrangedSubview(keepCard)
+            row1Right.addArrangedSubview(deleteCard)
+            contentStack.addArrangedSubview(row1Right)
+
+            storeHintSection.translatesAutoresizingMaskIntoConstraints = false
+            row2Left.addSubview(storeHintSection)
+            storeCard.translatesAutoresizingMaskIntoConstraints = false
+            row2Right.addSubview(storeCard)
+            row2.addArrangedSubview(row2Left)
+            row2.addArrangedSubview(row2Right)
+            contentStack.addArrangedSubview(row2)
+        } else { // keep-delte title next to belong card, cards square
+            titleSection.translatesAutoresizingMaskIntoConstraints = false
+            row1Left.addSubview(titleSection)
+            row1Right.addArrangedSubview(keepCard)
+            row1Right.addArrangedSubview(deleteCard)
+            row1.addArrangedSubview(row1Left)
+            row1.addArrangedSubview(row1Right)
+            contentStack.addArrangedSubview(row1)
+
+            storeHintSection.translatesAutoresizingMaskIntoConstraints = false
+            row2Left.addSubview(storeHintSection)
+            storeCard.translatesAutoresizingMaskIntoConstraints = false
+            row2Right.addSubview(storeCard)
+            row2.addArrangedSubview(row2Left)
+            row2.addArrangedSubview(row2Right)
+            contentStack.addArrangedSubview(row2)
+        }
+
         contentStack.addArrangedSubview(confirmContainer)
         contentStack.addArrangedSubview(gotItButton)
 
@@ -259,34 +275,40 @@ final class SimilarPhotosHelpSheet: UIViewController {
             contentStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 24),
             contentStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
             contentStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-            contentStack.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -24),
-            
-            titleSection.topAnchor.constraint(equalTo: row1Left.topAnchor),
-            titleSection.bottomAnchor.constraint(equalTo: row1Left.bottomAnchor),
-            titleSection.centerXAnchor.constraint(equalTo: row1Left.centerXAnchor),
-            titleSection.leadingAnchor.constraint(greaterThanOrEqualTo: row1Left.leadingAnchor),
-            titleSection.trailingAnchor.constraint(lessThanOrEqualTo: row1Left.trailingAnchor),
-            
+            contentStack.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12),
+
             storeHintSection.topAnchor.constraint(equalTo: row2Left.topAnchor),
             storeHintSection.bottomAnchor.constraint(equalTo: row2Left.bottomAnchor),
             storeHintSection.centerXAnchor.constraint(equalTo: row2Left.centerXAnchor),
             storeHintSection.leadingAnchor.constraint(greaterThanOrEqualTo: row2Left.leadingAnchor),
             storeHintSection.trailingAnchor.constraint(lessThanOrEqualTo: row2Left.trailingAnchor),
-            
+
             storeCard.topAnchor.constraint(equalTo: row2Right.topAnchor),
             storeCard.bottomAnchor.constraint(equalTo: row2Right.bottomAnchor),
             storeCard.centerXAnchor.constraint(equalTo: row2Right.centerXAnchor),
             storeCard.leadingAnchor.constraint(greaterThanOrEqualTo: row2Right.leadingAnchor),
             storeCard.trailingAnchor.constraint(lessThanOrEqualTo: row2Right.trailingAnchor),
-            
+
             confirmStack.topAnchor.constraint(equalTo: confirmContainer.topAnchor, constant: 12),
             confirmStack.centerXAnchor.constraint(equalTo: confirmContainer.centerXAnchor),
             confirmStack.leadingAnchor.constraint(greaterThanOrEqualTo: confirmContainer.leadingAnchor, constant: 16),
             confirmStack.trailingAnchor.constraint(lessThanOrEqualTo: confirmContainer.trailingAnchor, constant: -16),
             confirmStack.bottomAnchor.constraint(equalTo: confirmContainer.bottomAnchor, constant: -12)
         ])
-        row2Left.widthAnchor.constraint(equalTo: row2Right.widthAnchor).isActive = true
-        row1Left.widthAnchor.constraint(equalTo: row1Right.widthAnchor).isActive = true
+
+        if isSmallScreen {
+            row2Right.widthAnchor.constraint(equalTo: row2.widthAnchor, multiplier: 0.55).isActive = true
+        } else {
+            NSLayoutConstraint.activate([
+                titleSection.topAnchor.constraint(equalTo: row1Left.topAnchor),
+                titleSection.bottomAnchor.constraint(equalTo: row1Left.bottomAnchor),
+                titleSection.centerXAnchor.constraint(equalTo: row1Left.centerXAnchor),
+                titleSection.leadingAnchor.constraint(greaterThanOrEqualTo: row1Left.leadingAnchor),
+                titleSection.trailingAnchor.constraint(lessThanOrEqualTo: row1Left.trailingAnchor)
+            ])
+            row1Left.widthAnchor.constraint(equalTo: row1Right.widthAnchor).isActive = true
+            row2Left.widthAnchor.constraint(equalTo: row2Right.widthAnchor).isActive = true
+        }
         storeCard.widthAnchor.constraint(equalTo: keepCard.widthAnchor).isActive = true
     }
 
@@ -295,9 +317,10 @@ final class SimilarPhotosHelpSheet: UIViewController {
         cardView.backgroundColor = color.withAlphaComponent(0.15)
         cardView.layer.cornerRadius = 20
         cardView.translatesAutoresizingMaskIntoConstraints = false
-        cardView.heightAnchor.constraint(equalTo: cardView.widthAnchor).isActive = true
+        let ratio: CGFloat = isSmallScreen ? 0.7 : 1.0
+        cardView.heightAnchor.constraint(equalTo: cardView.widthAnchor, multiplier: ratio).isActive = true
 
-        let iconConfig = UIImage.SymbolConfiguration(pointSize: 40, weight: .medium)
+        let iconConfig = UIImage.SymbolConfiguration(pointSize: 28, weight: .medium)
         let iconView = UIImageView(image: UIImage(systemName: icon, withConfiguration: iconConfig))
         iconView.tintColor = color
         iconView.contentMode = .scaleAspectFit
@@ -316,7 +339,7 @@ final class SimilarPhotosHelpSheet: UIViewController {
 
         let subtitleLabel = UILabel()
         subtitleLabel.text = subtitle
-        subtitleLabel.font = .systemFont(ofSize: 11, weight: .regular)
+        subtitleLabel.font = .systemFont(ofSize: 10, weight: .regular)
         subtitleLabel.textColor = .textSecondary
         subtitleLabel.textAlignment = .center
         subtitleLabel.numberOfLines = 2
@@ -324,12 +347,12 @@ final class SimilarPhotosHelpSheet: UIViewController {
         let labelStack = UIStackView(arrangedSubviews: [titleLabel, subtitleLabel])
         labelStack.axis = .vertical
         labelStack.spacing = 2
-        labelStack.alignment = .center
+        labelStack.alignment = .fill
 
         let column = UIStackView(arrangedSubviews: [cardView, labelStack])
         column.axis = .vertical
         column.alignment = .fill
-        column.spacing = 8
+        column.spacing = 6
         return column
     }
 

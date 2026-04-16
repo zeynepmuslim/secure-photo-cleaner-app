@@ -18,6 +18,8 @@ final class StatItemView: UIView {
         let label = UILabel()
         label.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
         label.textColor = .label.withAlphaComponent(0.8)
+        label.adjustsFontSizeToFitWidth = true
+        label.minimumScaleFactor = 0.7
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()

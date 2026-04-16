@@ -191,8 +191,9 @@ final class OnboardingViewController: UIViewController {
 
     private func setupConstraint() {
         let isSmallScreen = UIScreen.main.bounds.height < 700
-        let topPadding: CGFloat = isSmallScreen ? 16 : 30
-        let stackSpacing: CGFloat = isSmallScreen ? 12 : 20
+        let topPadding: CGFloat = isSmallScreen ? 12 : 30
+        let stackSpacing: CGFloat = isSmallScreen ? 10 : 20
+        let sideStackTopSpacing: CGFloat = isSmallScreen ? 30 : 60
 
         NSLayoutConstraint.activate([
             titleContainerView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: topPadding),
@@ -220,11 +221,11 @@ final class OnboardingViewController: UIViewController {
             topStack.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor, multiplier: 0.7),
 
             leftStack.leadingAnchor.constraint(equalTo: gradientContainerView.leadingAnchor, constant: 24),
-            leftStack.centerYAnchor.constraint(equalTo: gradientContainerView.centerYAnchor),
+            leftStack.topAnchor.constraint(equalTo: topStack.bottomAnchor, constant: sideStackTopSpacing),
             leftStack.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor, multiplier: 0.3),
 
             rightStack.trailingAnchor.constraint(equalTo: gradientContainerView.trailingAnchor, constant: -24),
-            rightStack.centerYAnchor.constraint(equalTo: gradientContainerView.centerYAnchor),
+            rightStack.topAnchor.constraint(equalTo: topStack.bottomAnchor, constant: sideStackTopSpacing),
             rightStack.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor, multiplier: 0.3),
 
             swipeIconView.centerXAnchor.constraint(equalTo: gradientContainerView.centerXAnchor),

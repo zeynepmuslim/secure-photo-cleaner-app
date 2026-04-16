@@ -144,6 +144,8 @@ final class ImpactStatsView: UIView {
         valueLabel.text = value
         valueLabel.font = .systemFont(ofSize: 22, weight: .bold)
         valueLabel.textColor = valueColor
+        valueLabel.adjustsFontSizeToFitWidth = true
+        valueLabel.minimumScaleFactor = 0.7
         valueLabel.translatesAutoresizingMaskIntoConstraints = false
 
         container.addSubview(iconView)
@@ -159,6 +161,7 @@ final class ImpactStatsView: UIView {
             titleLabel.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: 12),
             titleLabel.centerYAnchor.constraint(equalTo: container.centerYAnchor),
 
+            valueLabel.leadingAnchor.constraint(greaterThanOrEqualTo: titleLabel.trailingAnchor, constant: 8),
             valueLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor),
             valueLabel.centerYAnchor.constraint(equalTo: container.centerYAnchor),
 

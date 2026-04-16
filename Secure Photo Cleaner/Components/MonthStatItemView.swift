@@ -32,6 +32,8 @@ final class MonthStatItemView: UIView {
         label.font = .systemFont(ofSize: 10, weight: .medium)
         label.textColor = .textSecondary
         label.textAlignment = .center
+        label.adjustsFontSizeToFitWidth = true
+        label.minimumScaleFactor = 0.7
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()

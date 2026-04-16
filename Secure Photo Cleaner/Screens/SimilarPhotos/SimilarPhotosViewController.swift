@@ -75,6 +75,7 @@ class SimilarPhotosViewController: UIViewController {
         tableView.register(SimilarGroupCell.self, forCellReuseIdentifier: SimilarGroupCell.reuseIdentifier)
         tableView.delegate = self
         tableView.dataSource = self
+        tableView.contentInsetAdjustmentBehavior = .automatic
         tableView.translatesAutoresizingMaskIntoConstraints = false
         return tableView
     }()
@@ -574,7 +575,7 @@ class SimilarPhotosViewController: UIViewController {
 
     private func setupConstraint() {
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            tableView.topAnchor.constraint(equalTo: view.topAnchor),
             tableView.leadingAnchor.constraint(
                 equalTo: view.leadingAnchor, constant: GeneralConstants.EdgePadding.medium),
             tableView.trailingAnchor.constraint(

@@ -43,7 +43,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Videolar en çok yer kaplayan dosyalarınız — şimdiye kadar %@ tasarruf ettiniz!"
+            "value" : "Videolar en çok yer kaplayan dosyalarınız — şimdiye kadar %@ kazandınız!"
           }
         }
       }
@@ -60,7 +60,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ temizlendi, %@ tasarruf edildi."
+            "value" : "%@ temizlendi, %@ kazanıldı."
           }
         }
       }
@@ -3044,13 +3044,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Review your photos by swiping. It's quick, easy, and fun!"
+            "value" : "Review your photos by swiping. It's quick, easy, and safe!"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fotoğraflarınızı kaydırarak inceleyin. Hızlı, kolay ve eğlenceli!"
+            "value" : "Fotoğraflarınızı kaydırarak inceleyin. Hızlı, kolay ve güvenli!"
           }
         }
       }
@@ -3061,13 +3061,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipe left to mark a photo for deletion. You can review and confirm before anything is deleted."
+            "value" : "You can review and confirm before anything is deleted."
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bir fotoğrafı silmek üzere işaretlemek için sola kaydırın. Silinmeden önce inceleyip onaylayabilirsiniz."
+            "value" : "Silinmeden önce inceleyip onaylayabilirsiniz"
           }
         }
       }
@@ -3095,13 +3095,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipe right to keep a photo in your library."
+            "value" : "It remains in your photo library"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bir fotoğrafı kütüphanenizde tutmak için sağa kaydırın."
+            "value" : "Fotoğraf kütüphanenizde kalır"
           }
         }
       }
@@ -3129,13 +3129,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Swipe up to save a photo to the \"Will Be Stored\" album for later review."
+            "value" : "It is added to the “Will Be Stored” album in Photos"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Daha sonra incelemek üzere bir fotoğrafı \"Depolanacak\" albümüne kaydetmek için yukarı kaydırın."
+            "value" : "Fotoğraflardaki \"Depolanacak\" albümüne eklenir"
           }
         }
       }
@@ -3163,13 +3163,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Welcome to Secure Photo Cleaner"
+            "value" : "Welcome to Purgio"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Secure Photo Cleaner'a Hoş Geldiniz"
+            "value" : "Purgio'a Hoş Geldiniz"
           }
         }
       }
@@ -3595,7 +3595,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@'a kadar tasarruf edebilirsiniz,  hadi temizleyelim!"
+            "value" : "%@'a kadar kazanç sağlayabilirsin,  hadi temizleyelim!"
           }
         }
       }
@@ -3629,7 +3629,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Geçen sefer %@ tasarruf ettiniz. Hadi tekrar yapalım!"
+            "value" : "Geçen sefer %@ kazandınız. Hadi tekrar yapalım!"
           }
         }
       }
@@ -3697,7 +3697,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Şimdiye kadar %@ tasarruf ettiniz. Her bit önemli!"
+            "value" : "Şimdiye kadar %@ kazandın. Her bit önemli!"
           }
         }
       }
@@ -4479,7 +4479,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "İşiniz bittiğinde Onayla'ya dokunun."
+            "value" : "İşin bittiğinde Onayla'ya dokun"
           }
         }
       }
@@ -4507,13 +4507,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tap again to mark for deletion."
+            "value" : "Mark for deletion"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Silmek üzere işaretlemek için tekrar dokunun."
+            "value" : "Silmek için işaretle"
           }
         }
       }
@@ -4558,13 +4558,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Photos are kept by default."
+            "value" : "Keep in default place"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fotoğraflar varsayılan olarak saklanır."
+            "value" : "Orijinal yerinde bırak"
           }
         }
       }
@@ -4592,13 +4592,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tap twice to mark for the \"Will Be Stored\" album."
+            "value" : "Save to a separate album"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "İki kez dokunarak \"Depolanacak\" albümüne işaretleyin."
+            "value" : "Ayrı bir albüme kaydet"
           }
         }
       }
@@ -4609,13 +4609,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Triple-tap to store."
+            "value" : "Tap the button to select storage"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Depolamak için üç kez dokunun."
+            "value" : "Depolama seçimi için butona dokun"
           }
         }
       }
@@ -4626,13 +4626,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tap photos to toggle between Keep / Delete / Store"
+            "value" : "Tap to toggle between Keep / Delete"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tut  / Sil / Depola arasında geçiş yapmak için fotoğraflara dokunun"
+            "value" : "Tut  / Sil arasında geçiş yapmak için dokun"
           }
         }
       }
@@ -5357,7 +5357,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tasarruf Edilen"
+            "value" : "Kazanılan"
           }
         }
       }
@@ -5629,7 +5629,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tasarruf: %@"
+            "value" : "Kazanılan: %@"
           }
         }
       }

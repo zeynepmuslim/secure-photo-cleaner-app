@@ -17,6 +17,15 @@ class DynamicGlassButton: UIButton {
     private var _richAttributedTitle: NSAttributedString?
     private var _isApplyingRichTitle = false
 
+    var title: String? {
+        get { configuration?.title }
+        set {
+            var config = configuration
+            config?.title = newValue
+            configuration = config
+        }
+    }
+
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupButton()
@@ -73,6 +82,7 @@ class DynamicGlassButton: UIButton {
         foregroundColor: UIColor = .white,
         borderColor: UIColor? = nil,
         borderWidth: CGFloat = 0,
+        font: UIFont? = nil,
         fontSize: CGFloat = 17,
         fontWeight: UIFont.Weight = .semibold,
         iconSize: CGFloat = 17,
@@ -113,9 +123,10 @@ class DynamicGlassButton: UIButton {
         } else {
             _richAttributedTitle = nil
             config.title = title
+            let resolvedFont = font ?? UIFont.systemFont(ofSize: fontSize, weight: fontWeight)
             config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
                 var outgoing = incoming
-                outgoing.font = UIFont.systemFont(ofSize: fontSize, weight: fontWeight)
+                outgoing.font = resolvedFont
                 return outgoing
             }
         }

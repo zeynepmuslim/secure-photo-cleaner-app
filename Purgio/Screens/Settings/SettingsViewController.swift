@@ -345,16 +345,18 @@ final class SettingsViewController: UIViewController {
         }
 
         supportCard.configure(with: SettingsInfoCardConfig(
-            iconName: "heart.fill", iconColor: .systemPink,
+            iconName: "heart.fill", iconColor: .tipJarRed100,
             title: Strings.supportTitle, subtitle: Strings.supportText,
-            themeColor: .systemPink,
-            buttonTitle: Strings.supportButton, buttonImageName: "patreon_logo"
+            themeColor: .tipJarRed100,
+            buttonTitle: Strings.supportButton, buttonIconName: "sparkles"
         ))
-        supportCard.onButtonTapped = {
-            if let url = URL(string: "https://www.patreon.com/cw/zeynepmuslim") {
-                UIApplication.shared.open(url)
-                HapticFeedbackManager.shared.impact(intensity: .light)
+        supportCard.onButtonTapped = { [weak self] in
+            HapticFeedbackManager.shared.impact(intensity: .light)
+            let tipJar = TipJarViewController()
+            tipJar.onRestoredInternet = { [weak self] in
+                self?.showInternetRestoredConfirmation()
             }
+            self?.present(tipJar, animated: true)
         }
 
         languageCard.configure(with: SettingsInfoCardConfig(
@@ -553,7 +555,6 @@ final class SettingsViewController: UIViewController {
 
     private func updateButtonIcons() {
         transparencyCard.refreshButtonIcon()
-        supportCard.refreshButtonIcon()
     }
 
     private func updateInternetToggleState() {
@@ -603,6 +604,18 @@ final class SettingsViewController: UIViewController {
         )
         alert.addAction(UIAlertAction(title: Strings.ok, style: .default))
         present(alert, animated: true)
+    }
+
+    private func showInternetRestoredConfirmation() {
+        let message = NSLocalizedString(
+            "tipJar.internetRestored",
+            comment: "Feedback when tip jar automatically turned internet access off"
+        )
+        let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+        present(alert, animated: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+            alert.dismiss(animated: true)
+        }
     }
 
     private func updateScheduleMenu() {

@@ -4201,13 +4201,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Support on Patreon"
+            "value" : "Leave a Tip"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Patreon'da Destek Ol"
+            "value" : "Bahşiş Bırak"
           }
         }
       }
@@ -4218,13 +4218,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "If you like the app, you can support the developer and the project on Patreon."
+            "value" : "If you enjoy using the app, you can leave a tip to support development."
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Eğer uygulamayı beğendiyseniz, geliştiriciyi ve projeyi  Patreon’dan destekleyebilirsiniz."
+            "value" : "Uygulamayı kullanmaktan memnunsanız, geliştirmeyi desteklemek için bahşiş bırakabilirsiniz."
           }
         }
       }
@@ -5787,6 +5787,91 @@
         }
       }
     },
+    "storeTutorial.albumFavorites" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favorites"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favoriler"
+          }
+        }
+      }
+    },
+    "storeTutorial.albumRecents" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recents"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Son Kaydedilenler"
+          }
+        }
+      }
+    },
+    "storeTutorial.albumScreenshots" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Screenshots"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ekran Resimleri"
+          }
+        }
+      }
+    },
+    "storeTutorial.albumSelfies" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selfies"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selfie’ler"
+          }
+        }
+      }
+    },
+    "storeTutorial.albumVideos" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Videos"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Videolar"
+          }
+        }
+      }
+    },
     "suggestion.duplicateShots" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6195,6 +6280,295 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "7+ gün önce"
+          }
+        }
+      }
+    },
+    "tipJar.error" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bir sorun oluştu"
+          }
+        }
+      }
+    },
+    "tipJar.gate.enableButton" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow Internet Access"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İnternet Erişimine İzin Ver"
+          }
+        }
+      }
+    },
+    "tipJar.gate.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leaving a tip contacts only Apple's App Store servers. Internet access will be turned off automatically after your transaction."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bahşiş bıraktığında sadece Apple'ın App Store sunucularıyla iletişim kurulur. İşlem tamamlandığında internet erişimi otomatik olarak kapatılır."
+          }
+        }
+      }
+    },
+    "tipJar.gate.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Internet Access Required"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İnternet Erişimi Gerekli"
+          }
+        }
+      }
+    },
+    "tipJar.internetRestored" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Internet access turned off."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İnternet erişimi kapatıldı."
+          }
+        }
+      }
+    },
+    "tipJar.loading" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading…"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yükleniyor…"
+          }
+        }
+      }
+    },
+    "tipJar.openSourceNote" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free, ad-free, and open source. Tips fund development."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ücretsiz, reklamsız ve açık kaynak. Bahşişler geliştirmeyidestekler."
+          }
+        }
+      }
+    },
+    "tipJar.retry" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try Again"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tekrar Dene"
+          }
+        }
+      }
+    },
+    "tipJar.securePayment" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Processed securely through Apple. Your photos and data are never accessed."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple'ın güvenli ödeme sistemi üzerinden gerçekleşir. Fotoğraflarınıza veya verilerinize erişilmez."
+          }
+        }
+      }
+    },
+    "tipJar.selectAmount" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select an amount"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bir miktar seç"
+          }
+        }
+      }
+    },
+    "tipJar.sendTipFormat" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send tip · %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bahşiş Ver · %@"
+          }
+        }
+      }
+    },
+    "tipJar.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your tips help keep Purgio free and ad-free."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bahşişleriniz Purgio'nun ücretsiz ve reklamsız kalmasına yardımcı olur."
+          }
+        }
+      }
+    },
+    "tipJar.thankYou" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thank you for your support!"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desteğin için teşekkürler!"
+          }
+        }
+      }
+    },
+    "tipJar.tier.large" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Large Tip"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Büyük Bahşiş"
+          }
+        }
+      }
+    },
+    "tipJar.tier.medium" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Medium Tip"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orta Bahşiş"
+          }
+        }
+      }
+    },
+    "tipJar.tier.small" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Small Tip"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Küçük Bahşiş"
+          }
+        }
+      }
+    },
+    "tipJar.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Support the Project"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Projeyi Destekle"
           }
         }
       }

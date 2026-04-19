@@ -25,6 +25,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         UNUserNotificationCenter.current().delegate = ReminderNotificationService.shared
         ReminderNotificationService.shared.registerCategories()
 
+        _ = TipJarManager.shared // for init Transaction.updates
+
         return true
     }
 

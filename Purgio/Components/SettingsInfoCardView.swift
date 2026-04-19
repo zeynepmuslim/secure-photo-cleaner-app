@@ -272,15 +272,15 @@ private struct SettingsInfoCardPreview: UIViewRepresentable {
     SettingsInfoCardPreview(
         config: SettingsInfoCardConfig(
             iconName: "heart.fill",
-            iconColor: .systemPink,
+            iconColor: .tipJarRed100,
             title: NSLocalizedString("settings.supportTitle", comment: ""),
             subtitle: NSLocalizedString("settings.supportText", comment: ""),
-            themeColor: .systemPink,
+            themeColor: .tipJarRed100,
             buttonTitle: NSLocalizedString(
                 "settings.supportButton",
                 comment: ""
             ),
-            buttonImageName: "patreon_logo"
+            buttonIconName: "sparkles"
         )
     )
     .frame(width: 350)

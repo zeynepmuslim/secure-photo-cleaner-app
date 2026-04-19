@@ -303,7 +303,7 @@
 				DEVELOPMENT_TEAM = 9N5WN36F7P;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Purgio/Application/Info.plist";
+				INFOPLIST_FILE = Purgio/Application/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Purgio;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Allow deletion of photos you choose to remove from the delete bin.";
@@ -342,7 +342,7 @@
 				DEVELOPMENT_TEAM = 9N5WN36F7P;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Purgio/Application/Info.plist";
+				INFOPLIST_FILE = Purgio/Application/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Purgio;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Allow deletion of photos you choose to remove from the delete bin.";

@@ -26,15 +26,22 @@ final class SlideToConfirmButton: UIControl {
     private let thumbInset: CGFloat = 4
     private var thumbDiameter: CGFloat { controlHeight - thumbInset * 2 }
 
-    private let startTrackColor: UIColor = .systemGray4
-    private let endTrackColor: UIColor = .systemGreen
-
     private let trackView: UIView = {
         let view = UIView()
         view.translatesAutoresizingMaskIntoConstraints = false
         view.isUserInteractionEnabled = false
         view.clipsToBounds = true
         view.backgroundColor = .systemGray4
+        return view
+    }()
+
+    private let greenOverlayView: UIView = {
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.isUserInteractionEnabled = false
+        view.clipsToBounds = true
+        view.backgroundColor = .systemGreen
+        view.alpha = 0
         return view
     }()
 
@@ -89,7 +96,8 @@ final class SlideToConfirmButton: UIControl {
         translatesAutoresizingMaskIntoConstraints = false
 
         addSubview(trackView)
-        trackView.addSubview(titleLabel)
+        addSubview(greenOverlayView)
+        addSubview(titleLabel)
         addSubview(thumbView)
         thumbView.addSubview(thumbIconView)
 
@@ -105,9 +113,14 @@ final class SlideToConfirmButton: UIControl {
             trackView.trailingAnchor.constraint(equalTo: trailingAnchor),
             trackView.bottomAnchor.constraint(equalTo: bottomAnchor),
 
-            titleLabel.leadingAnchor.constraint(equalTo: trackView.leadingAnchor, constant: 56),
-            titleLabel.trailingAnchor.constraint(equalTo: trackView.trailingAnchor, constant: -16),
-            titleLabel.centerYAnchor.constraint(equalTo: trackView.centerYAnchor),
+            greenOverlayView.topAnchor.constraint(equalTo: trackView.topAnchor),
+            greenOverlayView.leadingAnchor.constraint(equalTo: trackView.leadingAnchor),
+            greenOverlayView.trailingAnchor.constraint(equalTo: trackView.trailingAnchor),
+            greenOverlayView.bottomAnchor.constraint(equalTo: trackView.bottomAnchor),
+
+            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 56),
+            titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
 
             thumbLeadingConstraint,
             thumbView.centerYAnchor.constraint(equalTo: centerYAnchor),
@@ -128,6 +141,7 @@ final class SlideToConfirmButton: UIControl {
     override func layoutSubviews() {
         super.layoutSubviews()
         trackView.layer.cornerRadius = controlHeight / 2
+        greenOverlayView.layer.cornerRadius = controlHeight / 2
         thumbView.layer.cornerRadius = thumbDiameter / 2
     }
 
@@ -168,29 +182,10 @@ final class SlideToConfirmButton: UIControl {
     }
 
     private func applyProgressVisuals(progress: CGFloat) {
-        trackView.backgroundColor = interpolate(
-            from: startTrackColor,
-            to: endTrackColor,
-            at: progress
-        )
+        greenOverlayView.alpha = progress
         let thumbDisplacement = thumbLeadingConstraint.constant - thumbInset
         titleLabel.transform = CGAffineTransform(translationX: thumbDisplacement, y: 0)
         titleLabel.alpha = max(0, 1 - progress * 1.5)
-    }
-
-    private func interpolate(from a: UIColor, to b: UIColor, at progress: CGFloat) -> UIColor {
-        let ar = a.resolvedColor(with: traitCollection)
-        let br = b.resolvedColor(with: traitCollection)
-        var ar1: CGFloat = 0, ag1: CGFloat = 0, ab1: CGFloat = 0, aa1: CGFloat = 0
-        var br1: CGFloat = 0, bg1: CGFloat = 0, bb1: CGFloat = 0, ba1: CGFloat = 0
-        ar.getRed(&ar1, green: &ag1, blue: &ab1, alpha: &aa1)
-        br.getRed(&br1, green: &bg1, blue: &bb1, alpha: &ba1)
-        return UIColor(
-            red: ar1 + (br1 - ar1) * progress,
-            green: ag1 + (bg1 - ag1) * progress,
-            blue: ab1 + (bb1 - ab1) * progress,
-            alpha: aa1 + (ba1 - aa1) * progress
-        )
     }
 
     private func commitConfirmation() {

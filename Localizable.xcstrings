@@ -6466,7 +6466,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bahşiş Ver · %@"
+            "value" : "Bahşiş Bırak · %@"
           }
         }
       }

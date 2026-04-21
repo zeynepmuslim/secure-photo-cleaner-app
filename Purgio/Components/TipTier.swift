@@ -7,84 +7,161 @@
 
 import UIKit
 
-final class TipTier: UIButton {
+final class TipTier: UIControl {
 
     private(set) var isCardSelected: Bool = false
 
     func setSelected(_ selected: Bool) {
         guard isCardSelected != selected else { return }
         isCardSelected = selected
-        var config = configuration
-        config?.background.strokeColor = selected ? .tipJarRed100 : Self.defaultBorderColor
-        config?.background.strokeWidth = selected ? Self.selectedBorderWidth : Self.defaultBorderWidth
-        UIView.animate(
-            withDuration: 0.4,
-            delay: 0,
-            options: [.curveEaseInOut, .beginFromCurrentState, .allowUserInteraction],
-            animations: { self.configuration = config }
-        )
+
+        let targetColor = (selected ? UIColor.tipJarRed100 : Self.defaultBorderColor).cgColor
+        let targetWidth: CGFloat = selected ? Self.selectedBorderWidth : Self.defaultBorderWidth
+
+        let colorAnimation = CABasicAnimation(keyPath: "borderColor")
+        colorAnimation.fromValue = containerView.layer.borderColor
+        colorAnimation.toValue = targetColor
+        colorAnimation.duration = 0.4
+        colorAnimation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        containerView.layer.add(colorAnimation, forKey: "borderColor")
+        containerView.layer.borderColor = targetColor
+
+        let widthAnimation = CABasicAnimation(keyPath: "borderWidth")
+        widthAnimation.fromValue = containerView.layer.borderWidth
+        widthAnimation.toValue = targetWidth
+        widthAnimation.duration = 0.4
+        widthAnimation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        containerView.layer.add(widthAnimation, forKey: "borderWidth")
+        containerView.layer.borderWidth = targetWidth
     }
 
-    private static let cornerRadius: CGFloat = 16
+    override var isEnabled: Bool {
+        didSet {
+            guard oldValue != isEnabled else { return }
+            UIView.animate(withDuration: 0.2) {
+                self.alpha = self.isEnabled ? 1.0 : 0.5
+            }
+        }
+    }
+
+    private static let legacyCornerRadius: CGFloat = 16
 
     private static let defaultBorderColor: UIColor = .label.withAlphaComponent(0.12)
     private static let defaultBorderWidth: CGFloat = 1
     private static let selectedBorderWidth: CGFloat = 1
     private static let minHeight: CGFloat = 140
 
+    private let containerView: UIView = {
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.backgroundColor = .cardBackground
+        view.layer.masksToBounds = true
+        view.isUserInteractionEnabled = false
+        return view
+    }()
+
+    private let symbolImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.contentMode = .center
+        imageView.tintColor = .tipJarRed100
+        imageView.setContentHuggingPriority(.required, for: .vertical)
+        imageView.setContentHuggingPriority(.required, for: .horizontal)
+        imageView.setContentCompressionResistancePriority(.required, for: .vertical)
+        return imageView
+    }()
+
+    private let titleLabel: UILabel = {
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.textAlignment = .center
+        label.numberOfLines = 2
+        label.font = ThemeManager.Fonts.semiboldBody
+        label.textColor = .textPrimary
+        label.setContentHuggingPriority(.required, for: .vertical)
+        label.setContentCompressionResistancePriority(.required, for: .vertical)
+        return label
+    }()
+
+    private let priceLabel: UILabel = {
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.textAlignment = .center
+        label.font = ThemeManager.Fonts.regularCaption
+        label.textColor = .textSecondary
+        label.setContentHuggingPriority(.required, for: .vertical)
+        label.setContentCompressionResistancePriority(.required, for: .vertical)
+        return label
+    }()
+
+    private let contentStack: UIStackView = {
+        let stack = UIStackView()
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.axis = .vertical
+        stack.alignment = .center
+        stack.spacing = 14
+        stack.isUserInteractionEnabled = false
+        return stack
+    }()
+
     init(title: String, symbol: String, symbolSize: CGFloat, price: String) {
         super.init(frame: .zero)
-        setupConfiguration(title: title, symbol: symbol, symbolSize: symbolSize, price: price)
         translatesAutoresizingMaskIntoConstraints = false
-        heightAnchor.constraint(greaterThanOrEqualToConstant: Self.minHeight).isActive = true
+
+        titleLabel.text = title
+        priceLabel.text = price
+        let symbolConfig = UIImage.SymbolConfiguration(pointSize: symbolSize, weight: .semibold)
+        symbolImageView.image = UIImage(systemName: symbol, withConfiguration: symbolConfig)
+
+        containerView.layer.borderColor = Self.defaultBorderColor.cgColor
+        containerView.layer.borderWidth = Self.defaultBorderWidth
+        if #available(iOS 26.0, *) {
+            // capsule — resolved in layoutSubviews once height is known
+        } else {
+            containerView.layer.cornerRadius = Self.legacyCornerRadius
+        }
+
+        addSubview(containerView)
+        containerView.addSubview(contentStack)
+        contentStack.addArrangedSubview(symbolImageView)
+        contentStack.addArrangedSubview(titleLabel)
+        contentStack.addArrangedSubview(priceLabel)
+        contentStack.setCustomSpacing(14, after: symbolImageView)
+        contentStack.setCustomSpacing(4, after: titleLabel)
+
+        NSLayoutConstraint.activate([
+            heightAnchor.constraint(greaterThanOrEqualToConstant: Self.minHeight),
+
+            containerView.topAnchor.constraint(equalTo: topAnchor),
+            containerView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            containerView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            containerView.bottomAnchor.constraint(equalTo: bottomAnchor),
+
+            contentStack.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
+            contentStack.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 8),
+            contentStack.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -8),
+            contentStack.topAnchor.constraint(greaterThanOrEqualTo: containerView.topAnchor, constant: 20),
+            contentStack.bottomAnchor.constraint(lessThanOrEqualTo: containerView.bottomAnchor, constant: -20),
+        ])
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
-    private func setupConfiguration(title: String, symbol: String, symbolSize: CGFloat, price: String) {
-        var config: UIButton.Configuration
-
+    override func layoutSubviews() {
+        super.layoutSubviews()
         if #available(iOS 26.0, *) {
-            config = UIButton.Configuration.glass()
-            tintColor = .tipJarRed100
-        } else {
-            config = UIButton.Configuration.filled()
-            config.baseBackgroundColor = .cardBackground
+            containerView.layer.cornerRadius = containerView.bounds.width / 2
         }
+    }
 
-        config.baseForegroundColor = .label
-        config.background.cornerRadius = Self.cornerRadius
-        config.background.strokeColor = Self.defaultBorderColor
-        config.background.strokeWidth = Self.defaultBorderWidth
-
-        let symbolConfig = UIImage.SymbolConfiguration(pointSize: symbolSize, weight: .semibold)
-        config.image = UIImage(systemName: symbol, withConfiguration: symbolConfig)
-        config.imagePlacement = .top
-        config.imagePadding = 14
-        config.imageColorTransformer = UIConfigurationColorTransformer { _ in .tipJarRed100 }
-
-        var titleAttr = AttributedString(title)
-        titleAttr.font = ThemeManager.Fonts.semiboldBody
-        titleAttr.foregroundColor = .textPrimary
-        config.attributedTitle = titleAttr
-
-        var subtitleAttr = AttributedString(price)
-        subtitleAttr.font = ThemeManager.Fonts.regularCaption
-        subtitleAttr.foregroundColor = .textSecondary
-        config.attributedSubtitle = subtitleAttr
-
-        config.titleAlignment = .center
-        config.titlePadding = 4
-        config.contentInsets = NSDirectionalEdgeInsets(top: 20, leading: 8, bottom: 20, trailing: 8)
-
-        configuration = config
-
-        configurationUpdateHandler = { button in
-            UIView.animate(withDuration: 0.2) {
-                button.alpha = button.isEnabled ? 1.0 : 0.5
-            }
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesEnded(touches, with: event)
+        guard isEnabled, let touch = touches.first else { return }
+        let location = touch.location(in: self)
+        if bounds.contains(location) {
+            sendActions(for: .touchUpInside)
         }
     }
 }

@@ -113,6 +113,16 @@ final class SettingsViewController: UIViewController {
         view.backgroundColor = .mainBackground
         title = Strings.navTitle
 
+        let tipJarButton = UIBarButtonItem(
+            image: UIImage(systemName: "heart.fill"),
+            style: .plain,
+            target: self,
+            action: #selector(tipJarBarButtonTapped)
+        )
+        tipJarButton.tintColor = .tipJarRed100
+        tipJarButton.accessibilityLabel = Strings.supportTitle
+        navigationItem.rightBarButtonItem = tipJarButton
+
         setupUI()
         setupConstraint()
         setupNotifications()
@@ -351,12 +361,7 @@ final class SettingsViewController: UIViewController {
             buttonTitle: Strings.supportButton, buttonIconName: "sparkles"
         ))
         supportCard.onButtonTapped = { [weak self] in
-            HapticFeedbackManager.shared.impact(intensity: .light)
-            let tipJar = TipJarViewController()
-            tipJar.onRestoredInternet = { [weak self] in
-                self?.showInternetRestoredConfirmation()
-            }
-            self?.present(tipJar, animated: true)
+            self?.tipJarBarButtonTapped()
         }
 
         languageCard.configure(with: SettingsInfoCardConfig(
@@ -524,6 +529,15 @@ final class SettingsViewController: UIViewController {
     @objc private func skipICloudSwitchChanged() {
         settingsStore.skipICloudPhotos = skipICloudSwitch.isOn
         HapticFeedbackManager.shared.impact(intensity: .medium)
+    }
+
+    @objc private func tipJarBarButtonTapped() {
+        HapticFeedbackManager.shared.impact(intensity: .light)
+        let tipJar = TipJarViewController()
+        tipJar.onRestoredInternet = { [weak self] in
+            self?.showInternetRestoredConfirmation()
+        }
+        present(tipJar, animated: true)
     }
 
     @objc private func remindersSwitchChanged() {

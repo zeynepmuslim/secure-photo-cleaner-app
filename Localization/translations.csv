@@ -8,6 +8,14 @@ analytics.reviewedAndFreed;You've reviewed %d items and freed %@.;%d öge incele
 analytics.totalCleanup;Total cleanup: %d photos, %d videos — %@ saved.;Toplam temizlik: %d fotoğraf, %d video — %@ kazanıldı.;;;;
 analytics.photosCount;;;%lld photo;%lld photos;%lld fotoğraf;%lld fotoğraf
 analytics.videosCount;;;%lld video;%lld videos;%lld video;%lld video
+askPermission.title;None of your data will be left on your phone.;Hiçbir verin telefonundan ayrılmayacak.;;;;
+askPermission.subtitle;However, Purgio needs your permission to show you your photos.;Ancak Purgio, fotoğraflarını gösterebilmek için iznine ihtiyaç duyuyor.;;;;
+askPermission.settingsAlertTitle;Photo Access Required;Fotoğraf Erişimi Gerekli;;;;
+askPermission.settingsAlertMessage;Purgio needs access to your photos to work. Please open Settings to allow access.;Purgio'nun çalışabilmesi için fotoğraflarınıza erişmesi gerekiyor. Lütfen izin vermek için Ayarlar'ı açın.;;;;
+askPermission.openSettings;Open Settings;Ayarları Aç;;;;
+askPermission.privacyNoAccount;No account or personal information is required.;Hesap veya kişisel bilgi gerekmez;;;;
+askPermission.privacyOnDevice;Everything analyzed on-device;Her şey cihazınızda analiz edilir;;;;
+askPermission.privacyNoInternet;No internet connection needed;İnternet bağlantısı gerekmez;;;;
 common.cancel;Cancel;İptal;;;;
 common.delete;Delete;Sil;;;;
 common.ok;OK;Tamam;;;;
@@ -136,7 +144,7 @@ monthReview.timeLapseTitle;Time-Lapse · %@;Hızlandırılmış · %@;;;;
 monthsList.accessDenied;Photo access is denied. Please enable it in Settings to use the app.;Fotoğraf erişimi reddedildi. Uygulamayı kullanmak için lütfen Ayarlar'dan etkinleştirin.;;;;
 monthsList.allYears;All Years;Tüm Yıllar;;;;
 monthsList.allowAccessMessage;To help you clean up your photo library, we need access to your photos.;Fotoğraf kütüphanenizi temizlemenize yardımcı olmak için fotoğraflarınıza erişim izni gerekiyor.;;;;
-monthsList.allowPhotoAccess;Allow Photo Access;Fotoğraf Erişimine İzin Ver;;;;
+monthsList.allowPhotoAccess;Allow Photo Access;Erişime İzin Ver;;;;
 monthsList.filter;Filter;Filtre;;;;
 monthsList.openSettings;Open Settings;Ayarları Aç;;;;
 monthsList.status;Status;Durum;;;;
@@ -347,7 +355,7 @@ tipJar.thankYou;Thank you for your support!;Desteğin için teşekkürler!;;;;
 tipJar.loading;Loading…;Yükleniyor…;;;;
 tipJar.openSourceNote;Free, ad-free, and open source. Tips fund development.;Ücretsiz, reklamsız ve açık kaynak. Bahşişler geliştirmeyidestekler.;;;;
 tipJar.selectAmount;Select an amount;Bir miktar seç;;;;
-tipJar.sendTipFormat;Send tip · %@;Bahşiş Ver · %@;;;;
+tipJar.sendTipFormat;Send tip · %@;Bahşiş Bırak · %@;;;;
 tipJar.tier.small;Small Tip;Küçük Bahşiş;;;;
 tipJar.tier.medium;Medium Tip;Orta Bahşiş;;;;
 tipJar.tier.large;Large Tip;Büyük Bahşiş;;;;

@@ -309,7 +309,7 @@ final class TipJarViewController: UIViewController {
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         guard isBeingDismissed, didEnableInternetForSession else { return }
-        SettingsStore.shared.allowInternetAccess = false
+        SettingsStore.shared.endTemporaryInternetOverride()
         didEnableInternetForSession = false
         pendingInternetRestoreFeedback = true
     }
@@ -441,7 +441,7 @@ final class TipJarViewController: UIViewController {
     }
 
     private func gateEnableButtonTapped() {
-        SettingsStore.shared.allowInternetAccess = true
+        SettingsStore.shared.beginTemporaryInternetOverride()
         didEnableInternetForSession = true
         HapticFeedbackManager.shared.impact(intensity: .medium)
 

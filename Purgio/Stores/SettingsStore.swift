@@ -12,6 +12,7 @@ final class SettingsStore {
     
     private let defaults = UserDefaults.standard
     private let internetAccessKey = "allowInternetAccess"
+    private let internetOverrideActiveKey = "internetOverrideActive"
     private let skipICloudPhotosKey = "skipICloudPhotos"
     private let hasShownInitialICloudWarningKey = "hasShownInitialICloudWarning"
     private let hasShownPerCardICloudWarningKey = "hasShownPerCardICloudWarning"
@@ -37,6 +38,20 @@ final class SettingsStore {
                 iCloudSyncLogger.shared.logNetworkAccessChanged(allowed: newValue, source: "user_settings")
             }
         }
+    }
+
+    // Note for devs:
+    // StoreKit product fetches and purchases go through Apple's system process and are unaffected by our `allowInternetAccess` flag. this gate is purely a UX/privacy courtesy.
+    // We ask the user to opt in because processing a tip while they have explicitly disabled network access would feel dishonest, even though no app-originated network call is actually involved.
+    func beginTemporaryInternetOverride() {
+        defaults.set(true, forKey: internetOverrideActiveKey)
+        allowInternetAccess = true
+    }
+
+    func endTemporaryInternetOverride() {
+        guard defaults.bool(forKey: internetOverrideActiveKey) else { return }
+        defaults.removeObject(forKey: internetOverrideActiveKey)
+        allowInternetAccess = false
     }
 
     var skipICloudPhotos: Bool {

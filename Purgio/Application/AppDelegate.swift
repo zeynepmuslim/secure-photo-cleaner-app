@@ -19,6 +19,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         ThemeManager.configureNavigationBarAppearance()
 
+        SettingsStore.shared.endTemporaryInternetOverride()
+
         registerBackgroundTasks()
         preloadMonthBucketsCacheIfAuthorized()
 

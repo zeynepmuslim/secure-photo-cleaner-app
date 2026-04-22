@@ -14,9 +14,6 @@ class DynamicGlassButton: UIButton {
         case regular
     }
 
-    private var _richAttributedTitle: NSAttributedString?
-    private var _isApplyingRichTitle = false
-
     var title: String? {
         get { configuration?.title }
         set {
@@ -34,25 +31,6 @@ class DynamicGlassButton: UIButton {
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         setupButton()
-    }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        guard !_isApplyingRichTitle,
-              let rich = _richAttributedTitle,
-              let titleLabel else { return }
-        _isApplyingRichTitle = true
-        titleLabel.attributedText = rich
-        titleLabel.textAlignment = .center
-        
-        let insets = configuration?.contentInsets ?? .zero
-        titleLabel.frame = CGRect(
-            x: insets.leading,
-            y: insets.top,
-            width: bounds.width - insets.leading - insets.trailing,
-            height: bounds.height - insets.top - insets.bottom
-        )
-        _isApplyingRichTitle = false
     }
 
     private func setupButton() {
@@ -118,10 +96,8 @@ class DynamicGlassButton: UIButton {
         }
 
         if let attributedTitle = attributedTitle {
-            _richAttributedTitle = attributedTitle
-            config.attributedTitle = AttributedString(attributedTitle.string)
+            config.attributedTitle = AttributedString(attributedTitle)
         } else {
-            _richAttributedTitle = nil
             config.title = title
             let resolvedFont = font ?? UIFont.systemFont(ofSize: fontSize, weight: fontWeight)
             config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
@@ -135,12 +111,7 @@ class DynamicGlassButton: UIButton {
             config.image = image
         } else if let systemImage = systemImage {
             let symbolConfig = UIImage.SymbolConfiguration(pointSize: iconSize, weight: iconWeight)
-            var symbolImage = UIImage(systemName: systemImage, withConfiguration: symbolConfig)
-
-            if #available(iOS 26.0, *), style == .regular {
-                symbolImage = symbolImage?.withTintColor(foregroundColor, renderingMode: .alwaysOriginal)
-            }
-
+            let symbolImage = UIImage(systemName: systemImage, withConfiguration: symbolConfig)
             config.image = symbolImage
         }
 

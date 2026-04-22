@@ -10,9 +10,33 @@ import Photos
 final class PhotoLibraryService: NSObject, PHPhotoLibraryChangeObserver {
     static let shared = PhotoLibraryService()
 
+    private var isObservingChanges = false
+
     private override init() {
         super.init()
+        // wait until user has granted access.
+        // Touching PHPhotoLibrary when .notDetermined can cause native permission dialog;.
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        if status == .authorized || status == .limited {
+            startObservingLibraryChanges()
+        }
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handlePhotoAuthorizationGrantedInternal),
+            name: .photoAuthorizationGranted,
+            object: nil
+        )
+    }
+
+    private func startObservingLibraryChanges() {
+        guard !isObservingChanges else { return }
+        isObservingChanges = true
         PHPhotoLibrary.shared().register(self)
+    }
+
+    @objc private func handlePhotoAuthorizationGrantedInternal() {
+        startObservingLibraryChanges()
     }
 
     func photoLibraryDidChange(_ changeInstance: PHChange) {
@@ -422,4 +446,5 @@ final class PhotoLibraryService: NSObject, PHPhotoLibraryChangeObserver {
 // MARK: - Notification Names
 extension Notification.Name {
     static let photoLibraryDidChange = Notification.Name("photoLibraryDidChange")
+    static let photoAuthorizationGranted = Notification.Name("photoAuthorizationGranted")
 }

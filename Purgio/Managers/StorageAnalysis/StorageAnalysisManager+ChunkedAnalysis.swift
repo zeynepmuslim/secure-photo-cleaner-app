@@ -17,6 +17,12 @@ extension StorageAnalysisManager {
         let startTime = Date()
         print("[StorageAnalysis] Starting chunked analysis at \(startTime) [session \(sessionId)]")
 
+        let authStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        if authStatus == .notDetermined {
+            print("[StorageAnalysis] Authorization not determined; deferring analysis.")
+            return
+        }
+
         var progress = currentProgress ?? StorageAnalysisProgress.fresh()
 
         print("[StorageAnalysis] Fetching device storage info...")
@@ -50,28 +56,9 @@ extension StorageAnalysisManager {
             return
         }
 
-        print("[StorageAnalysis] Checking photo library authorization...")
-        let authStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        print("[StorageAnalysis] Authorization status: \(authStatus.rawValue)")
 
-        var finalAuthStatus = authStatus
-        if authStatus == .notDetermined {
-            print("[StorageAnalysis] Authorization not determined, requesting permission...")
-            let semaphore = DispatchSemaphore(value: 0)
-            var requestedStatus: PHAuthorizationStatus = .notDetermined
-
-            PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
-                requestedStatus = status
-                semaphore.signal()
-            }
-
-            semaphore.wait()
-            finalAuthStatus = requestedStatus
-            print("[StorageAnalysis] Authorization result: \(finalAuthStatus.rawValue)")
-        } else {
-            print("[StorageAnalysis] Authorization status: \(authStatus.rawValue)")
-        }
-
-        guard finalAuthStatus == .authorized || finalAuthStatus == .limited else {
+        guard authStatus == .authorized || authStatus == .limited else {
             print("[StorageAnalysis] Photo library access not granted.")
             let analysisData = StorageAnalysisData(
                 photosCount: 0, photosBytes: 0,

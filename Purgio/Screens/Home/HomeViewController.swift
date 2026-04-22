@@ -87,6 +87,7 @@ final class HomeViewController: UIViewController {
     private var isFirstLaunch: Bool = false
     private var hasNavigatedAway: Bool = false   // to prevent show direct response from async
     private var dashboardRefreshTask: Task<Void, Never>?
+    private var hasRunStartupFlow = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -107,6 +108,44 @@ final class HomeViewController: UIViewController {
 
         updateStorageAnalysisView()
         refreshDashboardCard()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        guard !hasRunStartupFlow else { return }
+        hasRunStartupFlow = true
+        runStartupFlow()
+    }
+
+    private func runStartupFlow() {
+        guard presentedViewController == nil else { return }
+
+        if !OnboardingStore.shared.hasCompletedOnboarding {
+            let onboarding = OnboardingViewController()
+            if let sheet = onboarding.sheetPresentationController {
+                if #available(iOS 16.0, *) {
+                    let threeQuarterDetent = UISheetPresentationController.Detent.custom { context in
+                        context.maximumDetentValue * 0.75
+                    }
+                    sheet.detents = [threeQuarterDetent]
+                } else {
+                    sheet.detents = [.large()]
+                }
+                sheet.prefersGrabberVisible = true
+                sheet.prefersScrollingExpandsWhenScrolledToEdge = false
+            }
+            onboarding.onDismiss = { [weak self] in
+                self?.runStartupFlow()
+            }
+            present(onboarding, animated: true)
+            return
+        }
+
+        if photoLibraryService.authorizationStatus() == .notDetermined {
+            let permission = AskPermissionBoardingViewController()
+            permission.isModalInPresentation = true
+            present(permission, animated: true)
+        }
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -298,6 +337,9 @@ final class HomeViewController: UIViewController {
     }
 
     private func refreshDashboardCard() {
+        if photoLibraryService.authorizationStatus() == .notDetermined {
+            return
+        }
         dashboardRefreshTask?.cancel()
         dashboardRefreshTask = Task { [weak self] in
             guard let self else { return }
@@ -317,6 +359,10 @@ final class HomeViewController: UIViewController {
 
     // MARK: - Data Loading
     private func loadData() {
+        if photoLibraryService.authorizationStatus() == .notDetermined {
+            return
+        }
+
         if let cachedData = storageManager.cachedData {
             updateCardsFromAnalysis(cachedData)
         }

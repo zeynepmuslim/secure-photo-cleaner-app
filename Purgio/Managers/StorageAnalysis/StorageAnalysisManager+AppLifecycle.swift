@@ -37,6 +37,18 @@ extension StorageAnalysisManager {
             name: UIApplication.willTerminateNotification,
             object: nil
         )
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handlePhotoAuthorizationGranted),
+            name: .photoAuthorizationGranted,
+            object: nil
+        )
+    }
+
+    @objc func handlePhotoAuthorizationGranted() {
+        print("[StorageAnalysis] Photo authorization granted - running analysis")
+        refreshIfNeeded()
     }
 
     @objc func appWillTerminate() {

@@ -228,6 +228,12 @@ final class StorageAnalysisManager {
 
     // MARK: - Analysis Control
     func refreshIfNeeded() {
+        let authStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        if authStatus == .notDetermined {
+            print("[StorageAnalysis] Authorization not determined; skipping refreshIfNeeded.")
+            return
+        }
+
         if hasResumableProgress {
             print("[StorageAnalysis] Resuming incomplete analysis")
             resumeAnalysis()

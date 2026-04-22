@@ -21,6 +21,8 @@ private enum Strings {
 
 final class OnboardingViewController: UIViewController {
 
+    var onDismiss: (() -> Void)?
+
     private let titleContainerView: UIView = {
         let view = UIView()
         view.translatesAutoresizingMaskIntoConstraints = false
@@ -134,6 +136,7 @@ final class OnboardingViewController: UIViewController {
         setupUI()
         setupConstraint()
         setupGestures()
+        presentationController?.delegate = self
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -183,10 +186,15 @@ final class OnboardingViewController: UIViewController {
         gradientContainerView.addSubview(leftStack)
         gradientContainerView.addSubview(rightStack)
 
-        buttonStack.addArrangedSubview(UIView.flexibleSpacer())
-        buttonStack.addArrangedSubview(closeButton)
-        buttonStack.addArrangedSubview(UIView.flexibleSpacer())
-        gradientContainerView.addSubview(buttonStack)
+        let isSmallScreen = UIScreen.main.bounds.height < 700
+        if isSmallScreen {
+            buttonStack.addArrangedSubview(UIView.flexibleSpacer())
+            buttonStack.addArrangedSubview(closeButton)
+            buttonStack.addArrangedSubview(UIView.flexibleSpacer())
+            gradientContainerView.addSubview(buttonStack)
+        } else {
+            gradientContainerView.addSubview(closeButton)
+        }
     }
 
     private func setupConstraint() {
@@ -229,12 +237,7 @@ final class OnboardingViewController: UIViewController {
             rightStack.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor, multiplier: 0.3),
 
             swipeIconView.centerXAnchor.constraint(equalTo: gradientContainerView.centerXAnchor),
-            swipeIconView.centerYAnchor.constraint(equalTo: gradientContainerView.centerYAnchor),
             swipeIconView.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: isSmallScreen ? 0.12 : 0.15),
-
-            buttonStack.topAnchor.constraint(equalTo: leftStack.bottomAnchor),
-            buttonStack.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            buttonStack.centerXAnchor.constraint(equalTo: gradientContainerView.centerXAnchor),
 
             topGradientView.topAnchor.constraint(equalTo: gradientContainerView.topAnchor),
             topGradientView.leadingAnchor.constraint(equalTo: gradientContainerView.leadingAnchor),
@@ -251,6 +254,28 @@ final class OnboardingViewController: UIViewController {
             rightGradientView.trailingAnchor.constraint(equalTo: gradientContainerView.trailingAnchor),
             rightGradientView.bottomAnchor.constraint(equalTo: gradientContainerView.bottomAnchor)
         ])
+
+        if isSmallScreen {
+            NSLayoutConstraint.activate([
+                swipeIconView.centerYAnchor.constraint(equalTo: gradientContainerView.centerYAnchor),
+                buttonStack.topAnchor.constraint(equalTo: leftStack.bottomAnchor),
+                buttonStack.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+                buttonStack.centerXAnchor.constraint(equalTo: gradientContainerView.centerXAnchor)
+            ])
+        } else {
+            NSLayoutConstraint.activate([
+                swipeIconView.centerYAnchor.constraint(equalTo: leftStack.centerYAnchor),
+                closeButton.centerXAnchor.constraint(equalTo: gradientContainerView.centerXAnchor),
+                closeButton.bottomAnchor.constraint(
+                    equalTo: view.safeAreaLayoutGuide.bottomAnchor,
+                    constant: -GeneralConstants.Spacer.buttonBottom
+                ),
+                closeButton.topAnchor.constraint(
+                    greaterThanOrEqualTo: leftStack.bottomAnchor,
+                    constant: GeneralConstants.EdgePadding.medium
+                )
+            ])
+        }
     }
 
     private func startPulseAnimation() {
@@ -265,7 +290,10 @@ final class OnboardingViewController: UIViewController {
     }
 
     @objc private func closeTapped() {
-        dismiss(animated: true)
+        OnboardingStore.shared.hasCompletedOnboarding = true
+        dismiss(animated: true) { [weak self] in
+            self?.onDismiss?()
+        }
     }
 
     private func setupGestures() {
@@ -348,6 +376,13 @@ final class OnboardingViewController: UIViewController {
         topStack.transform = .identity
         leftStack.transform = .identity
         rightStack.transform = .identity
+    }
+}
+
+extension OnboardingViewController: UIAdaptivePresentationControllerDelegate {
+    func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+        OnboardingStore.shared.hasCompletedOnboarding = true
+        onDismiss?()
     }
 }
 

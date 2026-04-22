@@ -244,6 +244,7 @@ final class AskPermissionBoardingViewController: UIViewController {
             self.allowButton.isEnabled = true
 
             if status == .authorized || status == .limited {
+                NotificationCenter.default.post(name: .photoAuthorizationGranted, object: nil)
                 self.dismiss(animated: true)
             } else {
                 self.showSettingsAlert()
@@ -267,6 +268,7 @@ final class AskPermissionBoardingViewController: UIViewController {
     @objc private func appDidBecomeActive() {
         let status = PhotoLibraryService.shared.authorizationStatus()
         if status == .authorized || status == .limited {
+            NotificationCenter.default.post(name: .photoAuthorizationGranted, object: nil)
             dismiss(animated: true)
         }
     }

@@ -24,6 +24,17 @@ private enum Strings {
     static let allYears = NSLocalizedString("monthsList.allYears", comment: "All years filter option")
     static let year = NSLocalizedString("monthsList.year", comment: "Year filter label")
     static let filter = NSLocalizedString("monthsList.filter", comment: "Filter button label")
+    static let photos = NSLocalizedString("monthsList.photos", comment: "Photos tab/nav title")
+    static let videos = NSLocalizedString("monthsList.videos", comment: "Videos tab/nav title")
+    static let noPhotosYet = NSLocalizedString("monthsList.noPhotosYet", comment: "Empty state title for photos")
+    static let noVideosYet = NSLocalizedString("monthsList.noVideosYet", comment: "Empty state title for videos")
+    static let limitedAccessPhotos = NSLocalizedString("monthsList.limitedAccessPhotos", comment: "Limited access hint for photos")
+    static let limitedAccessVideos = NSLocalizedString("monthsList.limitedAccessVideos", comment: "Limited access hint for videos")
+    static let noContentPhotos = NSLocalizedString("monthsList.noContentPhotos", comment: "Empty library hint for photos")
+    static let noContentVideos = NSLocalizedString("monthsList.noContentVideos", comment: "Empty library hint for videos")
+    static let selectPhotos = NSLocalizedString("monthsList.selectPhotos", comment: "Select photos action title")
+    static let selectVideos = NSLocalizedString("monthsList.selectVideos", comment: "Select videos action title")
+    static let older = NSLocalizedString("monthsList.older", comment: "Section header for entries older than tracked years")
 }
 
 final class MonthsListViewController: UIViewController {
@@ -102,19 +113,15 @@ final class MonthsListViewController: UIViewController {
     // MARK: - Computed Strings
 
     private var isVideo: Bool { mediaType == .video }
-    private var mediaTitle: String { isVideo ? "Videos" : "Photos" }
-    private var noItemsTitle: String { isVideo ? "No Videos Yet" : "No Photos Yet" }
+    private var mediaTitle: String { isVideo ? Strings.videos : Strings.photos }
+    private var noItemsTitle: String { isVideo ? Strings.noVideosYet : Strings.noPhotosYet }
     private var limitedAccessMessage: String {
-        isVideo
-            ? "Your photo access is limited. Select more videos to start reviewing by month."
-            : "Your photo access is limited. Select more photos to start reviewing by month."
+        isVideo ? Strings.limitedAccessVideos : Strings.limitedAccessPhotos
     }
     private var noContentMessage: String {
-        isVideo
-            ? "Take some videos or import them to your library to get started!"
-            : "Take some photos or import them to your library to get started!"
+        isVideo ? Strings.noContentVideos : Strings.noContentPhotos
     }
-    private var selectMediaTitle: String { isVideo ? "Select Videos" : "Select Photos" }
+    private var selectMediaTitle: String { isVideo ? Strings.selectVideos : Strings.selectPhotos }
     // MARK: - Init
 
     init(mediaType: PHAssetMediaType) {
@@ -480,7 +487,7 @@ final class MonthsListViewController: UIViewController {
 
         for month in filteredMonths {
             let yearString = month.key.components(separatedBy: "-").first ?? ""
-            let sectionYear = yearString.count == 4 ? yearString : "Older"
+            let sectionYear = yearString.count == 4 ? yearString : Strings.older
 
             if sectionYear != currentYear {
                 if let y = currentYear {

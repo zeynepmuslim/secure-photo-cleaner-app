@@ -21,6 +21,25 @@ private enum Strings {
 }
 
 final class AskPermissionBoardingViewController: UIViewController {
+    enum Status {
+        case permissionRequest
+        case noAction
+    }
+
+    private let status: Status
+
+    init(status: Status = .permissionRequest) {
+        self.status = status
+        super.init(nibName: nil, bundle: nil)
+        if status == .noAction {
+            modalPresentationStyle = .pageSheet
+        }
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.text = Strings.title
@@ -100,12 +119,24 @@ final class AskPermissionBoardingViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         setupConstraint()
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(appDidBecomeActive),
-            name: UIApplication.didBecomeActiveNotification,
-            object: nil
-        )
+
+        switch status {
+        case .permissionRequest:
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(appDidBecomeActive),
+                name: UIApplication.didBecomeActiveNotification,
+                object: nil
+            )
+        case .noAction:
+            configureSheet()
+        }
+    }
+
+    private func configureSheet() {
+        guard let sheet = sheetPresentationController else { return }
+        sheet.detents = [.large()]
+        sheet.prefersGrabberVisible = true
     }
 
     override func viewDidLayoutSubviews() {
@@ -139,15 +170,6 @@ final class AskPermissionBoardingViewController: UIViewController {
     private func setupUI() {
         view.backgroundColor = .mainBackground
 
-        allowButton.configure(
-            title: Strings.allowAccess,
-            style: .prominent,
-            backgroundColor: UIColor(named: "AccentColor") ?? .systemGreen,
-            foregroundColor: .white,
-            contentInsets: NSDirectionalEdgeInsets(top: 16, leading: 32, bottom: 16, trailing: 32)
-        )
-        allowButton.addTarget(self, action: #selector(allowTapped), for: .touchUpInside)
-
         bubbleView.onPhotoTapped = { [weak self] image in
             self?.showPhotoOverlay(image)
         }
@@ -157,13 +179,24 @@ final class AskPermissionBoardingViewController: UIViewController {
             ("cpu", Strings.privacyOnDevice),
             ("wifi.slash", Strings.privacyNoInternet)
         ]
-        
+
         privacyItems.forEach { item in
             privacyStack.addArrangedSubview(makePrivacyRow(symbol: item.symbol, text: item.text))
         }
 
         view.addSubview(contentStack)
-        view.addSubview(allowButton)
+
+        if status == .permissionRequest {
+            allowButton.configure(
+                title: Strings.allowAccess,
+                style: .prominent,
+                backgroundColor: UIColor(named: "AccentColor") ?? .systemGreen,
+                foregroundColor: .white,
+                contentInsets: NSDirectionalEdgeInsets(top: 16, leading: 32, bottom: 16, trailing: 32)
+            )
+            allowButton.addTarget(self, action: #selector(allowTapped), for: .touchUpInside)
+            view.addSubview(allowButton)
+        }
 
         headerStack.addArrangedSubview(titleLabel)
         headerStack.addArrangedSubview(subtitleLabel)
@@ -216,24 +249,38 @@ final class AskPermissionBoardingViewController: UIViewController {
         let bubbleHeight = bubbleView.heightAnchor.constraint(equalToConstant: ballDiameter)
         bubbleHeight.priority = .defaultHigh
 
-        NSLayoutConstraint.activate([
+        let contentBottom: NSLayoutConstraint
+        switch status {
+        case .permissionRequest:
+            contentBottom = contentStack.bottomAnchor.constraint(equalTo: allowButton.topAnchor, constant: -16)
+        case .noAction:
+            contentBottom = contentStack.bottomAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16)
+        }
+
+        var constraints: [NSLayoutConstraint] = [
             contentStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
             contentStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: horizontalPadding),
             contentStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -horizontalPadding),
-            contentStack.bottomAnchor.constraint(equalTo: allowButton.topAnchor, constant: -16),
+            contentBottom,
 
             bubbleView.widthAnchor.constraint(equalTo: bubbleView.heightAnchor),
             bubbleView.widthAnchor.constraint(lessThanOrEqualToConstant: ballDiameter),
             bubbleHeight,
 
-            allowButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: horizontalPadding),
-            allowButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -horizontalPadding),
-            allowButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
-
             privacyStack.leadingAnchor.constraint(equalTo: contentStack.leadingAnchor),
             privacyStack.trailingAnchor.constraint(equalTo: contentStack.trailingAnchor),
-        ])
+        ]
 
+        if status == .permissionRequest {
+            constraints.append(contentsOf: [
+                allowButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: horizontalPadding),
+                allowButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -horizontalPadding),
+                allowButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
+            ])
+        }
+
+        NSLayoutConstraint.activate(constraints)
     }
 
     @objc private func allowTapped() {
@@ -374,5 +421,10 @@ final class AskPermissionBoardingViewController: UIViewController {
         let vc = AskPermissionBoardingViewController()
         vc.overrideUserInterfaceStyle = .dark
         return vc
+    }
+
+    @available(iOS 17.0, *)
+    #Preview("No Action") {
+        AskPermissionBoardingViewController(status: .noAction)
     }
 #endif

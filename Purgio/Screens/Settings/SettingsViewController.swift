@@ -5,6 +5,7 @@
 //  Created by ZeynepMüslim on 23.01.2026.
 //
 
+import MessageUI
 import SwiftUI
 import UIKit
 
@@ -57,6 +58,12 @@ private enum Strings {
     static let languageTitle = NSLocalizedString("settings.languageTitle", comment: "App language title")
     static let languageSubtitle = NSLocalizedString("settings.languageSubtitle", comment: "Available languages subtitle")
     static let languageButton = NSLocalizedString("settings.languageButton", comment: "Change language in settings button")
+
+    static let rateAppTitle = NSLocalizedString("settings.rateAppTitle", comment: "Rate the app row title")
+    static let giveFeedbackTitle = NSLocalizedString("settings.giveFeedbackTitle", comment: "Give feedback row title")
+    static let feedbackSubject = NSLocalizedString("settings.feedbackSubject", comment: "Pre-filled feedback email subject")
+    static let mailUnavailableTitle = NSLocalizedString("settings.mailUnavailableTitle", comment: "Mail not configured alert title")
+    static let mailUnavailableMessage = NSLocalizedString("settings.mailUnavailableMessage", comment: "Mail not configured alert message")
 }
 
 final class SettingsViewController: UIViewController {
@@ -99,6 +106,13 @@ final class SettingsViewController: UIViewController {
     private let supportCard = SettingsInfoCardView()
     private let languageCard = SettingsInfoCardView()
 
+    private let helpLinksContainer = UIView()
+    private let helpLinksStack = UIStackView()
+    private let rateAppRow = SettingsLinkRowView()
+    private let helpLinksSeparatorContainer = UIView()
+    private let helpLinksSeparator = UIView()
+    private let feedbackRow = SettingsLinkRowView()
+
     private let aboutSectionLabel = UILabel()
     private let madeByLabel = UILabel()
     private let versionLabel = UILabel()
@@ -107,6 +121,9 @@ final class SettingsViewController: UIViewController {
     private let statsStore = StatsStore.shared
     private let storedStore = WillBeStoredStore.shared
     private let storageManager = StorageAnalysisManager.shared
+
+    private let feedbackEmail = "zeynep.muslim@icloud.com"
+    private let appStoreID = "6762494793"
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -377,6 +394,39 @@ final class SettingsViewController: UIViewController {
             }
         }
 
+        helpLinksContainer.backgroundColor = .cardBackground
+        helpLinksContainer.layer.cornerRadius = 14
+        helpLinksContainer.clipsToBounds = true
+        helpLinksContainer.translatesAutoresizingMaskIntoConstraints = false
+
+        helpLinksStack.axis = .vertical
+        helpLinksStack.spacing = 0
+        helpLinksStack.translatesAutoresizingMaskIntoConstraints = false
+
+        rateAppRow.configure(
+            iconName: "star.fill",
+            iconColor: .systemYellow,
+            title: Strings.rateAppTitle
+        )
+        rateAppRow.onTap = { [weak self] in self?.rateAppTapped() }
+
+        feedbackRow.configure(
+            iconName: "envelope.fill",
+            iconColor: .systemBlue,
+            title: Strings.giveFeedbackTitle
+        )
+        feedbackRow.onTap = { [weak self] in self?.feedbackTapped() }
+
+        helpLinksSeparatorContainer.translatesAutoresizingMaskIntoConstraints = false
+        helpLinksSeparator.backgroundColor = .separator
+        helpLinksSeparator.translatesAutoresizingMaskIntoConstraints = false
+        helpLinksSeparatorContainer.addSubview(helpLinksSeparator)
+
+        helpLinksStack.addArrangedSubview(rateAppRow)
+        helpLinksStack.addArrangedSubview(helpLinksSeparatorContainer)
+        helpLinksStack.addArrangedSubview(feedbackRow)
+        helpLinksContainer.addSubview(helpLinksStack)
+
         storeSectionLabel.text = Strings.features
         storeSectionLabel.font = ThemeManager.Fonts.titleFont(size: 12, weight: .semibold)
         storeSectionLabel.textColor = .systemGray
@@ -403,6 +453,8 @@ final class SettingsViewController: UIViewController {
         contentStack.addArrangedSubview(supportSectionLabel)
 
         contentStack.addArrangedSubview(supportCard)
+
+        contentStack.addArrangedSubview(helpLinksContainer)
 
         aboutSectionLabel.text = Strings.about
         aboutSectionLabel.font = ThemeManager.Fonts.titleFont(size: 12, weight: .semibold)
@@ -484,6 +536,19 @@ final class SettingsViewController: UIViewController {
             scheduleButton.trailingAnchor.constraint(equalTo: scheduleRow.trailingAnchor, constant: -18),
             scheduleButton.leadingAnchor.constraint(
                 greaterThanOrEqualTo: scheduleTitleLabel.trailingAnchor, constant: 12),
+
+            helpLinksStack.topAnchor.constraint(equalTo: helpLinksContainer.topAnchor),
+            helpLinksStack.leadingAnchor.constraint(equalTo: helpLinksContainer.leadingAnchor),
+            helpLinksStack.trailingAnchor.constraint(equalTo: helpLinksContainer.trailingAnchor),
+            helpLinksStack.bottomAnchor.constraint(equalTo: helpLinksContainer.bottomAnchor),
+
+            helpLinksSeparatorContainer.heightAnchor.constraint(equalToConstant: 0.5),
+            helpLinksSeparator.topAnchor.constraint(equalTo: helpLinksSeparatorContainer.topAnchor),
+            helpLinksSeparator.bottomAnchor.constraint(equalTo: helpLinksSeparatorContainer.bottomAnchor),
+            helpLinksSeparator.leadingAnchor.constraint(
+                equalTo: helpLinksSeparatorContainer.leadingAnchor, constant: 18),
+            helpLinksSeparator.trailingAnchor.constraint(
+                equalTo: helpLinksSeparatorContainer.trailingAnchor, constant: -18),
 
         ])
     }
@@ -687,6 +752,52 @@ final class SettingsViewController: UIViewController {
         }
     }
 
+    private func rateAppTapped() {
+        let urlString = "https://apps.apple.com/app/id\(appStoreID)?action=write-review"
+        guard let url = URL(string: urlString) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    private func feedbackTapped() {
+        if MFMailComposeViewController.canSendMail() {
+            let composer = MFMailComposeViewController()
+            composer.mailComposeDelegate = self
+            composer.setToRecipients([feedbackEmail])
+            composer.setSubject(Strings.feedbackSubject)
+            present(composer, animated: true)
+            return
+        }
+
+        let subject = Strings.feedbackSubject
+            .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        if let mailto = URL(string: "mailto:\(feedbackEmail)?subject=\(subject)"),
+           UIApplication.shared.canOpenURL(mailto) {
+            UIApplication.shared.open(mailto)
+        } else {
+            showMailUnavailableAlert()
+        }
+    }
+
+    private func showMailUnavailableAlert() {
+        let alert = UIAlertController(
+            title: Strings.mailUnavailableTitle,
+            message: Strings.mailUnavailableMessage,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: Strings.ok, style: .default))
+        present(alert, animated: true)
+    }
+
+}
+
+extension SettingsViewController: MFMailComposeViewControllerDelegate {
+    func mailComposeController(
+        _ controller: MFMailComposeViewController,
+        didFinishWith result: MFMailComposeResult,
+        error: Error?
+    ) {
+        controller.dismiss(animated: true)
+    }
 }
 
 @available(iOS 17.0, *)

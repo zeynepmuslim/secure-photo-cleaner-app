@@ -1,0 +1,99 @@
+{
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
+  "identifier" : "C0503C8B",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "0.99",
+      "familyShareable" : false,
+      "internalID" : "A1B2C3D4",
+      "localizations" : [
+        {
+          "description" : "A small tip to support development of Purgio.",
+          "displayName" : "Small Tip",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "Purgio'nun geliştirilmesine destek olmak için küçük bir bahşiş.",
+          "displayName" : "Küçük Bahşiş",
+          "locale" : "tr"
+        }
+      ],
+      "productID" : "com.zeynepmuslim.purgio.tip.small",
+      "referenceName" : "Small Tip",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "2.99",
+      "familyShareable" : false,
+      "internalID" : "E5F6A7B8",
+      "localizations" : [
+        {
+          "description" : "A medium tip to support continued development of Purgio.",
+          "displayName" : "Medium Tip",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "Purgio'nun gelişimini desteklemek için orta bir bahşiş.",
+          "displayName" : "Orta Bahşiş",
+          "locale" : "tr"
+        }
+      ],
+      "productID" : "com.zeynepmuslim.purgio.tip.medium",
+      "referenceName" : "Medium Tip",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : false,
+      "internalID" : "C9D0E1F2",
+      "localizations" : [
+        {
+          "description" : "Thank you! This really helps keep Purgio free and open source.",
+          "displayName" : "Large Tip",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "Teşekkürler! Bu, Purgio'nun ücretsiz ve açık kaynak kalmasına gerçekten yardımcı olur.",
+          "displayName" : "Büyük Bahşiş",
+          "locale" : "tr"
+        }
+      ],
+      "productID" : "com.zeynepmuslim.purgio.tip.large",
+      "referenceName" : "Large Tip",
+      "type" : "Consumable"
+    }
+  ],
+  "settings" : {
+    "_askToBuyEnabled" : false,
+    "_billingGracePeriodEnabled" : false,
+    "_billingIssuesEnabled" : false,
+    "_disableDialogs" : false,
+    "_failTransactionsEnabled" : false,
+    "_locale" : "tr",
+    "_renewalBillingIssuesEnabled" : false,
+    "_storefront" : "TUR",
+    "_storeKitErrors" : [
+
+    ],
+    "_timeRate" : 0
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

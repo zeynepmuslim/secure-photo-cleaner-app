@@ -480,6 +480,13 @@ final class MonthsListViewController: UIViewController {
             }
         }
 
+        if hasActiveFilter && !allMonths.isEmpty && filteredMonths.isEmpty {
+            activeYearFilter = nil
+            activeStatusFilter = .all
+            applyFilters()
+            return
+        }
+
         // 2. Group by Year
         var sections: [YearSection] = []
         var currentYear: String?

@@ -52,7 +52,7 @@ final class TipJarViewController: UIViewController {
         return [
             (Strings.tierSmall, "sparkle", sizes.0),
             (Strings.tierMedium, "sparkles", sizes.1),
-            (Strings.tierLarge, "wand.and.stars", sizes.2)
+            (Strings.tierLarge, "wand.and.sparkles.inverse", sizes.2)
         ]
     }()
 

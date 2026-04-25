@@ -195,7 +195,7 @@ private struct TipTierPreviewWrapper: UIViewRepresentable {
     HStack(spacing: 12) {
         TipTierPreviewWrapper(title: "Small Tip", symbol: "sparkle", symbolSize: 28, price: "₺34,99", selected: false)
         TipTierPreviewWrapper(title: "Medium Tip", symbol: "sparkles", symbolSize: 34, price: "₺94,99", selected: true)
-        TipTierPreviewWrapper(title: "Large Tip", symbol: "wand.and.stars", symbolSize: 40, price: "₺159,99", selected: false)
+        TipTierPreviewWrapper(title: "Large Tip", symbol: "wand.and.sparkles.inverse", symbolSize: 40, price: "₺159,99", selected: false)
     }
     .frame(height: 160)
     .padding()
@@ -206,7 +206,7 @@ private struct TipTierPreviewWrapper: UIViewRepresentable {
     HStack(spacing: 12) {
         TipTierPreviewWrapper(title: "Small Tip", symbol: "sparkle", symbolSize: 28, price: "₺34,99", selected: false)
         TipTierPreviewWrapper(title: "Medium Tip", symbol: "sparkles", symbolSize: 34, price: "₺94,99", selected: true)
-        TipTierPreviewWrapper(title: "Large Tip", symbol: "wand.and.stars", symbolSize: 40, price: "₺159,99", selected: false)
+        TipTierPreviewWrapper(title: "Large Tip", symbol: "wand.and.sparkles.inverse", symbolSize: 40, price: "₺159,99", selected: false)
     }
     .frame(height: 160)
     .padding()

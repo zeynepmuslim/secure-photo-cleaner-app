@@ -96,8 +96,8 @@ final class SlideToConfirmButton: UIControl {
         translatesAutoresizingMaskIntoConstraints = false
 
         addSubview(trackView)
-        addSubview(greenOverlayView)
-        addSubview(titleLabel)
+        trackView.addSubview(greenOverlayView)
+        trackView.addSubview(titleLabel)
         addSubview(thumbView)
         thumbView.addSubview(thumbIconView)
 
@@ -118,9 +118,9 @@ final class SlideToConfirmButton: UIControl {
             greenOverlayView.trailingAnchor.constraint(equalTo: trackView.trailingAnchor),
             greenOverlayView.bottomAnchor.constraint(equalTo: trackView.bottomAnchor),
 
-            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 56),
-            titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-            titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
+            titleLabel.leadingAnchor.constraint(equalTo: trackView.leadingAnchor, constant: 56),
+            titleLabel.trailingAnchor.constraint(equalTo: trackView.trailingAnchor, constant: -16),
+            titleLabel.centerYAnchor.constraint(equalTo: trackView.centerYAnchor),
 
             thumbLeadingConstraint,
             thumbView.centerYAnchor.constraint(equalTo: centerYAnchor),

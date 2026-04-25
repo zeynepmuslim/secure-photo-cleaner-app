@@ -166,8 +166,10 @@ final class MonthFilterCardsViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .mainBackground
-        let mediaSuffix = mediaType == .video ? "· Videos" : "· Photos"
-        title = "\(monthTitle) \(mediaSuffix)"
+        let mediaSuffix = mediaType == .video
+            ? NSLocalizedString("home.videosTitle", comment: "Videos label")
+            : NSLocalizedString("home.photosTitle", comment: "Photos label")
+        title = "\(monthTitle) · \(mediaSuffix)"
         navigationController?.navigationBar.prefersLargeTitles = false
         navigationItem.largeTitleDisplayMode = .never
 

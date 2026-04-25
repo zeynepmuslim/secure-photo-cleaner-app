@@ -40,9 +40,10 @@ final class FilterCard: UIControl {
         let label = UILabel()
         label.font = ThemeManager.Fonts.titleFont(size: 15, weight: .semibold)
         label.textColor = .textPrimary
-        label.numberOfLines = 3
+        label.numberOfLines = 2
         label.adjustsFontSizeToFitWidth = true
         label.minimumScaleFactor = 0.7
+        label.lineBreakMode = .byTruncatingTail
         label.isUserInteractionEnabled = false
         return label
     }()
@@ -52,6 +53,9 @@ final class FilterCard: UIControl {
         label.font = .systemFont(ofSize: 12, weight: .regular)
         label.textColor = .textSecondary
         label.numberOfLines = 2
+        label.adjustsFontSizeToFitWidth = true
+        label.minimumScaleFactor = 0.75
+        label.lineBreakMode = .byTruncatingTail
         label.isUserInteractionEnabled = false
         label.isHidden = UIScreen.main.bounds.width < 390
         return label

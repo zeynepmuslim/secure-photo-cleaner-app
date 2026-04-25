@@ -8,6 +8,11 @@
 import Foundation
 import Photos
 
+struct ReminderEntry {
+    let title: String
+    let body: String
+}
+
 final class ReminderDataCenter {
     static let shared = ReminderDataCenter()
 
@@ -275,8 +280,8 @@ final class ReminderDataCenter {
         reminderOpenCount += 1
     }
 
-    func notificationMessages(fallback: [String]) -> [String] {
-        var messages: [String] = []
+    func notificationMessages(fallback: [ReminderEntry]) -> [ReminderEntry] {
+        var entries: [ReminderEntry] = []
 
         // Signal 1: 30+ days since last clean
         if let lastCleanDate = lastCleanDate,
@@ -288,7 +293,7 @@ final class ReminderDataCenter {
                 NSLocalizedString("reminder.monthSinceCleanup2", comment: "Notification: photos piling up"),
                 NSLocalizedString("reminder.monthSinceCleanup3", comment: "Notification: month without cleaning"),
             ]
-            messages.append(options.randomElement()!)
+            entries.append(makeEntry(titleKey: "notification.title.monthSinceCleanup", body: options.randomElement()!))
         }
 
         // Signal 2: Bin has items
@@ -300,30 +305,34 @@ final class ReminderDataCenter {
                 String.localizedStringWithFormat(NSLocalizedString("reminder.binHasItems2", comment: "Notification: items waiting in bin"), count),
                 String.localizedStringWithFormat(NSLocalizedString("reminder.binHasItems3", comment: "Notification: items ready to delete"), count),
             ]
-            messages.append(options.randomElement()!)
+            entries.append(makeEntry(titleKey: "notification.title.binHasItems", body: options.randomElement()!))
         }
 
         // Signal 3: Last cleaned count
         if lastCleanedCount > 0 {
-            messages.append(String.localizedStringWithFormat(NSLocalizedString("reminder.lastCleanedCount", comment: "Notification: last cleaned count challenge"), lastCleanedCount))
+            let body = String.localizedStringWithFormat(NSLocalizedString("reminder.lastCleanedCount", comment: "Notification: last cleaned count challenge"), lastCleanedCount)
+            entries.append(makeEntry(titleKey: "notification.title.lastCleanedCount", body: body))
         }
 
         // Signal 4: Last cleaned bytes
         if lastCleanedBytes > 0 {
             let formatted = lastCleanedBytes.formattedBytes(allowedUnits: [.useMB, .useGB])
-            messages.append(String(format: NSLocalizedString("reminder.freedLastTime", comment: "Notification: freed space last time"), formatted))
+            let body = String(format: NSLocalizedString("reminder.freedLastTime", comment: "Notification: freed space last time"), formatted)
+            entries.append(makeEntry(titleKey: "notification.title.freedLastTime", body: body))
         }
 
         // Signal 5: Potential savings
         if lastPotentialSavingsBytes > 0 {
             let formatted = lastPotentialSavingsBytes.formattedBytes(allowedUnits: [.useMB, .useGB])
-            messages.append(String(format: NSLocalizedString("reminder.potentialSavings", comment: "Notification: potential savings"), formatted))
+            let body = String(format: NSLocalizedString("reminder.potentialSavings", comment: "Notification: potential savings"), formatted)
+            entries.append(makeEntry(titleKey: "notification.title.potentialSavings", body: body))
         }
 
         // Signal 6: Storage saved last time
         if lastStorageSavedBytes > 0 {
             let formatted = lastStorageSavedBytes.formattedBytes(allowedUnits: [.useMB, .useGB])
-            messages.append(String(format: NSLocalizedString("reminder.savedLastTime", comment: "Notification: saved space last time"), formatted))
+            let body = String(format: NSLocalizedString("reminder.savedLastTime", comment: "Notification: saved space last time"), formatted)
+            entries.append(makeEntry(titleKey: "notification.title.savedLastTime", body: body))
         }
 
         // Signal 7: 7+ days inactive
@@ -331,7 +340,8 @@ final class ReminderDataCenter {
             let days = daysSince(date: lastReviewDate),
             days >= 7
         {
-            messages.append(String.localizedStringWithFormat(NSLocalizedString("reminder.daysInactive", comment: "Notification: days since last review"), days))
+            let body = String.localizedStringWithFormat(NSLocalizedString("reminder.daysInactive", comment: "Notification: days since last review"), days)
+            entries.append(makeEntry(titleKey: "notification.title.daysInactive", body: body))
         }
 
         // Signal 8: In-progress month
@@ -341,12 +351,14 @@ final class ReminderDataCenter {
         {
             let percent = Int(progress * 100)
             let displayMonth = formattedMonthName(monthKey)
-            messages.append(String(format: NSLocalizedString("reminder.inProgressMonth", comment: "Notification: in-progress month with percent"), percent, displayMonth))
+            let body = String(format: NSLocalizedString("reminder.inProgressMonth", comment: "Notification: in-progress month with percent"), percent, displayMonth)
+            entries.append(makeEntry(titleKey: "notification.title.inProgressMonth", body: body))
         }
 
         // Signal 9: Review streak
         if lastReviewStreakDays >= 3 {
-            messages.append(String(format: NSLocalizedString("reminder.reviewStreak", comment: "Notification: review streak days"), lastReviewStreakDays))
+            let body = String(format: NSLocalizedString("reminder.reviewStreak", comment: "Notification: review streak days"), lastReviewStreakDays)
+            entries.append(makeEntry(titleKey: "notification.title.reviewStreak", body: body))
         }
 
         // Signal 10: Similar photos overdue
@@ -354,7 +366,8 @@ final class ReminderDataCenter {
             let days = daysSince(date: lastSimilarReviewDate),
             days >= 14
         {
-            messages.append(NSLocalizedString("reminder.similarPhotosOverdue", comment: "Notification: similar photos waiting"))
+            let body = NSLocalizedString("reminder.similarPhotosOverdue", comment: "Notification: similar photos waiting")
+            entries.append(makeEntry(titleKey: "notification.title.similarPhotosOverdue", body: body))
         }
 
         // Motivational signals from all-time stats
@@ -362,22 +375,29 @@ final class ReminderDataCenter {
 
         if stats.spaceSavedBytes > 0 {
             let formatted = stats.spaceSavedBytes.formattedBytes(allowedUnits: [.useMB, .useGB])
-            messages.append(String(format: NSLocalizedString("reminder.totalSaved", comment: "Notification: total saved so far"), formatted))
+            let body = String(format: NSLocalizedString("reminder.totalSaved", comment: "Notification: total saved so far"), formatted)
+            entries.append(makeEntry(titleKey: "notification.title.totalSaved", body: body))
         }
 
         if stats.totalDeleted > 0 {
-            messages.append(String(format: NSLocalizedString("reminder.totalDeleted", comment: "Notification: total deleted photos"), stats.totalDeleted))
+            let body = String(format: NSLocalizedString("reminder.totalDeleted", comment: "Notification: total deleted photos"), stats.totalDeleted)
+            entries.append(makeEntry(titleKey: "notification.title.totalDeleted", body: body))
         }
 
         if stats.totalReviewed >= 50 {
-            messages.append(String(format: NSLocalizedString("reminder.totalReviewed", comment: "Notification: total reviewed photos"), stats.totalReviewed))
+            let body = String(format: NSLocalizedString("reminder.totalReviewed", comment: "Notification: total reviewed photos"), stats.totalReviewed)
+            entries.append(makeEntry(titleKey: "notification.title.totalReviewed", body: body))
         }
 
-        if messages.isEmpty {
+        if entries.isEmpty {
             return fallback
         }
 
-        return messages.shuffled()
+        return entries.shuffled()
+    }
+
+    private func makeEntry(titleKey: String, body: String) -> ReminderEntry {
+        ReminderEntry(title: NSLocalizedString(titleKey, comment: ""), body: body)
     }
 
     func exampleMessagesForAllSignals() -> [String] {   // onşy investigate the possibale messages, just for print

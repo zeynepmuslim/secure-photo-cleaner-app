@@ -3344,6 +3344,244 @@
         }
       }
     },
+    "notification.title.binHasItems" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your bin is waiting"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çöpün temizlenmeyi bekliyor"
+          }
+        }
+      }
+    },
+    "notification.title.daysInactive" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We miss you"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seni özledik"
+          }
+        }
+      }
+    },
+    "notification.title.fallback" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo Cleanup"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotoğraf Temizliği"
+          }
+        }
+      }
+    },
+    "notification.title.freedLastTime" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Make room again?"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Biraz daha yer aç"
+          }
+        }
+      }
+    },
+    "notification.title.inProgressMonth" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Almost done!"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neredeyse tamam!"
+          }
+        }
+      }
+    },
+    "notification.title.lastCleanedCount" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beat your record?"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rekorunu tazele"
+          }
+        }
+      }
+    },
+    "notification.title.monthSinceCleanup" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It's been a while"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ortalıklarda yoksun?"
+          }
+        }
+      }
+    },
+    "notification.title.potentialSavings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Make a quick clean"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hızlı bir temizlik yap"
+          }
+        }
+      }
+    },
+    "notification.title.reviewStreak" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On fire!"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yanıyorsun!"
+          }
+        }
+      }
+    },
+    "notification.title.savedLastTime" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Great work!"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Harika!"
+          }
+        }
+      }
+    },
+    "notification.title.similarPhotosOverdue" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spot the duplicates"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopyaları ayıkla"
+          }
+        }
+      }
+    },
+    "notification.title.totalDeleted" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Look how far you've come"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ne kadar da çok yol katettin"
+          }
+        }
+      }
+    },
+    "notification.title.totalReviewed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whoa!"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vay be!"
+          }
+        }
+      }
+    },
+    "notification.title.totalSaved" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your impact grows"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temizliğinin etkisi artıyor"
+          }
+        }
+      }
+    },
     "onboarding.gotIt" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3792,7 +4030,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Geçen sefer %@ yer açtınız. Bir tur daha hazır mısınız?"
+            "value" : "Geçen sefer %@ yer açtın. Bir tur daha hazır mısın?"
           }
         }
       }
@@ -3809,7 +4047,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%2$@'ı %%%1$d tamamladınız. Bitirin!"
+            "value" : "%2$@ %%%1$d incelendi. Hemen tamamla!"
           }
         }
       }
@@ -3867,7 +4105,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Son temizliğinizin üzerinden bir aydan fazla zaman geçti. Düzenleme zamanı!"
+            "value" : "Son temizliğin üzerinden bir aydan fazla zaman geçti. Düzenleme zamanı!"
           }
         }
       }
@@ -3884,7 +4122,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fotoğraflarınız birikiyor! Hızlı bir inceleme yardımcı olabilir."
+            "value" : "Fotoğrafların birikiyor! Hızlı bir inceleme yardımcı olabilir."
           }
         }
       }
@@ -3935,7 +4173,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%d günlük inceleme seriniz var! Devam edin!"
+            "value" : "%d günlük inceleme serin var! Devam et!"
           }
         }
       }
@@ -3952,7 +4190,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Geçen sefer %@ kazandınız. Hadi tekrar yapalım!"
+            "value" : "Geçen sefer %@ kazandın. Hadi tekrar yapalım!"
           }
         }
       }
@@ -3969,7 +4207,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "İncelenmeyi bekleyen benzer fotoğraflarınız var. Hadi temizleyelim!"
+            "value" : "İncelenmeyi bekleyen benzer fotoğrafların var. Hadi temizleyelim!"
           }
         }
       }
@@ -3986,7 +4224,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Şimdiye kadar %d fotoğraf sildiniz. Devam edin!"
+            "value" : "Şimdiye kadar %d fotoğraf sildin. Devam et!"
           }
         }
       }
@@ -4462,7 +4700,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Program"
+            "value" : "Sıklık"
           }
         }
       }
@@ -7103,6 +7341,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tut"
+          }
+        }
+      }
+    },
+    "undoHistory.reviewHistoryTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Review History"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İnceleme Geçmişi"
           }
         }
       }

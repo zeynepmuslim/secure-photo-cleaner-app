@@ -49,7 +49,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		D711329D2F088869006A030E /* Exceptions for "Purgio" folder in "Purgio" target */ = {
+		D7AAAA012F00000000000001 /* Exceptions for "Purgio" folder in "Purgio" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Application/Info.plist,
@@ -69,7 +69,7 @@
 		D711329C2F088869006A030E /* Purgio */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				D711329D2F088869006A030E /* Exceptions for "Purgio" folder in "Purgio" target */,
+				D7AAAA012F00000000000001 /* Exceptions for "Purgio" folder in "Purgio" target */,
 			);
 			path = Purgio;
 			sourceTree = "<group>";
@@ -305,7 +305,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Purgio/Application/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Purgio;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Allow deletion of photos you choose to remove from the delete bin.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Allow access to your photo library so you can review and clean up photos by month.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -344,7 +344,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Purgio/Application/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Purgio;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Allow deletion of photos you choose to remove from the delete bin.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Allow access to your photo library so you can review and clean up photos by month.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;

@@ -35,17 +35,27 @@ final class UndoHistoryViewController: UIViewController {
         view.addSubview(selectionToolbar)
         selectionToolbar.isHidden = true
 
+        let showTitles = UIScreen.main.bounds.width >= 430
+
         func createButton(title: String, systemImage: String, color: UIColor, action: Selector) -> DynamicGlassButton {
             let button = DynamicGlassButton()
             button.configure(
-                title: title,
+                title: showTitles ? title : nil,
                 systemImage: systemImage,
                 style: .prominent,
                 backgroundColor: color,
                 fontSize: 13,
-                iconSize: 11,
+                iconSize: showTitles ? 11 : 18,
                 contentInsets: NSDirectionalEdgeInsets(top: 12, leading: 10, bottom: 12, trailing: 10)   // Tighter insets
             )
+            if showTitles {
+                button.titleLabel?.numberOfLines = 1
+                button.titleLabel?.lineBreakMode = .byTruncatingTail
+                button.titleLabel?.adjustsFontSizeToFitWidth = true
+                button.titleLabel?.minimumScaleFactor = 0.7
+            } else {
+                button.accessibilityLabel = title
+            }
             button.addTarget(self, action: action, for: .touchUpInside)
             return button
         }
@@ -130,7 +140,7 @@ final class UndoHistoryViewController: UIViewController {
         headerView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(headerView)
 
-        titleLabel.text = "Review History"
+        titleLabel.text = NSLocalizedString("undoHistory.reviewHistoryTitle", comment: "Undo history screen title")
         titleLabel.font = .systemFont(ofSize: 28, weight: .bold)
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         headerView.addSubview(titleLabel)

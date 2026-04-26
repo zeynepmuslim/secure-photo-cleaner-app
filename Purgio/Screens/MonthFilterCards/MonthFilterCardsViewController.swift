@@ -166,8 +166,10 @@ final class MonthFilterCardsViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .mainBackground
-        let mediaSuffix = mediaType == .video ? "· Videos" : "· Photos"
-        title = "\(monthTitle) \(mediaSuffix)"
+        let mediaSuffix = mediaType == .video
+            ? NSLocalizedString("home.videosTitle", comment: "Videos label")
+            : NSLocalizedString("home.photosTitle", comment: "Photos label")
+        title = "\(monthTitle) · \(mediaSuffix)"
         navigationController?.navigationBar.prefersLargeTitles = false
         navigationItem.largeTitleDisplayMode = .never
 
@@ -486,25 +488,51 @@ final class MonthFilterCardsViewController: UIViewController {
             let currentCount = assets.count
             guard currentCount != storedTotal else { return }
 
-            // Count has changed (added or removed) — update stored total
-            ReviewProgressStore.shared.saveProgress(
-                forMonthKey: self.monthKey,
-                mediaType: self.mediaType,
-                currentIndex: storedProgress.currentIndex,
-                reviewedCount: storedProgress.reviewedCount,
-                deletedCount: storedProgress.deletedCount,
-                keptCount: storedProgress.keptCount,
-                storedCount: storedProgress.storedCount,
-                originalTotalCount: currentCount
-            )
-
-            // Only reset finished badges when new content was added
             if currentCount > storedTotal {
-                MonthFilterStatusStore.shared.clearAllFinishedFilters(monthKey: self.monthKey)
-            }
-
-            await MainActor.run {
-                self.updateStats()
+                // Content added. update total and reopen finished filters for review.
+                ReviewProgressStore.shared.saveProgress(
+                    forMonthKey: self.monthKey,
+                    mediaType: self.mediaType,
+                    currentIndex: storedProgress.currentIndex,
+                    reviewedCount: storedProgress.reviewedCount,
+                    deletedCount: storedProgress.deletedCount,
+                    keptCount: storedProgress.keptCount,
+                    storedCount: storedProgress.storedCount,
+                    originalTotalCount: currentCount
+                )
+                await MainActor.run {
+                    MonthFilterStatusStore.shared.clearAllFinishedFilters(monthKey: self.monthKey)
+                    self.updateStats()
+                }
+            } else if currentCount == 0 && storedProgress.reviewedCount >= storedTotal {
+                // Library become zero after complete review
+                await MainActor.run {
+                    for filter in MonthFilterStatusStore.filters(for: self.mediaType) {
+                        MonthFilterStatusStore.shared.markFilterFinished(monthKey: self.monthKey, filter: filter)
+                    }
+                    self.updateStats()
+                }
+            } else {
+                // Library smaller but not empty
+                let newTotal = currentCount
+                let newReviewed = min(storedProgress.reviewedCount, newTotal)
+                let newDeleted = min(storedProgress.deletedCount, newReviewed)
+                let newKept = min(storedProgress.keptCount, max(0, newReviewed - newDeleted))
+                let newStored = min(storedProgress.storedCount, max(0, newReviewed - newDeleted - newKept))
+                let newCurrentIndex = min(storedProgress.currentIndex, newTotal)
+                ReviewProgressStore.shared.saveProgress(
+                    forMonthKey: self.monthKey,
+                    mediaType: self.mediaType,
+                    currentIndex: newCurrentIndex,
+                    reviewedCount: newReviewed,
+                    deletedCount: newDeleted,
+                    keptCount: newKept,
+                    storedCount: newStored,
+                    originalTotalCount: newTotal
+                )
+                await MainActor.run {
+                    self.updateStats()
+                }
             }
         }
     }

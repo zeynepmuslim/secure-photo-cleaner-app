@@ -54,16 +54,20 @@ final class ReminderNotificationService: NSObject {
         let monthDay: Int
     }
 
-    private let fallbackMessages = [
-        NSLocalizedString("notification.fallback1", comment: "Fallback notification: library cleanup"),
-        NSLocalizedString("notification.fallback2", comment: "Fallback notification: tidy up"),
-        NSLocalizedString("notification.fallback3", comment: "Fallback notification: free up space"),
-        NSLocalizedString("notification.fallback4", comment: "Fallback notification: screenshots and duplicates"),
-        NSLocalizedString("notification.fallback5", comment: "Fallback notification: review recent"),
-        NSLocalizedString("notification.fallback6", comment: "Fallback notification: stay organized"),
-        NSLocalizedString("notification.fallback7", comment: "Fallback notification: remove unneeded"),
-        NSLocalizedString("notification.fallback8", comment: "Fallback notification: fresh start"),
-    ]
+    private let fallbackEntries: [ReminderEntry] = {
+        let title = NSLocalizedString("notification.title.fallback", comment: "Generic fallback notification title")
+        let bodies = [
+            NSLocalizedString("notification.fallback1", comment: "Fallback notification: library cleanup"),
+            NSLocalizedString("notification.fallback2", comment: "Fallback notification: tidy up"),
+            NSLocalizedString("notification.fallback3", comment: "Fallback notification: free up space"),
+            NSLocalizedString("notification.fallback4", comment: "Fallback notification: screenshots and duplicates"),
+            NSLocalizedString("notification.fallback5", comment: "Fallback notification: review recent"),
+            NSLocalizedString("notification.fallback6", comment: "Fallback notification: stay organized"),
+            NSLocalizedString("notification.fallback7", comment: "Fallback notification: remove unneeded"),
+            NSLocalizedString("notification.fallback8", comment: "Fallback notification: fresh start"),
+        ]
+        return bodies.map { ReminderEntry(title: title, body: $0) }
+    }()
 
     private let requestIdPrefix = "cleanupReminder"
 
@@ -95,20 +99,20 @@ final class ReminderNotificationService: NSObject {
             monthDay: settingsStore.reminderMonthDay
         )
 
-        var messages = dataCenter.notificationMessages(fallback: fallbackMessages)
+        var entries = dataCenter.notificationMessages(fallback: fallbackEntries)
 
-        if let randomFallback = fallbackMessages.randomElement(),
-            !messages.contains(randomFallback)
+        if let randomFallback = fallbackEntries.randomElement(),
+            !entries.contains(where: { $0.body == randomFallback.body })
         {
-            messages.append(randomFallback)
+            entries.append(randomFallback)
         }
 
         let randomMinute = Int.random(in: 0...59)
 
         switch schedule.frequency {
         case .daily:
-            let message = messages.randomElement() ?? fallbackMessages[0]
-            let content = makeContent(message: message)
+            let entry = entries.randomElement() ?? fallbackEntries[0]
+            let content = makeContent(entry: entry)
             let trigger = UNCalendarNotificationTrigger(
                 dateMatching: DateComponents(hour: schedule.hour, minute: randomMinute),
                 repeats: true
@@ -116,8 +120,8 @@ final class ReminderNotificationService: NSObject {
             addRequest(idSuffix: "daily", content: content, trigger: trigger)
         case .weekly:
             let randomWeekday = Int.random(in: 1...7) // Sun–Sat
-            let message = messages.randomElement() ?? fallbackMessages[0]
-            let content = makeContent(message: message)
+            let entry = entries.randomElement() ?? fallbackEntries[0]
+            let content = makeContent(entry: entry)
             var components = DateComponents()
             components.weekday = randomWeekday
             components.hour = schedule.hour
@@ -126,8 +130,8 @@ final class ReminderNotificationService: NSObject {
             let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
             addRequest(idSuffix: "weekly_\(randomWeekday)", content: content, trigger: trigger)
         case .monthly:
-            let message = messages.randomElement() ?? fallbackMessages[0]
-            let content = makeContent(message: message)
+            let entry = entries.randomElement() ?? fallbackEntries[0]
+            let content = makeContent(entry: entry)
             var components = DateComponents()
             components.day = schedule.monthDay
             components.hour = schedule.hour
@@ -138,10 +142,10 @@ final class ReminderNotificationService: NSObject {
         }
     }
 
-    private func makeContent(message: String) -> UNNotificationContent {
+    private func makeContent(entry: ReminderEntry) -> UNNotificationContent {
         let content = UNMutableNotificationContent()
-        content.title = NSLocalizedString("notification.title", comment: "Notification title for cleanup reminders")
-        content.body = message
+        content.title = entry.title
+        content.body = entry.body
         content.sound = .default
         content.categoryIdentifier = Self.categoryIdentifier
         return content
@@ -169,10 +173,10 @@ final class ReminderNotificationService: NSObject {
     }
 
     func debugPrintSampleReminders() {
-        let generated = dataCenter.notificationMessages(fallback: fallbackMessages)
+        let generated = dataCenter.notificationMessages(fallback: fallbackEntries)
         print("[ReminderDebug] Generated reminders:")
-        for message in generated {
-            print("[ReminderDebug] - \(message)")
+        for entry in generated {
+            print("[ReminderDebug] - [\(entry.title)] \(entry.body)")
         }
         let examples = dataCenter.exampleMessagesForAllSignals()
         print("[ReminderDebug] Example reminders:")
@@ -207,9 +211,9 @@ final class ReminderNotificationService: NSObject {
     }
 
     private func scheduleSnooze() {
-        let messages = dataCenter.notificationMessages(fallback: fallbackMessages)
-        let message = messages.randomElement() ?? fallbackMessages[0]
-        let content = makeContent(message: message)
+        let entries = dataCenter.notificationMessages(fallback: fallbackEntries)
+        let entry = entries.randomElement() ?? fallbackEntries[0]
+        let content = makeContent(entry: entry)
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: snoozeInterval, repeats: false)
         let request = UNNotificationRequest(
             identifier: Self.snoozeRequestId,
@@ -227,9 +231,9 @@ final class ReminderNotificationService: NSObject {
         private static let testRequestId = "cleanupReminder.test"
 
         func scheduleTestNotification(afterSeconds seconds: TimeInterval = 5) {
-            let messages = dataCenter.notificationMessages(fallback: fallbackMessages)
-            let message = messages.randomElement() ?? fallbackMessages[0]
-            let content = makeContent(message: message)
+            let entries = dataCenter.notificationMessages(fallback: fallbackEntries)
+            let entry = entries.randomElement() ?? fallbackEntries[0]
+            let content = makeContent(entry: entry)
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: seconds, repeats: false)
             let request = UNNotificationRequest(
                 identifier: Self.testRequestId,

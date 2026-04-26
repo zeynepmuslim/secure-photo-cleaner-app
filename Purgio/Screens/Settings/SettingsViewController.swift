@@ -347,6 +347,11 @@ final class SettingsViewController: UIViewController {
             iconName: "lock.shield", iconColor: .systemBlue,
             title: Strings.privacyTitle, subtitle: Strings.privacyText
         ))
+        privacyCard.onCardTapped = { [weak self] in
+            HapticFeedbackManager.shared.impact(intensity: .light)
+            let sheet = AskPermissionBoardingViewController(status: .noAction)
+            self?.present(sheet, animated: true)
+        }
 
         storeCard.configure(with: SettingsInfoCardConfig(
             iconName: "archivebox.fill", iconColor: ThemeManager.Colors.statusYellow,

@@ -594,6 +594,7 @@ final class TipJarViewController: UIViewController {
     }
 }
 
+#if DEBUG
 import SwiftUI
 
 @available(iOS 17.0, *)
@@ -627,3 +628,4 @@ private struct TipJarPreview: UIViewControllerRepresentable {
 #Preview("Tip Jar — Failed") {
     TipJarPreview(state: .failed)
 }
+#endif

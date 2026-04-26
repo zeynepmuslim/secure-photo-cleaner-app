@@ -1000,6 +1000,7 @@ extension DeleteBinViewController: UICollectionViewDelegate {
     }
 }
 
+#if DEBUG
 @available(iOS 17.0, *)
 #Preview("Default") {
     UINavigationController(rootViewController: DeleteBinViewController())
@@ -1019,3 +1020,4 @@ extension DeleteBinViewController: UICollectionViewDelegate {
     vc.configureForEmptyPreview()
     return UINavigationController(rootViewController: vc)
 }
+#endif

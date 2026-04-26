@@ -1029,7 +1029,7 @@ final class StorageAnalysisView: UIView {
 }
 
 // MARK: - Preview
-
+#if DEBUG
 @available(iOS 17.0, *)
 #Preview("Loading") {
     let view = StorageAnalysisView()
@@ -1119,3 +1119,4 @@ final class StorageAnalysisView: UIView {
     view.update(with: .loaded(data))
     return view
 }
+#endif

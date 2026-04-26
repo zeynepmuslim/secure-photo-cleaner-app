@@ -305,7 +305,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Purgio/Application/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Purgio;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Allow deletion of photos you choose to remove from the delete bin.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Allow access to your photo library so you can review and clean up photos by month.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -344,7 +344,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Purgio/Application/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Purgio;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Allow deletion of photos you choose to remove from the delete bin.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Allow access to your photo library so you can review and clean up photos by month.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;

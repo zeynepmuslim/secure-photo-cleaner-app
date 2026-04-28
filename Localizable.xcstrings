@@ -2687,13 +2687,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Allow Photo Access"
+            "value" : "Continue"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Erişime İzin Ver"
+            "value" : "Devam Et"
           }
         }
       }

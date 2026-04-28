@@ -144,7 +144,7 @@ monthReview.timeLapseTitle;Time-Lapse · %@;Hızlandırılmış · %@;;;;
 monthsList.accessDenied;Photo access is denied. Please enable it in Settings to use the app.;Fotoğraf erişimi reddedildi. Uygulamayı kullanmak için lütfen Ayarlar'dan etkinleştirin.;;;;
 monthsList.allYears;All Years;Tüm Yıllar;;;;
 monthsList.allowAccessMessage;To help you clean up your photo library, we need access to your photos.;Fotoğraf kütüphanenizi temizlemenize yardımcı olmak için fotoğraflarınıza erişim izni gerekiyor.;;;;
-monthsList.allowPhotoAccess;Allow Photo Access;Erişime İzin Ver;;;;
+monthsList.allowPhotoAccess;Continue;Devam Et;;;;
 monthsList.filter;Filter;Filtre;;;;
 monthsList.limitedAccessPhotos;Your photo access is limited. Select more photos to start reviewing by month.;Fotoğraf erişiminiz sınırlı. Aylara göre incelemeye başlamak için daha fazla fotoğraf seçin.;;;;
 monthsList.limitedAccessVideos;Your photo access is limited. Select more videos to start reviewing by month.;Fotoğraf erişiminiz sınırlı. Aylara göre incelemeye başlamak için daha fazla video seçin.;;;;

@@ -1,7 +1,6 @@
 # secure-photo-cleaner-app
 <p align="center">
-  <!-- TODO: replace the placeholder App ID once Purgio is live on the App Store -->
-  <a href="https://apps.apple.com/app/idXXXXXXXXX">
+  <a href="https://apps.apple.com/tr/app/purgio/id6762494793">
     <img src="Docs/readme-resource/banner.jpg" alt="Purgio" width="900">
   </a>
 </p>
@@ -11,7 +10,7 @@
 **Free, safe and simple photo cleanup for iPhone.** Native iOS, fully offline, ML-powered.
 
 <p align="left">
-  <a href="https://apps.apple.com/app/idXXXXXXXXX">
+  <a href="https://apps.apple.com/tr/app/purgio/id6762494793">
     <img src="Docs/readme-resource/appstore.png" alt="Download Purgio on the App Store" width="240">
   </a>
 </p>
@@ -48,4 +47,3 @@ Feedback genuinely shapes this app. Bug reports, feature ideas, edge cases on ol
 ---
 
 Built by [Zeynep Müslim](https://www.zeynepmuslim.com).
-No newline at end of file

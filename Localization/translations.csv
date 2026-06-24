@@ -1,11 +1,11 @@
 DEV_KEY;en;tr;en_one;en_other;tr_one;tr_other
 analytics.and;and;ve;;;;
-analytics.biggestSpaceHogs;Videos are your biggest space hogs — you've saved %@ so far!;Videolar en çok yer kaplayan dosyalarınız — şimdiye kadar %@ kazandınız!;;;;
+analytics.biggestSpaceHogs;Videos are your biggest space hogs, you've saved %@ so far!;Videolar en çok yer kaplayan dosyalarınız, şimdiye kadar %@ kazandınız!;;;;
 analytics.cleanedSaving;Cleaned %@, saving %@.;%@ temizlendi, %@ kazanıldı.;;;;
 analytics.freedUpSoFar;You've freed up %@ so far!;Şimdiye kadar %@ yer açtınız!;;;;
 analytics.itemsCleaned;You cleaned %d items and saved %@.;%d öge temizlediniz ve %@ kazandınız.;;;;
 analytics.reviewedAndFreed;You've reviewed %d items and freed %@.;%d öge inceleyip %@ yer açtınız.;;;;
-analytics.totalCleanup;Total cleanup: %d photos, %d videos — %@ saved.;Toplam temizlik: %d fotoğraf, %d video — %@ kazanıldı.;;;;
+analytics.totalCleanup;Total cleanup: %d photos, %d videos, %@ saved.;Toplam temizlik: %d fotoğraf, %d video, %@ kazanıldı.;;;;
 analytics.photosCount;;;%lld photo;%lld photos;%lld fotoğraf;%lld fotoğraf
 analytics.videosCount;;;%lld video;%lld videos;%lld video;%lld video
 askPermission.title;None of your data will be left on your phone.;Hiçbir verin telefonundan ayrılmayacak.;;;;
@@ -38,6 +38,7 @@ deleteBin.binCountTitle;Bin · %d;Çöp · %d;;;;
 deleteBin.deleteCannotUndo;Items will be moved to the Recently Deleted folder in Photos, where they'll stay for 30 days before being permanently removed.;Ögeler, Fotoğraflar'daki Son Silinenler klasörüne taşınacak ve kalıcı olarak silinmeden önce 30 gün boyunca saklanacaktır.;;;;
 deleteBin.deleteConfirmTitle;Delete %@?;%@ silinsin mi?;;;;
 deleteBin.deletingProgress;Deleting...;Siliniyor...;;;;
+deleteBin.preparingProgress;Preparing...;Hazırlanıyor...;;;;
 deleteBin.editMode;Edit;Düzenle;;;;
 deleteBin.emptyMessage;Swipe left on photos to add them here. When you're ready, delete them all at once.;Fotoğrafları buraya eklemek için sola kaydırın. Hazır olduğunuzda hepsini bir kerede silin.;;;;
 deleteBin.errorMessage;Some items could not be deleted. Please try again.;Bazı ögeler silinemedi. Lütfen tekrar deneyin.;;;;
@@ -163,7 +164,7 @@ monthsList.year;Year;Yıl;;;;
 motivation.catVideos;Make room for more cat videos!;Daha fazla kedi videosu için yer açın!;;;;
 motivation.littleRoom;Make a little room today;Bugün biraz yer açın;;;;
 motivation.memoriesOnTheWay;New memories are on the way!;Yeni anılar yolda!;;;;
-motivation.memoriesPileUp;Memories pile up — time to sort!;Anılar birikiyor — ayıklama zamanı!;;;;
+motivation.memoriesPileUp;Memories pile up, time to sort!;Anılar birikiyor, ayıklama zamanı!;;;;
 motivation.newMemories;Make space for new memories;Yeni anılara yer açın;;;;
 motivation.nextTrip;Clean up before your next trip!;Bir sonraki seyahatinizden önce alan açın!;;;;
 motivation.noSpace;No space for your next video?;Bir sonraki videonuz için yer yok mu?;;;;
@@ -318,7 +319,7 @@ storageAnalysis.iCloudActiveInfo;iCloud Photos enabled on device;Cihazda iCloud 
 storageAnalysis.iCloudBannerText;iCloud Photo Library detected. %1$d items (%2$@, %3$d%%) are stored only in iCloud.;iCloud Fotoğraf Kütüphanesi algılandı. %1$d öge (%2$@, %%%3$d) yalnızca iCloud'da saklanıyor.;;;;
 storageAnalysis.iCloudOnly;iCloud Only;Yalnızca iCloud;;;;
 storageAnalysis.lastAnalyzed;Last analyzed: %@;Son analiz: %@;;;;
-storageAnalysis.lastAnalyzedStale;%@ — Tap to refresh;%@ — Yenilemek için dokunun;;;;
+storageAnalysis.lastAnalyzedStale;%@, Tap to refresh;%@, Yenilemek için dokunun;;;;
 storageAnalysis.mediaCountSubtitle;%d photos · %d videos;%d fotoğraf · %d video;;;;
 storageAnalysis.notAnalyzedYet;Not analyzed yet;Henüz analiz edilmedi;;;;
 storageAnalysis.onThisDevice;On This Device;Bu Cihazda;;;;

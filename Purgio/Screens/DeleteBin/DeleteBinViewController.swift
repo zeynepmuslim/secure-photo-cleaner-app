@@ -17,6 +17,7 @@ private enum Strings {
     static let cancel = CommonStrings.cancel
     static let delete = CommonStrings.delete
     static let ok = CommonStrings.ok
+    static let preparingProgress = NSLocalizedString("deleteBin.preparingProgress", comment: "Preparing to delete progress label")
     static let deletingProgress = NSLocalizedString("deleteBin.deletingProgress", comment: "Deleting progress label")
     static let deleteCannotUndo = NSLocalizedString("deleteBin.deleteCannotUndo", comment: "Delete warning about Recently Deleted folder")
     static let yourDeleteBin = NSLocalizedString("deleteBin.yourDeleteBin", comment: "Your Delete Bin title")
@@ -314,6 +315,7 @@ final class DeleteBinViewController: UIViewController {
             )
             navigationItem.rightBarButtonItem = editButton
         }
+
     }
 
     private func makeEditMenu() -> UIMenu {
@@ -648,7 +650,12 @@ final class DeleteBinViewController: UIViewController {
 
         DispatchQueue.global(qos: .utility).async { [weak self] in
             guard let self = self else { return }
-            let estimatedSize = self.calculateEstimatedSize(for: currentAssets)
+            var estimatedSize: Int64 = 0
+            for asset in currentAssets {
+                for resource in PHAssetResource.assetResources(for: asset) {
+                    if let size = resource.value(forKey: "fileSize") as? Int64 { estimatedSize += size }
+                }
+            }
             let sizeString = estimatedSize.formattedBytes()
 
             DispatchQueue.main.async {
@@ -657,19 +664,6 @@ final class DeleteBinViewController: UIViewController {
                 }
             }
         }
-    }
-
-    private func calculateEstimatedSize(for assets: [PHAsset]) -> Int64 {
-        var totalSize: Int64 = 0
-        for asset in assets {
-            let resources = PHAssetResource.assetResources(for: asset)
-            for resource in resources {
-                if let size = resource.value(forKey: "fileSize") as? Int64 {
-                    totalSize += size
-                }
-            }
-        }
-        return totalSize
     }
 
     // MARK: - Empty State
@@ -706,6 +700,16 @@ final class DeleteBinViewController: UIViewController {
         navigationItem.rightBarButtonItem?.isEnabled = false
         findFloatingBinButton()?.isEnabled = false
         findFloatingBinButton()?.alpha = 0.5
+    }
+
+    private func showErrorAlert() {
+        let alert = UIAlertController(
+            title: Strings.errorTitle,
+            message: Strings.errorMessage,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: Strings.ok, style: .default))
+        present(alert, animated: true)
     }
 
     #if DEBUG
@@ -838,31 +842,40 @@ final class DeleteBinViewController: UIViewController {
 
     private func performBatchDeletion(assets: [PHAsset]? = nil, indexPaths: [IndexPath]? = nil) {
         let assetsToDelete = assets ?? photoAssets
-        let estimatedFreedBytes = calculateEstimatedSize(for: assetsToDelete)
+        guard !assetsToDelete.isEmpty else { return }
 
-        var assetSizes: [String: Int64] = [:]
-        for asset in assetsToDelete {
-            let resources = PHAssetResource.assetResources(for: asset)
-            var total: Int64 = 0
-            for resource in resources {
-                if let size = resource.value(forKey: "fileSize") as? Int64 {
-                    total += size
-                }
-            }
-            assetSizes[asset.localIdentifier] = total
-        }
-
-        let loadingAlert = UIAlertController(title: Strings.deletingProgress, message: nil, preferredStyle: .alert)
+        let loadingAlert = UIAlertController(title: Strings.preparingProgress, message: nil, preferredStyle: .alert)
         present(loadingAlert, animated: true)
 
-        PHPhotoLibrary.shared().performChanges({
-            PHAssetChangeRequest.deleteAssets(assetsToDelete as NSArray)
-        }) { [weak self] success, error in
-            DispatchQueue.main.async {
-                loadingAlert.dismiss(animated: true) {
-                    self?.handleDeletionResult(
-                        success: success, error: error, assets: assetsToDelete, indexPaths: indexPaths,
-                        freedBytes: estimatedFreedBytes, assetSizes: assetSizes)
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+
+            // Single pass off the main thread
+            var assetSizes: [String: Int64] = [:]
+            var totalBytes: Int64 = 0
+            for asset in assetsToDelete {
+                var assetTotal: Int64 = 0
+                for resource in PHAssetResource.assetResources(for: asset) {
+                    if let size = resource.value(forKey: "fileSize") as? Int64 { assetTotal += size }
+                }
+                assetSizes[asset.localIdentifier] = assetTotal
+                totalBytes += assetTotal
+            }
+
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                loadingAlert.title = Strings.deletingProgress
+
+                PHPhotoLibrary.shared().performChanges({
+                    PHAssetChangeRequest.deleteAssets(assetsToDelete as NSArray)
+                }) { [weak self] success, error in
+                    DispatchQueue.main.async {
+                        loadingAlert.dismiss(animated: true) {
+                            self?.handleDeletionResult(
+                                success: success, error: error, assets: assetsToDelete,
+                                indexPaths: indexPaths, freedBytes: totalBytes, assetSizes: assetSizes)
+                        }
+                    }
                 }
             }
         }
@@ -925,15 +938,8 @@ final class DeleteBinViewController: UIViewController {
                 )
             }
 
-            let alert = UIAlertController(
-                title: Strings.errorTitle,
-                message: Strings.errorMessage,
-                preferredStyle: .alert
-            )
-            print("[BIN DELETE ERROR] \(error?.localizedDescription ?? "Unknown error")")
-            alert.addAction(UIAlertAction(title: Strings.ok, style: .default))
-
-            present(alert, animated: true)
+            print("[BIN DELETE ERROR] code=\((error as? NSError)?.code ?? -1) \(error?.localizedDescription ?? "Unknown error")")
+            showErrorAlert()
         }
     }
 }

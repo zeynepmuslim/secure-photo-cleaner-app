@@ -37,13 +37,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Videos are your biggest space hogs — you've saved %@ so far!"
+            "value" : "Videos are your biggest space hogs, you've saved %@ so far!"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Videolar en çok yer kaplayan dosyalarınız — şimdiye kadar %@ kazandınız!"
+            "value" : "Videolar en çok yer kaplayan dosyalarınız, şimdiye kadar %@ kazandınız!"
           }
         }
       }
@@ -163,13 +163,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Total cleanup: %d photos, %d videos — %@ saved."
+            "value" : "Total cleanup: %d photos, %d videos, %@ saved."
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Toplam temizlik: %d fotoğraf, %d video — %@ kazanıldı."
+            "value" : "Toplam temizlik: %d fotoğraf, %d video, %@ kazanıldı."
           }
         }
       }
@@ -966,6 +966,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ · ~%@"
+          }
+        }
+      }
+    },
+    "deleteBin.preparingProgress" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparing..."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hazırlanıyor..."
           }
         }
       }
@@ -3027,13 +3044,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Memories pile up — time to sort!"
+            "value" : "Memories pile up, time to sort!"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Anılar birikiyor — ayıklama zamanı!"
+            "value" : "Anılar birikiyor, ayıklama zamanı!"
           }
         }
       }
@@ -5895,13 +5912,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ — Tap to refresh"
+            "value" : "%@, Tap to refresh"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ — Yenilemek için dokunun"
+            "value" : "%@, Yenilemek için dokunun"
           }
         }
       }

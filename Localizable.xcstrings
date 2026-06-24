@@ -861,6 +861,23 @@
         }
       }
     },
+    "deleteBin.mailNotConfiguredMessage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mail is not configured on this device. Please set up a Mail account in Settings."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu cihazda Mail uygulaması yapılandırılmamış. Lütfen Ayarlar'dan bir Mail hesabı ekleyin."
+          }
+        }
+      }
+    },
     "deleteBin.monthBinTitle" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1045,6 +1062,57 @@
         }
       }
     },
+    "deleteBin.reportSentMessage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your error report has been sent. Thank you!"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hata raporunuz gönderildi. Teşekkürler!"
+          }
+        }
+      }
+    },
+    "deleteBin.reportSentTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Report Sent"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rapor Gönderildi"
+          }
+        }
+      }
+    },
+    "deleteBin.reportToDeveloper" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Report to Developer"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geliştiriciye Bildir"
+          }
+        }
+      }
+    },
     "deleteBin.successTitle" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1058,6 +1126,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Başarılı!"
+          }
+        }
+      }
+    },
+    "deleteBin.tryAgain" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try Again"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tekrar Dene"
+          }
+        }
+      }
+    },
+    "deleteBin.tryInParts" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try Deleting in Parts"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parçalar Hâlinde Silmeyi Dene"
           }
         }
       }

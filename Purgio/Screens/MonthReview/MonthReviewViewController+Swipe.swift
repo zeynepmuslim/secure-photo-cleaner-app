@@ -212,7 +212,7 @@ extension MonthReviewViewController {
 
         if let oldAssetId = recycledCard.assetIdentifier,
            let requestID = imageRequestIDs[oldAssetId] {
-            imageManager.cancelImageRequest(requestID)
+            imageCache.cancelRequest(requestID)
             imageRequestIDs.removeValue(forKey: oldAssetId)
         }
 

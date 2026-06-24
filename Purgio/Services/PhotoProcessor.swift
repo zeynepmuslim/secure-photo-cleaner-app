@@ -14,6 +14,7 @@ struct ProcessingProgress {
 
 enum ProcessingResult {
     case progress(ProcessingProgress)
+    case initialBatchReady([ReviewAsset])
     case completed([ReviewAsset])
     case cancelled
 }
@@ -24,7 +25,8 @@ actor PhotoProcessor {
 
     func processAssets(
         _ assets: [PHAsset],
-        progressInterval: Int = 1
+        progressInterval: Int = 1,
+        initialBatchSize: Int = 50
     ) -> AsyncStream<ProcessingResult> {
         AsyncStream { continuation in
             Task {
@@ -38,7 +40,12 @@ actor PhotoProcessor {
                         return
                     }
 
-                    reviewAssets.append(ReviewAsset(asset: asset, isCloudOnly: asset.isCloudOnly, fileSize: asset.fileSize))
+                    let metadata = asset.resourceMetadata()
+                    reviewAssets.append(ReviewAsset(asset: asset, isCloudOnly: metadata.isCloudOnly, fileSize: metadata.fileSize))
+
+                    if reviewAssets.count == initialBatchSize && total > initialBatchSize {
+                        continuation.yield(.initialBatchReady(reviewAssets))
+                    }
 
                     if (index + 1) % progressInterval == 0 || index == total - 1 {
                         continuation.yield(.progress(ProcessingProgress(current: index + 1, total: total)))
@@ -71,7 +78,8 @@ actor PhotoProcessor {
                         return
                     }
 
-                    reviewAssets.append(ReviewAsset(asset: asset, isCloudOnly: asset.isCloudOnly, fileSize: asset.fileSize))
+                    let metadata = asset.resourceMetadata()
+                    reviewAssets.append(ReviewAsset(asset: asset, isCloudOnly: metadata.isCloudOnly, fileSize: metadata.fileSize))
 
                     if (index + 1) % progressInterval == 0 || index == total - 1 {
                         continuation.yield(.progress(ProcessingProgress(current: index + 1, total: total)))
@@ -116,7 +124,8 @@ actor PhotoProcessor {
                     let isClosed = await EyeBlinkDetector.shared.hasClosedEyes(asset: asset, using: detector)
 
                     if isClosed {
-                        blinkingAssets.append(ReviewAsset(asset: asset, isCloudOnly: asset.isCloudOnly, fileSize: asset.fileSize))
+                        let metadata = asset.resourceMetadata()
+                        blinkingAssets.append(ReviewAsset(asset: asset, isCloudOnly: metadata.isCloudOnly, fileSize: metadata.fileSize))
                     }
 
                     if (index + 1) % progressInterval == 0 || index == total - 1 {

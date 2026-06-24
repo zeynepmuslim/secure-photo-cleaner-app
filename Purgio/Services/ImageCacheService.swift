@@ -44,8 +44,8 @@ final class ImageCacheService {
     private init() {
         self.screenScale = UIScreen.main.scale
 
-        cache.totalCostLimit = 30 * 1024 * 1024
-        cache.countLimit = 15
+        cache.totalCostLimit = 100 * 1024 * 1024
+        cache.countLimit = 50
 
         NotificationCenter.default.addObserver(
             self,
@@ -213,5 +213,9 @@ final class ImageCacheService {
 
     func stopCachingAllImages() {
         imageManager.stopCachingImagesForAllAssets()
+    }
+
+    func cancelRequest(_ requestID: PHImageRequestID) {
+        imageManager.cancelImageRequest(requestID)
     }
 }

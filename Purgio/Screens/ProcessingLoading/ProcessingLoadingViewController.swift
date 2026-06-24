@@ -260,6 +260,8 @@ final class ProcessingLoadingViewController: UIViewController {
                     await MainActor.run {
                         self.navigateToResults(with: resultAssets)
                     }
+                case .initialBatchReady:
+                    break
                 case .cancelled:
                     break
                 }

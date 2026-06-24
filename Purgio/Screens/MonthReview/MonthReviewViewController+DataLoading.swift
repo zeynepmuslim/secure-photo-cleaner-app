@@ -21,6 +21,12 @@ extension MonthReviewViewController {
 
         loadingTask = Task {
             let reviewAssets: [ReviewAsset]
+            let deleteBin = DeleteBinStore.shared
+            let keptStore = KeptAssetsStore.shared
+            let willBeStored = WillBeStoredStore.shared
+            let skipICloud = SettingsStore.shared.skipICloudPhotos && !SettingsStore.shared.allowInternetAccess
+            let savedProgress = ReviewProgressStore.shared.getProgress(
+                forMonthKey: currentProgressKey, mediaType: currentMediaType)
 
             if let preComputed = preComputed {
                 reviewAssets = preComputed
@@ -51,12 +57,44 @@ extension MonthReviewViewController {
                 if Task.isCancelled { return }
 
                 var processedAssets: [ReviewAsset] = []
+                var shownInitialBatch = false
                 let stream = await PhotoProcessor.shared.processAssets(assets)
 
                 for await result in stream {
                     switch result {
                     case .progress:
                         break
+                    case .initialBatchReady(let partial):
+                        guard !Task.isCancelled else { return }
+                        guard savedProgress.currentIndex < partial.count else { break }
+
+                        var earlyStart = savedProgress.currentIndex
+                        for i in earlyStart ..< partial.count {
+                            let id = partial[i].localIdentifier
+                            let processed = deleteBin.hasAssetId(id) || keptStore.hasAssetId(id) || willBeStored.hasAssetId(id)
+                            let skip = processed || (skipICloud && partial[i].isCloudOnly)
+                            if !skip { earlyStart = i; break }
+                            if i == partial.count - 1 { earlyStart = partial.count }
+                        }
+
+                        await MainActor.run { [weak self] in
+                            guard let self, self.reviewAssets.isEmpty else { return }
+                            self.reviewAssets = partial
+                            self.currentIndex = earlyStart
+                            self.recalculateCountsFromStores()
+                            let storedTotal = savedProgress.originalTotalCount
+                            self.originalTotalCount = storedTotal > 0 ? storedTotal : partial.count
+                            self.saveProgress()
+                            self.refreshStack()
+                            self.hideSkeletonLoading()
+                            self.showInitialICloudWarning()
+                            Task {
+                                try? await Task.sleep(nanoseconds: 500_000_000)
+                                self.prefetchUpcoming()
+                            }
+                        }
+                        shownInitialBatch = true
+
                     case .completed(let assets):
                         processedAssets = assets
                     case .cancelled:
@@ -65,19 +103,29 @@ extension MonthReviewViewController {
                 }
 
                 reviewAssets = processedAssets
+
+                if shownInitialBatch {
+                    // Cards already visible, silently expand the array and update stats
+                    guard !Task.isCancelled else { return }
+                    await MainActor.run { [weak self] in
+                        guard let self else { return }
+                        self.reviewAssets = reviewAssets
+                        self.recalculateCountsFromStores()
+                        let storedTotal = savedProgress.originalTotalCount
+                        self.originalTotalCount = max(
+                            storedTotal > 0 ? storedTotal : reviewAssets.count,
+                            reviewAssets.count)
+                        self.saveProgress()
+                        self.updateStats()
+                    }
+                    return
+                }
             }
 
             if Task.isCancelled { return }
 
-            let deleteBin = DeleteBinStore.shared
-            let keptStore = KeptAssetsStore.shared
-            let willBeStored = WillBeStoredStore.shared
-            let skipICloud = SettingsStore.shared.skipICloudPhotos && !SettingsStore.shared.allowInternetAccess
-
-            let progress = ReviewProgressStore.shared.getProgress(
-                forMonthKey: currentProgressKey, mediaType: currentMediaType)
             let maxIndex = max(0, reviewAssets.count - 1)
-            var startIndex = min(progress.currentIndex, maxIndex)
+            var startIndex = min(savedProgress.currentIndex, maxIndex)
 
             for i in startIndex ..< reviewAssets.count {
                 let reviewAsset = reviewAssets[i]
@@ -117,7 +165,7 @@ extension MonthReviewViewController {
                     if currentFilterContext != .none {
                         self.originalTotalCount = reviewAssets.count
                     } else {
-                        let storedOriginalTotal = progress.originalTotalCount
+                        let storedOriginalTotal = savedProgress.originalTotalCount
                         let resolvedOriginalTotal = storedOriginalTotal > 0 ? storedOriginalTotal : reviewAssets.count
                         self.originalTotalCount = max(resolvedOriginalTotal, reviewAssets.count)
                     }
@@ -253,7 +301,7 @@ extension MonthReviewViewController {
         card.setPlaceholder(.none)
 
         if let oldRequestID = imageRequestIDs[card.assetIdentifier ?? ""] {
-            imageManager.cancelImageRequest(oldRequestID)
+            imageCache.cancelRequest(oldRequestID)
         }
 
         let isTopCard = (index == currentIndex)

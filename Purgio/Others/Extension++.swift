@@ -8,6 +8,17 @@
 import Foundation
 import UIKit.UIView
 
+extension Int {
+    var compactFormatted: String {
+        if self >= 10_000 { return "\(self / 1_000)K" }
+        if self >= 1_000 {
+            let s = String(format: "%.1fK", Double(self) / 1_000)
+            return s.hasSuffix(".0K") ? s.replacingOccurrences(of: ".0K", with: "K") : s
+        }
+        return "\(self)"
+    }
+}
+
 extension Int64 {
     func formattedBytes(allowedUnits: ByteCountFormatter.Units = [.useKB, .useMB, .useGB]) -> String {
         let formatter = Self.byteFormatter

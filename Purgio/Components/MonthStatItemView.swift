@@ -77,7 +77,7 @@ final class MonthStatItemView: UIView {
     }
 
     func setValue(_ value: Int) {
-        valueLabel.text = "\(value)"
+        valueLabel.text = value.compactFormatted
     }
 
     func setValue(_ text: String) {
@@ -86,30 +86,30 @@ final class MonthStatItemView: UIView {
 }
 
 @available(iOS 17.0, *)
-#Preview {
+private func makeStatStack(reviewedText: String, deleted: Int, kept: Int, stored: Int) -> UIView {
     let stack = UIStackView()
     stack.axis = .horizontal
     stack.distribution = .fillEqually
     stack.spacing = 8
     stack.translatesAutoresizingMaskIntoConstraints = false
 
-    let reviewed = MonthStatItemView()
-    reviewed.configure(title: NSLocalizedString("filterCards.reviewed", comment: ""), color: .systemGray)
-    reviewed.setValue("12/40")
+    let reviewedView = MonthStatItemView()
+    reviewedView.configure(title: NSLocalizedString("filterCards.reviewed", comment: ""), color: .systemGray)
+    reviewedView.setValue(reviewedText)
 
-    let deleted = MonthStatItemView()
-    deleted.configure(title: NSLocalizedString("filterCards.delete", comment: ""), color: .systemRed)
-    deleted.setValue(5)
+    let deletedView = MonthStatItemView()
+    deletedView.configure(title: NSLocalizedString("filterCards.delete", comment: ""), color: .systemRed)
+    deletedView.setValue(deleted)
 
-    let kept = MonthStatItemView()
-    kept.configure(title: NSLocalizedString("filterCards.keep", comment: ""), color: .systemGreen)
-    kept.setValue(7)
+    let keptView = MonthStatItemView()
+    keptView.configure(title: NSLocalizedString("filterCards.keep", comment: ""), color: .systemGreen)
+    keptView.setValue(kept)
 
-    let stored = MonthStatItemView()
-    stored.configure(title: NSLocalizedString("filterCards.store", comment: ""), color: .systemYellow)
-    stored.setValue(0)
+    let storedView = MonthStatItemView()
+    storedView.configure(title: NSLocalizedString("filterCards.store", comment: ""), color: .systemYellow)
+    storedView.setValue(stored)
 
-    [reviewed, deleted, kept, stored].forEach { stack.addArrangedSubview($0) }
+    [reviewedView, deletedView, keptView, storedView].forEach { stack.addArrangedSubview($0) }
 
     let container = UIView()
     container.backgroundColor = .mainBackground
@@ -121,4 +121,19 @@ final class MonthStatItemView: UIView {
         stack.heightAnchor.constraint(equalToConstant: 50)
     ])
     return container
+}
+
+@available(iOS 17.0, *)
+#Preview("Small numbers") {
+    makeStatStack(reviewedText: "12/40", deleted: 5, kept: 7, stored: 0)
+}
+
+@available(iOS 17.0, *)
+#Preview("Large numbers (K)") {
+    makeStatStack(reviewedText: "3.2K/5K", deleted: 1200, kept: 1500, stored: 500)
+}
+
+@available(iOS 17.0, *)
+#Preview("Very large numbers") {
+    makeStatStack(reviewedText: "12K/20K", deleted: 8000, kept: 3000, stored: 1000)
 }

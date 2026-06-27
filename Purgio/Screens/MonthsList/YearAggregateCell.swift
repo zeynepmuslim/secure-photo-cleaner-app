@@ -242,18 +242,19 @@ final class YearAggregateCell: UITableViewCell {
         progressWidthConstraint?.isActive = true
 
         let totalCount = item.originalTotalCount > 0 ? item.originalTotalCount : item.currentTotalCount
+        //Actually compactFormatted wont be needed bacause of bounds (50 curently)
         reviewedStat.configure(
             systemName: "eye.fill", color: .textPrimary,
-            text: "\(item.reviewedCount)/\(totalCount)")
+            text: "\(item.reviewedCount.compactFormatted)/\(totalCount.compactFormatted)")
         deletedStat.configure(
             systemName: "trash.fill", color: ThemeManager.Colors.statusRed,
-            text: "\(item.deletedCount)")
+            text: item.deletedCount.compactFormatted)
         keptStat.configure(
             systemName: "checkmark.circle.fill", color: ThemeManager.Colors.statusGreen,
-            text: "\(item.keptCount)")
+            text: item.keptCount.compactFormatted)
         storedStat.configure(
             systemName: "archivebox.fill", color: ThemeManager.Colors.statusYellow,
-            text: "\(item.storedCount)", iconPointSize: 14)
+            text: item.storedCount.compactFormatted, iconPointSize: 14)
     }
 }
 
@@ -286,5 +287,14 @@ final class YearAggregateCell: UITableViewCell {
     cell.configure(with: YearItem(
         year: "2015", key: "year-2015", months: [],
         currentTotalCount: 23, reviewedCount: 23, deletedCount: 15, keptCount: 7, storedCount: 1, originalTotalCount: 23, mediaType: .image))
+    return cell
+}
+
+@available(iOS 17.0, *)
+#Preview("Large numbers (K)", traits: .fixedLayout(width: 375, height: 90)) {
+    let cell = YearAggregateCell(style: .default, reuseIdentifier: "cell")
+    cell.configure(with: YearItem(
+        year: "2023", key: "year-2023", months: [],
+        currentTotalCount: 5000, reviewedCount: 3200, deletedCount: 1200, keptCount: 1500, storedCount: 500, originalTotalCount: 5000, mediaType: .image))
     return cell
 }

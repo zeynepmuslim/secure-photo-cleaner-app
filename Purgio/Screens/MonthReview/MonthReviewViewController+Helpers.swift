@@ -688,16 +688,16 @@ extension MonthReviewViewController {
 
         attributedText.append(createAttachment(systemName: "eye.fill", color: .label))
         attributedText.append(
-            NSAttributedString(string: " \(reviewed)/\(displayTotal)  |  ", attributes: textAttributes))
+            NSAttributedString(string: " \(reviewed.compactFormatted)/\(displayTotal.compactFormatted)  |  ", attributes: textAttributes))
 
         attributedText.append(createAttachment(systemName: "trash.fill", color: .systemRed))
-        attributedText.append(NSAttributedString(string: " \(displayDeleted)  |  ", attributes: textAttributes))
+        attributedText.append(NSAttributedString(string: " \(displayDeleted.compactFormatted)  |  ", attributes: textAttributes))
 
         attributedText.append(createAttachment(systemName: "checkmark.circle.fill", color: .systemGreen))
-        attributedText.append(NSAttributedString(string: " \(displayKept)  |  ", attributes: textAttributes))
+        attributedText.append(NSAttributedString(string: " \(displayKept.compactFormatted)  |  ", attributes: textAttributes))
 
         attributedText.append(createAttachment(systemName: "archivebox.fill", color: .systemYellow))
-        attributedText.append(NSAttributedString(string: " \(displayStored)", attributes: textAttributes))
+        attributedText.append(NSAttributedString(string: " \(displayStored.compactFormatted)", attributes: textAttributes))
 
         statsLabel.attributedText = attributedText
 

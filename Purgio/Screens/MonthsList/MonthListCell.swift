@@ -235,13 +235,17 @@ final class MonthListCell: UITableViewCell {
         let totalCount = item.originalTotalCount > 0 ? item.originalTotalCount : item.currentPhotoCount
 
         reviewedStat.configure(
-            systemName: "eye.fill", color: .textPrimary, text: "\(item.reviewedCount)/\(totalCount)")
+            systemName: "eye.fill", color: .textPrimary,
+            text: "\(item.reviewedCount.compactFormatted)/\(totalCount.compactFormatted)")
         deletedStat.configure(
-            systemName: "trash.fill", color: ThemeManager.Colors.statusRed, text: "\(item.deletedCount)")
+            systemName: "trash.fill", color: ThemeManager.Colors.statusRed,
+            text: item.deletedCount.compactFormatted)
         keptStat.configure(
-            systemName: "checkmark.circle.fill", color: ThemeManager.Colors.statusGreen, text: "\(item.keptCount)")
+            systemName: "checkmark.circle.fill", color: ThemeManager.Colors.statusGreen,
+            text: item.keptCount.compactFormatted)
         storedStat.configure(
-            systemName: "archivebox.fill", color: ThemeManager.Colors.statusYellow, text: "\(item.storedCount)", iconPointSize: 14)
+            systemName: "archivebox.fill", color: ThemeManager.Colors.statusYellow,
+            text: item.storedCount.compactFormatted, iconPointSize: 14)
     }
 }
 
@@ -348,6 +352,24 @@ final class MonthListCell: UITableViewCell {
         storedCount: 0,
         originalTotalCount: 20,
         mediaType: .video
+    )
+    cell.configure(with: item)
+    return cell
+}
+
+@available(iOS 17.0, *)
+#Preview("Photos (Large numbers)", traits: .fixedLayout(width: 375, height: 90)) {
+    let cell = MonthListCell(style: .default, reuseIdentifier: "cell")
+    let item = MonthItem(
+        title: "Summer 2023",
+        key: "year-2023",
+        currentPhotoCount: 5000,
+        reviewedCount: 3200,
+        keptCount: 1500,
+        deletedCount: 1200,
+        storedCount: 500,
+        originalTotalCount: 5000,
+        mediaType: .image
     )
     cell.configure(with: item)
     return cell

@@ -453,7 +453,7 @@ final class MonthFilterCardsViewController: UIViewController {
         let displayDeleted = min(progress.deletedCount, displayReviewed)
         let displayKept = min(progress.keptCount, displayReviewed - displayDeleted)
         let displayStored = min(progress.storedCount, displayReviewed - displayDeleted - displayKept)
-        reviewedStatView.setValue("\(displayReviewed)/\(totalCount)")
+        reviewedStatView.setValue("\(displayReviewed.compactFormatted)/\(totalCount.compactFormatted)")
         deletedStatView.setValue(displayDeleted)
         keptStatView.setValue(displayKept)
         storedStatView.setValue(displayStored)

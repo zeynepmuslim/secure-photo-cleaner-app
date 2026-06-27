@@ -45,7 +45,7 @@ extension MonthReviewViewController {
             let minThreshold: CGFloat = 15.0 // Minimum movement before showing gradient
 
             if absX > minThreshold || absY > minThreshold {
-                if absY > absX && translation.y < 0 {
+                if absY > absX * 1.5 && translation.y < 0 {
                     let verticalProgress = min(abs(translation.y) / 200.0, 1.0)
                     topGradient.alpha = verticalProgress
                     leftGradient.alpha = 0
@@ -78,7 +78,12 @@ extension MonthReviewViewController {
             let threshold: CGFloat = 100
             let velocityThreshold: CGFloat = 800
 
-            let isUpSwipe = translation.y < -threshold || velocity.y < -velocityThreshold
+            // Thump arcs curve upward before going right, we require 60 degree from horizontal. to avoid treating a rightward arc as an up swipe.
+            let translationAngle = atan2(abs(translation.y), max(abs(translation.x), 1))
+            let velocityAngle = atan2(abs(velocity.y), max(abs(velocity.x), 1))
+            let upAngleThreshold = CGFloat.pi / 3  // 60
+            let isUpSwipe = (translation.y < -threshold && translationAngle > upAngleThreshold)
+                || (velocity.y < -velocityThreshold && velocityAngle > upAngleThreshold)
 
             if isUpSwipe {
                 completeSwipe(direction: .up)

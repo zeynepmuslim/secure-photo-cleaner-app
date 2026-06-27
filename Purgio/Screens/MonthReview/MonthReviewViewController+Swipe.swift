@@ -203,9 +203,14 @@ extension MonthReviewViewController {
 
         statsStore.recordReview(for: mediaType)
         currentIndex += 1
-        
+        let indexBeforeSkip = currentIndex
+
+        // Assets already processed in another filter session (similar, screenshots, etc.)
+        // are skipped here too, so the index may jump by more than one.
         advanceToFirstUnprocessedIndex()
-//        print("[FILTER-STATS] advanceToNext — action=\(actionType), filter=\(filterContext), newIndex=\(currentIndex), deleted=\(deletedCount), kept=\(keptCount), stored=\(storedCount)")
+        let didSkip = currentIndex > indexBeforeSkip
+        updateTitleForYearSession()
+
         saveProgress()
 
         let recycledCard = cardStack.removeLast()
@@ -233,6 +238,13 @@ extension MonthReviewViewController {
 
         let newBottomIndex = currentIndex + 2
         configureCard(recycledCard, at: newBottomIndex)
+
+        // Stale cards still point to skipped indices, reconfigure for the new position.
+        if didSkip {
+            let n = cardStack.count
+            if n > 2 { configureCard(cardStack[n - 1], at: currentIndex) }
+            if n > 1 { configureCard(cardStack[n - 2], at: currentIndex + 1) }
+        }
 
         let bottomReverseIndex = CGFloat(cardStack.count - 1)
         let bottomScale = 1.0 - (bottomReverseIndex * 0.05)

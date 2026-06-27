@@ -32,26 +32,27 @@ extension MonthReviewViewController {
                 reviewAssets = preComputed
             } else {
                 var assets: [PHAsset]
+                let sourceAssets: [PHAsset]
                 if let preSorted = preSorted {
-                    assets = preSorted
+                    sourceAssets = preSorted
                 } else {
-                    let monthAssets = await service.fetchPhotos(
+                    sourceAssets = await service.fetchPhotos(
                         forMonthKey: currentMonthKey, mediaType: currentMediaType)
+                }
 
-                    switch currentFilterContext {
-                    case .none:
-                        assets = monthAssets
-                    case .screenshots:
-                        assets = monthAssets.filter { $0.mediaSubtypes.contains(.photoScreenshot) }
-                    case .screenRecordings:
-                        assets = monthAssets.filter { $0.mediaSubtypes.contains(.videoScreenRecording) }
-                    case .slowMotion:
-                        assets = monthAssets.filter { $0.mediaSubtypes.contains(.videoHighFrameRate) }
-                    case .timeLapse:
-                        assets = monthAssets.filter { $0.mediaSubtypes.contains(.videoTimelapse) }
-                    case .largeFiles, .eyesClosed:
-                        assets = monthAssets
-                    }
+                switch currentFilterContext {
+                case .none:
+                    assets = sourceAssets
+                case .screenshots:
+                    assets = sourceAssets.filter { $0.mediaSubtypes.contains(.photoScreenshot) }
+                case .screenRecordings:
+                    assets = sourceAssets.filter { $0.mediaSubtypes.contains(.videoScreenRecording) }
+                case .slowMotion:
+                    assets = sourceAssets.filter { $0.mediaSubtypes.contains(.videoHighFrameRate) }
+                case .timeLapse:
+                    assets = sourceAssets.filter { $0.mediaSubtypes.contains(.videoTimelapse) }
+                case .largeFiles, .eyesClosed:
+                    assets = sourceAssets
                 }
 
                 if Task.isCancelled { return }
@@ -86,7 +87,15 @@ extension MonthReviewViewController {
                             self.originalTotalCount = storedTotal > 0 ? storedTotal : partial.count
                             self.saveProgress()
                             self.refreshStack()
+                            self.updateTitleForYearSession()
                             self.hideSkeletonLoading()
+
+                            // All remaining assets were already processed
+                            if self.currentIndex >= self.reviewAssets.count {
+                                self.showCompletionSummary()
+                                return
+                            }
+
                             self.showInitialICloudWarning()
                             Task {
                                 try? await Task.sleep(nanoseconds: 500_000_000)
@@ -117,6 +126,12 @@ extension MonthReviewViewController {
                             reviewAssets.count)
                         self.saveProgress()
                         self.updateStats()
+
+                        // Safety net: if all remaining were skipped in the early batch and
+                        // completion wasn't shown yet, trigger it now
+                        if self.currentIndex >= reviewAssets.count && !reviewAssets.isEmpty {
+                            self.showCompletionSummary()
+                        }
                     }
                     return
                 }
@@ -131,9 +146,9 @@ extension MonthReviewViewController {
                 let reviewAsset = reviewAssets[i]
                 let id = reviewAsset.localIdentifier
                 let isProcessed = deleteBin.hasAssetId(id) || keptStore.hasAssetId(id) || willBeStored.hasAssetId(id)
-                let shouldSkip = isProcessed || (skipICloud && reviewAsset.isCloudOnly)
+                let isCloud = skipICloud && reviewAsset.isCloudOnly
 
-                if !shouldSkip {
+                if !(isProcessed || isCloud) {
                     startIndex = i
                     break
                 }
@@ -157,9 +172,6 @@ extension MonthReviewViewController {
                     self.markNonEmptyFilterNotFinished()
 
                     self.currentIndex = startIndex
-                    //                    print("[FILTER-STATS] loadPhotos — filter=\(currentFilterContext), progressKey=\(currentProgressKey), startIndex=\(startIndex), totalAssets=\(reviewAssets.count)")
-                    //                    print("[FILTER-STATS] loadPhotos — savedProgress: deleted=\(progress.deletedCount), kept=\(progress.keptCount), stored=\(progress.storedCount), reviewed=\(progress.reviewedCount), originalTotal=\(progress.originalTotalCount)")
-
                     self.recalculateCountsFromStores()
 
                     if currentFilterContext != .none {
@@ -170,11 +182,9 @@ extension MonthReviewViewController {
                         self.originalTotalCount = max(resolvedOriginalTotal, reviewAssets.count)
                     }
 
-                    //                    print("[FILTER-STATS] loadPhotos — after recalculate: deleted=\(self.deletedCount), kept=\(self.keptCount), stored=\(self.storedCount), originalTotal=\(self.originalTotalCount)")
-
                     self.saveProgress()
-
                     self.refreshStack()
+                    self.updateTitleForYearSession()
                     self.hideSkeletonLoading()
 
                     if self.currentIndex >= reviewAssets.count {
@@ -234,7 +244,7 @@ extension MonthReviewViewController {
 
         while currentIndex < reviewAssets.count && checkedCount < maxChecks {
             let reviewAsset = reviewAssets[currentIndex]
-            if shouldSkipAsset(reviewAsset) { 
+            if shouldSkipAsset(reviewAsset) {
                 currentIndex += 1
             } else {
                 return
@@ -251,11 +261,6 @@ extension MonthReviewViewController {
             let indexToLoad = currentIndex + offset
             configureCard(card, at: indexToLoad)
         }
-
-        let hiddenCount = cardStack.filter { $0.isHidden }.count
-        print(
-            "[REFRESH DEBUG] After refreshStack: \(hiddenCount)/\(cardStack.count) cards hidden, currentIndex: \(currentIndex)"
-        )
 
         layoutCards()
         updateStats()

@@ -151,11 +151,14 @@ final class MonthFilterCardsViewController: UIViewController {
     private let horizontalPadding: CGFloat = 16
     private let cardSpacing: CGFloat = 12
     private var binCountTask: Task<Void, Never>?
+    private var preloadedYearAssets: [PHAsset]?
+    private var yearSection: YearSection?
 
-    init(monthTitle: String, monthKey: String, mediaType: PHAssetMediaType = .image) {
+    init(monthTitle: String, monthKey: String, mediaType: PHAssetMediaType = .image, yearSection: YearSection? = nil) {
         self.monthTitle = monthTitle
         self.monthKey = monthKey
         self.mediaType = mediaType
+        self.yearSection = yearSection
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -175,6 +178,11 @@ final class MonthFilterCardsViewController: UIViewController {
 
         setupUI()
         setupConstraint()
+
+        if monthKey.hasPrefix("year-") {
+            setupInfoButton()
+            preloadYearAssets()
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -384,11 +392,13 @@ final class MonthFilterCardsViewController: UIViewController {
 //        #endif
 
         if progress.originalTotalCount == 0 {
-//            #if DEBUG
-//                print(
-//                    "[MonthFilterCards][Stats] totalCount missing -> fetching assets | monthKey=\(monthKey) mediaType=\(mediaTypeDebugName) reviewed=\(progress.reviewedCount) deleted=\(progress.deletedCount) kept=\(progress.keptCount) stored=\(progress.storedCount)"
-//                )
-//            #endif
+            // Year keys can't be parsed as dates, skip the fetch fallback and wait for preloadYearAssets() to complete
+            guard !monthKey.hasPrefix("year-") else {
+                #if DEBUG
+                print("[MonthFilterCards] year key detected, skipping fetchPhotos fallback for \(monthKey)")
+                #endif
+                return
+            }
             Task {
                 let assets = await photoLibraryService.fetchPhotos(forMonthKey: monthKey, mediaType: mediaType)
                 let count = assets.count
@@ -445,7 +455,7 @@ final class MonthFilterCardsViewController: UIViewController {
         let displayDeleted = min(progress.deletedCount, displayReviewed)
         let displayKept = min(progress.keptCount, displayReviewed - displayDeleted)
         let displayStored = min(progress.storedCount, displayReviewed - displayDeleted - displayKept)
-        reviewedStatView.setValue("\(displayReviewed)/\(totalCount)")
+        reviewedStatView.setValue("\(displayReviewed.compactFormatted)/\(totalCount.compactFormatted)")
         deletedStatView.setValue(displayDeleted)
         keptStatView.setValue(displayKept)
         storedStatView.setValue(displayStored)
@@ -479,6 +489,13 @@ final class MonthFilterCardsViewController: UIViewController {
 
     // MARK: - Auto Reset Finished Tags
     private func checkForNewContentAndResetFinished() {
+
+        guard !monthKey.hasPrefix("year-") else {
+            #if DEBUG
+            print("[MonthFilterCards] skipping checkForNewContent for year key \(monthKey)")
+            #endif
+            return
+        }
         let storedProgress = ReviewProgressStore.shared.getProgress(forMonthKey: monthKey, mediaType: mediaType)
         let storedTotal = storedProgress.originalTotalCount
         guard storedTotal > 0 else { return }
@@ -597,27 +614,147 @@ final class MonthFilterCardsViewController: UIViewController {
         return MonthFilterStatusStore.shared.isFilterFinished(monthKey: monthKey, filter: filter)
     }
 
+    // MARK: - Year Info Button
+
+    private func setupInfoButton() {
+        let config = UIImage.SymbolConfiguration(pointSize: 17, weight: .medium)
+        let image = UIImage(systemName: "info.circle", withConfiguration: config)
+        let button = UIBarButtonItem(image: image, style: .plain, target: self, action: #selector(infoButtonTapped))
+        button.tintColor = .textPrimary
+        navigationItem.rightBarButtonItem = button
+    }
+
+    @objc private func infoButtonTapped() {
+        guard let item = buildFreshYearItem() else { return }
+        let sheet = YearDetailSheet(yearItem: item)
+        present(sheet, animated: true)
+    }
+
+    private func buildFreshYearItem() -> YearItem? {
+        guard let section = yearSection else { return nil }
+        let yearProgress = ReviewProgressStore.shared.getProgress(forMonthKey: monthKey, mediaType: mediaType)
+        let yearReviewed = yearProgress.reviewedCount
+        let totalSectionCount = section.totalItemCount
+
+        // No per-month progress exists, distribute the year total proportionally by photo count.
+        let freshMonths = section.months.map { month in
+            let proportional = totalSectionCount > 0
+                ? Int(round(Double(yearReviewed) * Double(month.currentPhotoCount) / Double(totalSectionCount)))
+                : 0
+            return MonthItem(
+                title: month.title,
+                key: month.key,
+                currentPhotoCount: month.currentPhotoCount,
+                reviewedCount: proportional,
+                keptCount: 0,
+                deletedCount: 0,
+                storedCount: 0,
+                originalTotalCount: month.currentPhotoCount,
+                mediaType: month.mediaType
+            )
+        }
+        return YearItem(
+            year: section.year,
+            key: monthKey,
+            months: freshMonths,
+            currentTotalCount: section.totalItemCount,
+            reviewedCount: yearProgress.reviewedCount,
+            deletedCount: yearProgress.deletedCount,
+            keptCount: yearProgress.keptCount,
+            storedCount: yearProgress.storedCount,
+            originalTotalCount: yearProgress.originalTotalCount,
+            mediaType: mediaType
+        )
+    }
+
+    // MARK: - Year Session Support
+
+    private func preloadYearAssets() {
+        guard let year = monthKey.components(separatedBy: "-").last else { return }
+        Task { [weak self] in
+            guard let self else { return }
+            let buckets = await self.photoLibraryService.loadMonthBuckets(mediaType: self.mediaType)
+            let yearBuckets = buckets.filter { $0.key.hasPrefix(year + "-") }
+            guard !yearBuckets.isEmpty else { return }
+
+            let assets: [PHAsset] = await withTaskGroup(of: [PHAsset].self) { group in
+                for bucket in yearBuckets {
+                    group.addTask { [weak self] in
+                        guard let self else { return [] }
+                        return await self.photoLibraryService.fetchPhotos(
+                            forMonthKey: bucket.key, mediaType: self.mediaType)
+                    }
+                }
+                var combined: [PHAsset] = []
+                for await batch in group { combined.append(contentsOf: batch) }
+                return combined.sorted {
+                    ($0.creationDate ?? .distantPast) < ($1.creationDate ?? .distantPast)
+                }
+            }
+            await MainActor.run { [weak self] in
+                guard let self else { return }
+                self.preloadedYearAssets = assets
+                #if DEBUG
+                print("[MonthFilterCards] year assets preloaded: \(assets.count) assets for \(self.monthKey)")
+                #endif
+                // Save total count so updateStats() can display the correct number
+                let existing = ReviewProgressStore.shared.getProgress(forMonthKey: self.monthKey, mediaType: self.mediaType)
+                if existing.originalTotalCount == 0 && !assets.isEmpty {
+                    ReviewProgressStore.shared.saveProgress(
+                        forMonthKey: self.monthKey, mediaType: self.mediaType,
+                        currentIndex: existing.currentIndex,
+                        reviewedCount: existing.reviewedCount,
+                        deletedCount: existing.deletedCount,
+                        keptCount: existing.keptCount,
+                        storedCount: existing.storedCount,
+                        originalTotalCount: assets.count
+                    )
+                    #if DEBUG
+                    print("[MonthFilterCards] saved originalTotalCount=\(assets.count) for \(self.monthKey)")
+                    #endif
+                }
+                self.updateStats()
+            }
+        }
+    }
+
     // MARK: - Actions
+
+    // For year sessions, preloadedYearAssets is passed directly to each filter
+    // to avoid redundant per-filter fetches. For regular months it stays nil
+    // and each VC fetches its own assets.
+
     @objc private func handleBinTap() {
         let binVC = DeleteBinViewController()
-        binVC.filterMonthKey = monthKey
-        binVC.filterMonthTitle = monthTitle
+        if !monthKey.hasPrefix("year-") {
+            binVC.filterMonthKey = monthKey
+            binVC.filterMonthTitle = monthTitle
+        }
         navigationController?.pushViewController(binVC, animated: true)
     }
 
     @objc private func similarCardTapped() {
         guard !isFilterComplete(.similar) else { return }
         HapticFeedbackManager.shared.impact(intensity: .medium)
-        let similarVC = SimilarPhotosViewController(monthTitle: monthTitle, monthKey: monthKey, mediaType: mediaType)
+        let similarVC = SimilarPhotosViewController(
+            assets: preloadedYearAssets,
+            monthTitle: monthTitle, monthKey: monthKey, mediaType: mediaType)
         navigationController?.pushViewController(similarVC, animated: true)
     }
 
     @objc private func largestCardTapped() {
         guard !isFilterComplete(.largeFiles) else { return }
         HapticFeedbackManager.shared.impact(intensity: .medium)
-        let loadingVC = ProcessingLoadingViewController(
-            monthTitle: monthTitle, monthKey: monthKey, mediaType: mediaType, config: .largeFiles())
-        navigationController?.pushViewController(loadingVC, animated: true)
+        if let yearAssets = preloadedYearAssets {
+            let loadingVC = ProcessingLoadingViewController(
+                monthTitle: monthTitle, monthKey: monthKey,
+                assets: yearAssets, mediaType: mediaType, config: .largeFiles())
+            navigationController?.pushViewController(loadingVC, animated: true)
+        } else {
+            let loadingVC = ProcessingLoadingViewController(
+                monthTitle: monthTitle, monthKey: monthKey, mediaType: mediaType, config: .largeFiles())
+            navigationController?.pushViewController(loadingVC, animated: true)
+        }
     }
 
     @objc private func screenshotsCardTapped() {
@@ -625,15 +762,25 @@ final class MonthFilterCardsViewController: UIViewController {
         HapticFeedbackManager.shared.impact(intensity: .medium)
         let screenshotsVC = MonthReviewViewController(
             monthTitle: monthTitle, monthKey: monthKey, mediaType: mediaType, filterContext: .screenshots)
+        if let yearAssets = preloadedYearAssets {
+            screenshotsVC.setSortedAssets(yearAssets)
+        }
         navigationController?.pushViewController(screenshotsVC, animated: true)
     }
 
     @objc private func eyesClosedCardTapped() {
         guard !isFilterComplete(.eyesClosed) else { return }
         HapticFeedbackManager.shared.impact(intensity: .medium)
-        let loadingVC = ProcessingLoadingViewController(
-            monthTitle: monthTitle, monthKey: monthKey, mediaType: mediaType, config: .eyesClosed())
-        navigationController?.pushViewController(loadingVC, animated: true)
+        if let yearAssets = preloadedYearAssets {
+            let loadingVC = ProcessingLoadingViewController(
+                monthTitle: monthTitle, monthKey: monthKey,
+                assets: yearAssets, mediaType: mediaType, config: .eyesClosed())
+            navigationController?.pushViewController(loadingVC, animated: true)
+        } else {
+            let loadingVC = ProcessingLoadingViewController(
+                monthTitle: monthTitle, monthKey: monthKey, mediaType: mediaType, config: .eyesClosed())
+            navigationController?.pushViewController(loadingVC, animated: true)
+        }
     }
 
     @objc private func screenRecordingsCardTapped() {
@@ -641,6 +788,9 @@ final class MonthFilterCardsViewController: UIViewController {
         HapticFeedbackManager.shared.impact(intensity: .medium)
         let recordingsVC = MonthReviewViewController(
             monthTitle: monthTitle, monthKey: monthKey, mediaType: mediaType, filterContext: .screenRecordings)
+        if let yearAssets = preloadedYearAssets {
+            recordingsVC.setSortedAssets(yearAssets)
+        }
         navigationController?.pushViewController(recordingsVC, animated: true)
     }
 
@@ -649,6 +799,9 @@ final class MonthFilterCardsViewController: UIViewController {
         HapticFeedbackManager.shared.impact(intensity: .medium)
         let slowMotionVC = MonthReviewViewController(
             monthTitle: monthTitle, monthKey: monthKey, mediaType: mediaType, filterContext: .slowMotion)
+        if let yearAssets = preloadedYearAssets {
+            slowMotionVC.setSortedAssets(yearAssets)
+        }
         navigationController?.pushViewController(slowMotionVC, animated: true)
     }
 
@@ -657,6 +810,9 @@ final class MonthFilterCardsViewController: UIViewController {
         HapticFeedbackManager.shared.impact(intensity: .medium)
         let timeLapseVC = MonthReviewViewController(
             monthTitle: monthTitle, monthKey: monthKey, mediaType: mediaType, filterContext: .timeLapse)
+        if let yearAssets = preloadedYearAssets {
+            timeLapseVC.setSortedAssets(yearAssets)
+        }
         navigationController?.pushViewController(timeLapseVC, animated: true)
     }
 
@@ -665,6 +821,9 @@ final class MonthFilterCardsViewController: UIViewController {
         HapticFeedbackManager.shared.impact(intensity: .medium)
         let reviewVC = MonthReviewViewController(
             monthTitle: monthTitle, monthKey: monthKey, mediaType: mediaType, filterContext: .none)
+        if let yearAssets = preloadedYearAssets {
+            reviewVC.setSortedAssets(yearAssets)
+        }
         navigationController?.pushViewController(reviewVC, animated: true)
     }
 }

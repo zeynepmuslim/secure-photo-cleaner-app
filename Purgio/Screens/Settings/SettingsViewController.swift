@@ -763,19 +763,35 @@ final class SettingsViewController: UIViewController {
         UIApplication.shared.open(url)
     }
 
+    private func feedbackEmailBody() -> String {
+        let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+        let iosVersion = UIDevice.current.systemVersion
+        let deviceModel = UIDevice.current.model
+        return """
+
+
+        ---
+        App: Purgio \(appVersion)
+        iOS: \(iosVersion) | Device: \(deviceModel)
+        """
+    }
+
     private func feedbackTapped() {
         if MFMailComposeViewController.canSendMail() {
             let composer = MFMailComposeViewController()
             composer.mailComposeDelegate = self
             composer.setToRecipients([feedbackEmail])
             composer.setSubject(Strings.feedbackSubject)
+            composer.setMessageBody(feedbackEmailBody(), isHTML: false)
             present(composer, animated: true)
             return
         }
 
         let subject = Strings.feedbackSubject
             .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        if let mailto = URL(string: "mailto:\(feedbackEmail)?subject=\(subject)"),
+        let body = feedbackEmailBody()
+            .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        if let mailto = URL(string: "mailto:\(feedbackEmail)?subject=\(subject)&body=\(body)"),
            UIApplication.shared.canOpenURL(mailto) {
             UIApplication.shared.open(mailto)
         } else {

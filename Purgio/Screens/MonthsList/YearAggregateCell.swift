@@ -1,16 +1,17 @@
 //
-//  MonthListCell.swift
+//  YearAggregateCell.swift
 //  Purgio
 //
-//  Created by ZeynepMüslim on 11.01.2026.
+//  Created by ZeynepMüslim on 25.06.2026.
 //
 
 import Photos
 import SwiftUI
 import UIKit
 
-final class MonthListCell: UITableViewCell {
+final class YearAggregateCell: UITableViewCell {
 
+    static let reuseIdentifier = "YearAggregateCell"
     private let containerView: UIView = {
         let view = UIView()
         view.backgroundColor = .cardBackground
@@ -30,7 +31,7 @@ final class MonthListCell: UITableViewCell {
 
     private let titleLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 17, weight: .semibold)
+        label.font = ThemeManager.Fonts.titleFont(size: 17, weight: .bold)
         label.textColor = .textPrimary
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
@@ -72,10 +73,11 @@ final class MonthListCell: UITableViewCell {
 
     private var progressWidthConstraint: NSLayoutConstraint?
 
+    // MARK: - Init
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupUI()
-        setupConstraint()
+        setupConstraints()
     }
 
     required init?(coder: NSCoder) {
@@ -99,7 +101,7 @@ final class MonthListCell: UITableViewCell {
         statsStackView.addArrangedSubview(storedStat)
     }
 
-    private func setupConstraint() {
+    private func setupConstraints() {
         reviewedStat.translatesAutoresizingMaskIntoConstraints = false
         deletedStat.translatesAutoresizingMaskIntoConstraints = false
         keptStat.translatesAutoresizingMaskIntoConstraints = false
@@ -144,7 +146,6 @@ final class MonthListCell: UITableViewCell {
     override func prepareForReuse() {
         super.prepareForReuse()
         progressBackgroundView.backgroundColor = .clear
-        progressBackgroundView.frame.size.width = 0
         removeProgressConstraint()
     }
 
@@ -153,10 +154,11 @@ final class MonthListCell: UITableViewCell {
         progressWidthConstraint = nil
     }
 
-    func configure(with item: MonthItem) {
-        titleLabel.text = item.title
+    // MARK: - Configuration
+    func configure(with item: YearItem) {
+        titleLabel.text = item.year
 
-        let total = item.originalTotalCount > 0 ? item.originalTotalCount : item.currentPhotoCount
+        let total = item.originalTotalCount > 0 ? item.originalTotalCount : item.currentTotalCount
         let reviewed = item.reviewedCount
 
         removeProgressConstraint()
@@ -164,7 +166,7 @@ final class MonthListCell: UITableViewCell {
         if total > 0 && reviewed >= total {
             configureFullyReviewed()
         } else if reviewed == 0 {
-            configureNotTouched(totalCount: item.currentPhotoCount, mediaType: item.mediaType)
+            configureNotStarted(item: item)
         } else {
             configureInProgress(item: item, total: total)
         }
@@ -175,65 +177,71 @@ final class MonthListCell: UITableViewCell {
         statsStackView.isHidden = true
 
         progressBackgroundView.backgroundColor = .progressCompleted
-
-        progressWidthConstraint = progressBackgroundView.widthAnchor.constraint(equalTo: containerView.widthAnchor)
+        progressWidthConstraint = progressBackgroundView.widthAnchor.constraint(
+            equalTo: containerView.widthAnchor)
         progressWidthConstraint?.isActive = true
 
         let textAttributes: [NSAttributedString.Key: Any] = [
             .foregroundColor: ThemeManager.Colors.statusGreen,
             .font: UIFont.systemFont(ofSize: 13, weight: .medium)
         ]
-
         let config = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
-        if let image = UIImage(systemName: "checkmark.seal.fill", withConfiguration: config)?.withTintColor(
-            ThemeManager.Colors.statusGreen)
+        if let image = UIImage(systemName: "checkmark.seal.fill", withConfiguration: config)?
+            .withTintColor(ThemeManager.Colors.statusGreen)
         {
             let attachment = NSTextAttachment()
             attachment.image = image
             attachment.bounds = CGRect(x: 0, y: -2, width: 14, height: 14)
-            let attributedString = NSMutableAttributedString(attachment: attachment)
-            attributedString.append(NSAttributedString(string: "  " + NSLocalizedString("monthCell.allCaughtUp", comment: "All caught up message"), attributes: textAttributes))
-            detailLabel.attributedText = attributedString
+            let attributed = NSMutableAttributedString(attachment: attachment)
+            attributed.append(NSAttributedString(
+                string: "  " + NSLocalizedString("monthsList.yearDone", comment: ""),
+                attributes: textAttributes))
+            detailLabel.attributedText = attributed
         } else {
-            detailLabel.attributedText = NSAttributedString(string: NSLocalizedString("monthCell.allCaughtUp", comment: "All caught up message"), attributes: textAttributes)
+            detailLabel.attributedText = NSAttributedString(
+                string: NSLocalizedString("monthsList.yearDone", comment: ""),
+                attributes: textAttributes)
         }
     }
 
-    private func configureNotTouched(totalCount: Int, mediaType: PHAssetMediaType) {
+    private static let monthAbbrevFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM"
+        return formatter
+    }()
+
+    private func configureNotStarted(item: YearItem) {
         detailLabel.isHidden = false
         statsStackView.isHidden = true
-
         progressBackgroundView.backgroundColor = .clear
 
-        let textAttributes: [NSAttributedString.Key: Any] = [
-            .foregroundColor: UIColor.textSecondary,
-            .font: UIFont.systemFont(ofSize: 13, weight: .regular)
-        ]
+        let monthNames = item.months.compactMap { month -> String? in
+            guard let date = DateFormatterManager.shared.date(fromMonthKey: month.key) else { return nil }
+            return Self.monthAbbrevFormatter.string(from: date)
+        }.joined(separator: ", ")
 
-        let text = mediaType == .video
-            ? String.localizedStringWithFormat(NSLocalizedString("monthCell.videosToReview", comment: "Videos to review count"), totalCount)
-            : String.localizedStringWithFormat(NSLocalizedString("monthCell.photosToReview", comment: "Photos to review count"), totalCount)
-        detailLabel.attributedText = NSAttributedString(string: text, attributes: textAttributes)
+        let countText = String(
+            format: NSLocalizedString("yearCell.itemsCount", comment: ""),
+            item.currentTotalCount)
+
+        let detail = monthNames.isEmpty ? countText : "\(monthNames) · \(countText)"
+        detailLabel.text = detail
     }
 
-    private func configureInProgress(item: MonthItem, total: Int) {
+    private func configureInProgress(item: YearItem, total: Int) {
         detailLabel.isHidden = true
         statsStackView.isHidden = false
 
-        let color =
-            item.mediaType == .video
-            ? UIColor.video50
-            : UIColor.photo50
+        let color: UIColor = item.mediaType == .video ? .video50 : .photo50
         progressBackgroundView.backgroundColor = color
 
         let percentage = CGFloat(item.reviewedCount) / CGFloat(total)
-
         progressWidthConstraint = progressBackgroundView.widthAnchor.constraint(
             equalTo: containerView.widthAnchor, multiplier: percentage)
         progressWidthConstraint?.isActive = true
 
-        let totalCount = item.originalTotalCount > 0 ? item.originalTotalCount : item.currentPhotoCount
-
+        let totalCount = item.originalTotalCount > 0 ? item.originalTotalCount : item.currentTotalCount
+        //Actually compactFormatted wont be needed bacause of bounds (50 curently)
         reviewedStat.configure(
             systemName: "eye.fill", color: .textPrimary,
             text: "\(item.reviewedCount.compactFormatted)/\(totalCount.compactFormatted)")
@@ -250,127 +258,42 @@ final class MonthListCell: UITableViewCell {
 }
 
 @available(iOS 17.0, *)
-#Preview("Photos (Untouched)", traits: .fixedLayout(width: 375, height: 90)) {
-    let cell = MonthListCell(style: .default, reuseIdentifier: "cell")
-    let item = MonthItem(
-        title: "September 2024",
-        key: "202409",
-        currentPhotoCount: 100,
-        reviewedCount: 0,
-        keptCount: 0,
-        deletedCount: 0,
-        storedCount: 0,
-        originalTotalCount: 100,
-        mediaType: .image
-    )
-    cell.configure(with: item)
+#Preview("Not Started", traits: .fixedLayout(width: 375, height: 90)) {
+    let cell = YearAggregateCell(style: .default, reuseIdentifier: "cell")
+    cell.configure(with: YearItem(
+        year: "2015", key: "year-2015",
+        months: [
+            MonthItem(title: "January 2015", key: "2015-01", currentPhotoCount: 8,  reviewedCount: 0, keptCount: 0, deletedCount: 0, storedCount: 0, originalTotalCount: 8,  mediaType: .image),
+            MonthItem(title: "July 2015",    key: "2015-07", currentPhotoCount: 10, reviewedCount: 0, keptCount: 0, deletedCount: 0, storedCount: 0, originalTotalCount: 10, mediaType: .image),
+            MonthItem(title: "November 2015",key: "2015-11", currentPhotoCount: 5,  reviewedCount: 0, keptCount: 0, deletedCount: 0, storedCount: 0, originalTotalCount: 5,  mediaType: .image),
+        ],
+        currentTotalCount: 23, reviewedCount: 0, deletedCount: 0, keptCount: 0, storedCount: 0, originalTotalCount: 23, mediaType: .image))
     return cell
 }
 
 @available(iOS 17.0, *)
-#Preview("Photos (In Progress)", traits: .fixedLayout(width: 375, height: 90)) {
-    let cell = MonthListCell(style: .default, reuseIdentifier: "cell")
-    let item = MonthItem(
-        title: "January 2024",
-        key: "202401",
-        currentPhotoCount: 100,
-        reviewedCount: 30,
-        keptCount: 10,
-        deletedCount: 20,
-        storedCount: 0,
-        originalTotalCount: 100,
-        mediaType: .image
-    )
-    cell.configure(with: item)
+#Preview("In Progress", traits: .fixedLayout(width: 375, height: 90)) {
+    let cell = YearAggregateCell(style: .default, reuseIdentifier: "cell")
+    cell.configure(with: YearItem(
+        year: "2015", key: "year-2015", months: [],
+        currentTotalCount: 23, reviewedCount: 14, deletedCount: 8, keptCount: 5, storedCount: 1, originalTotalCount: 23, mediaType: .image))
     return cell
 }
 
 @available(iOS 17.0, *)
-#Preview("Photos (Finished)", traits: .fixedLayout(width: 375, height: 90)) {
-    let cell = MonthListCell(style: .default, reuseIdentifier: "cell")
-    let item = MonthItem(
-        title: "March 2024",
-        key: "202403",
-        currentPhotoCount: 150,
-        reviewedCount: 150,
-        keptCount: 50,
-        deletedCount: 100,
-        storedCount: 0,
-        originalTotalCount: 150,
-        mediaType: .image
-    )
-    cell.configure(with: item)
+#Preview("Fully Reviewed", traits: .fixedLayout(width: 375, height: 90)) {
+    let cell = YearAggregateCell(style: .default, reuseIdentifier: "cell")
+    cell.configure(with: YearItem(
+        year: "2015", key: "year-2015", months: [],
+        currentTotalCount: 23, reviewedCount: 23, deletedCount: 15, keptCount: 7, storedCount: 1, originalTotalCount: 23, mediaType: .image))
     return cell
 }
 
 @available(iOS 17.0, *)
-#Preview("Videos (Untouched)", traits: .fixedLayout(width: 375, height: 90)) {
-    let cell = MonthListCell(style: .default, reuseIdentifier: "cell")
-    let item = MonthItem(
-        title: "February 2024",
-        key: "202402",
-        currentPhotoCount: 50,
-        reviewedCount: 0,
-        keptCount: 0,
-        deletedCount: 0,
-        storedCount: 0,
-        originalTotalCount: 50,
-        mediaType: .video
-    )
-    cell.configure(with: item)
-    return cell
-}
-
-@available(iOS 17.0, *)
-#Preview("Videos (In Progress)", traits: .fixedLayout(width: 375, height: 90)) {
-    let cell = MonthListCell(style: .default, reuseIdentifier: "cell")
-    let item = MonthItem(
-        title: "June 2024",
-        key: "202406",
-        currentPhotoCount: 40,
-        reviewedCount: 20,
-        keptCount: 10,
-        deletedCount: 10,
-        storedCount: 0,
-        originalTotalCount: 40,
-        mediaType: .video
-    )
-    cell.configure(with: item)
-    return cell
-}
-
-@available(iOS 17.0, *)
-#Preview("Videos (Finished)", traits: .fixedLayout(width: 375, height: 90)) {
-    let cell = MonthListCell(style: .default, reuseIdentifier: "cell")
-    let item = MonthItem(
-        title: "April 2024",
-        key: "202404",
-        currentPhotoCount: 20,
-        reviewedCount: 20,
-        keptCount: 5,
-        deletedCount: 15,
-        storedCount: 0,
-        originalTotalCount: 20,
-        mediaType: .video
-    )
-    cell.configure(with: item)
-    return cell
-}
-
-@available(iOS 17.0, *)
-#Preview("Photos (Large numbers)", traits: .fixedLayout(width: 375, height: 90)) {
-    let cell = MonthListCell(style: .default, reuseIdentifier: "cell")
-    let item = MonthItem(
-        title: "Summer 2023",
-        key: "year-2023",
-        currentPhotoCount: 5000,
-        reviewedCount: 3200,
-        keptCount: 1500,
-        deletedCount: 1200,
-        storedCount: 500,
-        originalTotalCount: 5000,
-        mediaType: .image
-    )
-    cell.configure(with: item)
+#Preview("Large numbers (K)", traits: .fixedLayout(width: 375, height: 90)) {
+    let cell = YearAggregateCell(style: .default, reuseIdentifier: "cell")
+    cell.configure(with: YearItem(
+        year: "2023", key: "year-2023", months: [],
+        currentTotalCount: 5000, reviewedCount: 3200, deletedCount: 1200, keptCount: 1500, storedCount: 500, originalTotalCount: 5000, mediaType: .image))
     return cell
 }

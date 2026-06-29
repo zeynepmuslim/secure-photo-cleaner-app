@@ -54,7 +54,7 @@ def detect_languages(headers):
 
 
 def build_string_unit(state, value):
-    return {"stringUnit": {"state": state, "value": value}}
+    return {"stringUnit": {"state": state, "value": value.replace("\\n", "\n")}}
 
 
 def build_plural_variation(category_values):

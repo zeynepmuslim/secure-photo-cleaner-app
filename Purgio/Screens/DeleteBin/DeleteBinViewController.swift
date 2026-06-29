@@ -5,6 +5,7 @@
 //  Created by ZeynepMüslim on 04.01.2026.
 //
 
+import MessageUI
 import Photos
 import SwiftUI
 import UIKit
@@ -17,6 +18,7 @@ private enum Strings {
     static let cancel = CommonStrings.cancel
     static let delete = CommonStrings.delete
     static let ok = CommonStrings.ok
+    static let preparingProgress = NSLocalizedString("deleteBin.preparingProgress", comment: "Preparing to delete progress label")
     static let deletingProgress = NSLocalizedString("deleteBin.deletingProgress", comment: "Deleting progress label")
     static let deleteCannotUndo = NSLocalizedString("deleteBin.deleteCannotUndo", comment: "Delete warning about Recently Deleted folder")
     static let yourDeleteBin = NSLocalizedString("deleteBin.yourDeleteBin", comment: "Your Delete Bin title")
@@ -25,6 +27,12 @@ private enum Strings {
     static let allDeletedMessage = NSLocalizedString("deleteBin.allDeletedMessage", comment: "All items deleted success message")
     static let errorTitle = NSLocalizedString("deleteBin.errorTitle", comment: "Error alert title")
     static let errorMessage = NSLocalizedString("deleteBin.errorMessage", comment: "Delete error message")
+    static let tryAgain = NSLocalizedString("deleteBin.tryAgain", comment: "Try again button")
+    static let tryInParts = NSLocalizedString("deleteBin.tryInParts", comment: "Retry deletion in smaller chunks")
+    static let reportToDeveloper = NSLocalizedString("deleteBin.reportToDeveloper", comment: "Report error to developer button")
+    static let reportSentTitle = NSLocalizedString("deleteBin.reportSentTitle", comment: "Error report sent confirmation title")
+    static let reportSentMessage = NSLocalizedString("deleteBin.reportSentMessage", comment: "Error report sent confirmation message")
+    static let mailNotConfiguredMessage = NSLocalizedString("deleteBin.mailNotConfiguredMessage", comment: "Mail app not configured message")
 
     private static func mediaDescription(for assets: [PHAsset]) -> String {
         let photoCount = assets.filter { $0.mediaType == .image }.count
@@ -314,6 +322,7 @@ final class DeleteBinViewController: UIViewController {
             )
             navigationItem.rightBarButtonItem = editButton
         }
+
     }
 
     private func makeEditMenu() -> UIMenu {
@@ -648,7 +657,12 @@ final class DeleteBinViewController: UIViewController {
 
         DispatchQueue.global(qos: .utility).async { [weak self] in
             guard let self = self else { return }
-            let estimatedSize = self.calculateEstimatedSize(for: currentAssets)
+            var estimatedSize: Int64 = 0
+            for asset in currentAssets {
+                for resource in PHAssetResource.assetResources(for: asset) {
+                    if let size = resource.value(forKey: "fileSize") as? Int64 { estimatedSize += size }
+                }
+            }
             let sizeString = estimatedSize.formattedBytes()
 
             DispatchQueue.main.async {
@@ -657,19 +671,6 @@ final class DeleteBinViewController: UIViewController {
                 }
             }
         }
-    }
-
-    private func calculateEstimatedSize(for assets: [PHAsset]) -> Int64 {
-        var totalSize: Int64 = 0
-        for asset in assets {
-            let resources = PHAssetResource.assetResources(for: asset)
-            for resource in resources {
-                if let size = resource.value(forKey: "fileSize") as? Int64 {
-                    totalSize += size
-                }
-            }
-        }
-        return totalSize
     }
 
     // MARK: - Empty State
@@ -706,6 +707,163 @@ final class DeleteBinViewController: UIViewController {
         navigationItem.rightBarButtonItem?.isEnabled = false
         findFloatingBinButton()?.isEnabled = false
         findFloatingBinButton()?.alpha = 0.5
+    }
+
+    private func showErrorAlert() {
+        let alert = UIAlertController(
+            title: Strings.errorTitle,
+            message: Strings.errorMessage,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: Strings.ok, style: .default))
+        present(alert, animated: true)
+    }
+
+    private func showDeletionFailedAlert(
+        assets: [PHAsset], indexPaths: [IndexPath]?,
+        totalBytes: Int64, assetSizes: [String: Int64]
+    ) {
+        let alert = UIAlertController(
+            title: Strings.errorTitle,
+            message: Strings.errorMessage,
+            preferredStyle: .alert
+        )
+
+        if assets.count > 500 {
+            alert.addAction(UIAlertAction(title: Strings.ok, style: .default))
+            alert.addAction(UIAlertAction(title: Strings.tryInParts, style: .default) { [weak self] _ in
+                self?.performChunkedDeletion(assets: assets, indexPaths: indexPaths, totalBytes: totalBytes, assetSizes: assetSizes)
+            })
+        } else {
+            alert.addAction(UIAlertAction(title: Strings.ok, style: .default))
+        }
+
+        present(alert, animated: true)
+    }
+
+    private func performChunkedDeletion(
+        assets: [PHAsset], indexPaths: [IndexPath]?,
+        totalBytes: Int64, assetSizes: [String: Int64]
+    ) {
+        let loadingAlert = UIAlertController(title: Strings.deletingProgress, message: nil, preferredStyle: .alert)
+        present(loadingAlert, animated: true)
+
+        let chunkSize = 500
+        let chunks = stride(from: 0, to: assets.count, by: chunkSize).map {
+            Array(assets[$0 ..< min($0 + chunkSize, assets.count)])
+        }
+
+        deleteNextChunk(
+            chunks: chunks, index: 0, totalAssets: assets,
+            indexPaths: indexPaths, totalBytes: totalBytes, assetSizes: assetSizes,
+            loadingAlert: loadingAlert
+        )
+    }
+
+    private func deleteNextChunk(
+        chunks: [[PHAsset]], index: Int, totalAssets: [PHAsset],
+        indexPaths: [IndexPath]?, totalBytes: Int64, assetSizes: [String: Int64],
+        loadingAlert: UIAlertController
+    ) {
+        guard index < chunks.count else {
+            loadingAlert.dismiss(animated: true) { [weak self] in
+                self?.handleDeletionResult(
+                    success: true, error: nil, assets: totalAssets,
+                    indexPaths: indexPaths, freedBytes: totalBytes, assetSizes: assetSizes)
+            }
+            return
+        }
+
+        if chunks.count > 1 {
+            let processed = min(index * 500 + chunks[index].count, totalAssets.count)
+            loadingAlert.message = "\(processed) / \(totalAssets.count)"
+        }
+
+        PHPhotoLibrary.shared().performChanges({
+            PHAssetChangeRequest.deleteAssets(chunks[index] as NSArray)
+        }) { [weak self] success, error in
+            DispatchQueue.main.async {
+                if success {
+                    self?.deleteNextChunk(
+                        chunks: chunks, index: index + 1, totalAssets: totalAssets,
+                        indexPaths: indexPaths, totalBytes: totalBytes, assetSizes: assetSizes,
+                        loadingAlert: loadingAlert
+                    )
+                } else {
+                    loadingAlert.dismiss(animated: true) { [weak self] in
+                        self?.showChunkedDeletionFailedAlert(
+                            error: error, assets: totalAssets,
+                            indexPaths: indexPaths, totalBytes: totalBytes,
+                            assetSizes: assetSizes)
+                    }
+                }
+            }
+        }
+    }
+
+    private func showChunkedDeletionFailedAlert(
+        error: Error?,
+        assets: [PHAsset],
+        indexPaths: [IndexPath]?,
+        totalBytes: Int64,
+        assetSizes: [String: Int64]
+    ) {
+        print("[CHUNK DELETE ERROR] code=\((error as? NSError)?.code ?? -1) \(error?.localizedDescription ?? "Unknown error")")
+
+        let alert = UIAlertController(
+            title: Strings.errorTitle,
+            message: Strings.errorMessage,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: Strings.ok, style: .default))
+        alert.addAction(UIAlertAction(title: Strings.tryAgain, style: .default) { [weak self] _ in
+            self?.performChunkedDeletion(assets: assets, indexPaths: indexPaths, totalBytes: totalBytes, assetSizes: assetSizes)
+        })
+        alert.addAction(UIAlertAction(title: Strings.reportToDeveloper, style: .default) { [weak self] _ in
+            self?.sendErrorReport(error: error)
+        })
+        present(alert, animated: true)
+    }
+
+    private func sendErrorReport(error: Error?) {
+        guard MFMailComposeViewController.canSendMail() else {
+            let alert = UIAlertController(
+                title: Strings.errorTitle,
+                message: Strings.mailNotConfiguredMessage,
+                preferredStyle: .alert
+            )
+            alert.addAction(UIAlertAction(title: Strings.ok, style: .default))
+            present(alert, animated: true)
+            return
+        }
+
+        let composer = MFMailComposeViewController()
+        composer.mailComposeDelegate = self
+        composer.setToRecipients(["zeynep.muslim@icloud.com"])
+        composer.setSubject("Purgio Deletion Error Report")
+        composer.setMessageBody(buildErrorReportBody(error: error), isHTML: false)
+        present(composer, animated: true)
+    }
+
+    private func buildErrorReportBody(error: Error?) -> String {
+        let device = UIDevice.current
+        let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "-"
+        let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "-"
+        let nsError = error as? NSError
+
+        return """
+        Purgio Error Report
+        ===================
+
+        Error Code  : \(nsError?.code.description ?? "-")
+        Error Domain: \(nsError?.domain ?? "-")
+        Description : \(error?.localizedDescription ?? "-")
+
+        Device      : \(device.model)
+        iOS Version : \(device.systemVersion)
+        App Version : \(appVersion) (\(buildNumber))
+        Date        : \(Date())
+        """
     }
 
     #if DEBUG
@@ -838,31 +996,40 @@ final class DeleteBinViewController: UIViewController {
 
     private func performBatchDeletion(assets: [PHAsset]? = nil, indexPaths: [IndexPath]? = nil) {
         let assetsToDelete = assets ?? photoAssets
-        let estimatedFreedBytes = calculateEstimatedSize(for: assetsToDelete)
+        guard !assetsToDelete.isEmpty else { return }
 
-        var assetSizes: [String: Int64] = [:]
-        for asset in assetsToDelete {
-            let resources = PHAssetResource.assetResources(for: asset)
-            var total: Int64 = 0
-            for resource in resources {
-                if let size = resource.value(forKey: "fileSize") as? Int64 {
-                    total += size
-                }
-            }
-            assetSizes[asset.localIdentifier] = total
-        }
-
-        let loadingAlert = UIAlertController(title: Strings.deletingProgress, message: nil, preferredStyle: .alert)
+        let loadingAlert = UIAlertController(title: Strings.preparingProgress, message: nil, preferredStyle: .alert)
         present(loadingAlert, animated: true)
 
-        PHPhotoLibrary.shared().performChanges({
-            PHAssetChangeRequest.deleteAssets(assetsToDelete as NSArray)
-        }) { [weak self] success, error in
-            DispatchQueue.main.async {
-                loadingAlert.dismiss(animated: true) {
-                    self?.handleDeletionResult(
-                        success: success, error: error, assets: assetsToDelete, indexPaths: indexPaths,
-                        freedBytes: estimatedFreedBytes, assetSizes: assetSizes)
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+
+            // Single pass off the main thread
+            var assetSizes: [String: Int64] = [:]
+            var totalBytes: Int64 = 0
+            for asset in assetsToDelete {
+                var assetTotal: Int64 = 0
+                for resource in PHAssetResource.assetResources(for: asset) {
+                    if let size = resource.value(forKey: "fileSize") as? Int64 { assetTotal += size }
+                }
+                assetSizes[asset.localIdentifier] = assetTotal
+                totalBytes += assetTotal
+            }
+
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                loadingAlert.title = Strings.deletingProgress
+
+                PHPhotoLibrary.shared().performChanges({
+                    PHAssetChangeRequest.deleteAssets(assetsToDelete as NSArray)
+                }) { [weak self] success, error in
+                    DispatchQueue.main.async {
+                        loadingAlert.dismiss(animated: true) {
+                            self?.handleDeletionResult(
+                                success: success, error: error, assets: assetsToDelete,
+                                indexPaths: indexPaths, freedBytes: totalBytes, assetSizes: assetSizes)
+                        }
+                    }
                 }
             }
         }
@@ -925,15 +1092,8 @@ final class DeleteBinViewController: UIViewController {
                 )
             }
 
-            let alert = UIAlertController(
-                title: Strings.errorTitle,
-                message: Strings.errorMessage,
-                preferredStyle: .alert
-            )
-            print("[BIN DELETE ERROR] \(error?.localizedDescription ?? "Unknown error")")
-            alert.addAction(UIAlertAction(title: Strings.ok, style: .default))
-
-            present(alert, animated: true)
+            print("[BIN DELETE ERROR] code=\((error as? NSError)?.code ?? -1) \(error?.localizedDescription ?? "Unknown error")")
+            showDeletionFailedAlert(assets: assets, indexPaths: indexPaths, totalBytes: freedBytes, assetSizes: assetSizes)
         }
     }
 }
@@ -997,6 +1157,25 @@ extension DeleteBinViewController: UICollectionViewDelegate {
 
     func collectionView(_ collectionView: UICollectionView, shouldSelectItemAt indexPath: IndexPath) -> Bool {
         return true
+    }
+}
+
+extension DeleteBinViewController: MFMailComposeViewControllerDelegate {
+    func mailComposeController(
+        _ controller: MFMailComposeViewController,
+        didFinishWith result: MFMailComposeResult,
+        error: Error?
+    ) {
+        controller.dismiss(animated: true) { [weak self] in
+            guard result == .sent else { return }
+            let alert = UIAlertController(
+                title: Strings.reportSentTitle,
+                message: Strings.reportSentMessage,
+                preferredStyle: .alert
+            )
+            alert.addAction(UIAlertAction(title: Strings.ok, style: .default))
+            self?.present(alert, animated: true)
+        }
     }
 }
 

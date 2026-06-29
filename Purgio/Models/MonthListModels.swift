@@ -24,6 +24,23 @@ struct MonthItem {
 struct YearSection {
     let year: String
     let months: [MonthItem]
+
+    var totalItemCount: Int {
+        months.reduce(0) { $0 + $1.currentPhotoCount }
+    }
+}
+
+struct YearItem {
+    let year: String
+    let key: String
+    let months: [MonthItem]
+    let currentTotalCount: Int
+    let reviewedCount: Int
+    let deletedCount: Int
+    let keptCount: Int
+    let storedCount: Int
+    let originalTotalCount: Int
+    let mediaType: PHAssetMediaType
 }
 
 enum FilterStatus: String, CaseIterable {

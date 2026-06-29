@@ -27,8 +27,25 @@ private enum Strings {
 
 extension MonthReviewViewController {
 
+    // MARK: - Year Session Title
+
+    private static let yearSessionMonthFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMMM yyyy"
+        return f
+    }()
+
+    func updateTitleForYearSession() {
+        guard monthKey.hasPrefix("year-"),
+              filterContext == .none,
+              currentIndex < reviewAssets.count,
+              let date = reviewAssets[currentIndex].asset.creationDate else { return }
+        title = Self.yearSessionMonthFormatter.string(from: date)
+    }
+
     func showEmptyState() {
-        let isFilterActive = preSortedAssets != nil || filterContext != .none
+        // Year sessions set preSortedAssets but aren't a "filter active" context for .none filter
+        let isFilterActive = (preSortedAssets != nil && !monthKey.hasPrefix("year-")) || filterContext != .none
         let showTryAnother = isFilterActive && (navigationSource == .dashboard || navigationSource == .luckyPicker)
 
         if isFilterActive {
@@ -405,8 +422,12 @@ extension MonthReviewViewController {
 
     @objc func handleBinTap() {
         let binViewController = DeleteBinViewController()
-        binViewController.filterMonthKey = monthKey
-        binViewController.filterMonthTitle = monthTitle
+        // Year-wide session keys (e.g. "year-2026") cannot be parsed as yyyy-MM by DeleteBinViewController,
+        // so skip the filter to show all bin items for year sessions.
+        if !monthKey.hasPrefix("year-") {
+            binViewController.filterMonthKey = monthKey
+            binViewController.filterMonthTitle = monthTitle
+        }
         navigationController?.pushViewController(binViewController, animated: true)
     }
 
@@ -667,16 +688,16 @@ extension MonthReviewViewController {
 
         attributedText.append(createAttachment(systemName: "eye.fill", color: .label))
         attributedText.append(
-            NSAttributedString(string: " \(reviewed)/\(displayTotal)  |  ", attributes: textAttributes))
+            NSAttributedString(string: " \(reviewed.compactFormatted)/\(displayTotal.compactFormatted)  |  ", attributes: textAttributes))
 
         attributedText.append(createAttachment(systemName: "trash.fill", color: .systemRed))
-        attributedText.append(NSAttributedString(string: " \(displayDeleted)  |  ", attributes: textAttributes))
+        attributedText.append(NSAttributedString(string: " \(displayDeleted.compactFormatted)  |  ", attributes: textAttributes))
 
         attributedText.append(createAttachment(systemName: "checkmark.circle.fill", color: .systemGreen))
-        attributedText.append(NSAttributedString(string: " \(displayKept)  |  ", attributes: textAttributes))
+        attributedText.append(NSAttributedString(string: " \(displayKept.compactFormatted)  |  ", attributes: textAttributes))
 
         attributedText.append(createAttachment(systemName: "archivebox.fill", color: .systemYellow))
-        attributedText.append(NSAttributedString(string: " \(displayStored)", attributes: textAttributes))
+        attributedText.append(NSAttributedString(string: " \(displayStored.compactFormatted)", attributes: textAttributes))
 
         statsLabel.attributedText = attributedText
 
@@ -688,7 +709,6 @@ extension MonthReviewViewController {
     }
 
     func showCompletionSummary() {
-//        print("[FILTER-STATS] showCompletionSummary() — filter=\(filterContext), deleted=\(deletedCount), kept=\(keptCount), stored=\(storedCount), originalTotal=\(originalTotalCount)")
         saveProgress()
 
         let progressKey = makeProgressKey()

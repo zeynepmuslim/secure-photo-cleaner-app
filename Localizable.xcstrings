@@ -37,13 +37,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Videos are your biggest space hogs — you've saved %@ so far!"
+            "value" : "Videos are your biggest space hogs, you've saved %@ so far!"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Videolar en çok yer kaplayan dosyalarınız — şimdiye kadar %@ kazandınız!"
+            "value" : "Videolar en çok yer kaplayan dosyalarınız, şimdiye kadar %@ kazandınız!"
           }
         }
       }
@@ -163,13 +163,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Total cleanup: %d photos, %d videos — %@ saved."
+            "value" : "Total cleanup: %d photos, %d videos, %@ saved."
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Toplam temizlik: %d fotoğraf, %d video — %@ kazanıldı."
+            "value" : "Toplam temizlik: %d fotoğraf, %d video, %@ kazanıldı."
           }
         }
       }
@@ -861,6 +861,23 @@
         }
       }
     },
+    "deleteBin.mailNotConfiguredMessage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mail is not configured on this device. Please set up a Mail account in Settings."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu cihazda Mail uygulaması yapılandırılmamış. Lütfen Ayarlar'dan bir Mail hesabı ekleyin."
+          }
+        }
+      }
+    },
     "deleteBin.monthBinTitle" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -970,6 +987,23 @@
         }
       }
     },
+    "deleteBin.preparingProgress" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparing..."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hazırlanıyor..."
+          }
+        }
+      }
+    },
     "deleteBin.removeConfirmMessage" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1028,6 +1062,57 @@
         }
       }
     },
+    "deleteBin.reportSentMessage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your error report has been sent. Thank you!"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hata raporunuz gönderildi. Teşekkürler!"
+          }
+        }
+      }
+    },
+    "deleteBin.reportSentTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Report Sent"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rapor Gönderildi"
+          }
+        }
+      }
+    },
+    "deleteBin.reportToDeveloper" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Report to Developer"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geliştiriciye Bildir"
+          }
+        }
+      }
+    },
     "deleteBin.successTitle" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1041,6 +1126,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Başarılı!"
+          }
+        }
+      }
+    },
+    "deleteBin.tryAgain" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try Again"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tekrar Dene"
+          }
+        }
+      }
+    },
+    "deleteBin.tryInParts" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try Deleting in Parts"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parçalar Hâlinde Silmeyi Dene"
           }
         }
       }
@@ -1170,6 +1289,9 @@
           }
         }
       }
+    },
+    "filterCards.delete" : {
+
     },
     "filterCards.eyesClosedSubtitle" : {
       "extractionState" : "manual",
@@ -2970,6 +3092,23 @@
         }
       }
     },
+    "monthsList.yearDone" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tamamlandı"
+          }
+        }
+      }
+    },
     "motivation.catVideos" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3027,13 +3166,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Memories pile up — time to sort!"
+            "value" : "Memories pile up, time to sort!"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Anılar birikiyor — ayıklama zamanı!"
+            "value" : "Anılar birikiyor, ayıklama zamanı!"
           }
         }
       }
@@ -5895,13 +6034,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ — Tap to refresh"
+            "value" : "%@, Tap to refresh"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ — Yenilemek için dokunun"
+            "value" : "%@, Yenilemek için dokunun"
           }
         }
       }
@@ -7157,13 +7296,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Large Tip"
+            "value" : "Large\nTip"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Büyük Bahşiş"
+            "value" : "Büyük\nBahşiş"
           }
         }
       }
@@ -7174,13 +7313,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Medium Tip"
+            "value" : "Medium\nTip"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Orta Bahşiş"
+            "value" : "Orta\nBahşiş"
           }
         }
       }
@@ -7191,13 +7330,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Small Tip"
+            "value" : "Small\nTip"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Küçük Bahşiş"
+            "value" : "Küçük\nBahşiş"
           }
         }
       }
@@ -7545,6 +7684,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Depolama Analizi"
+          }
+        }
+      }
+    },
+    "yearCell.itemsCount" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d items"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d öğe"
+          }
+        }
+      }
+    },
+    "yearDetailSheet.months" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d months"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d ay"
           }
         }
       }

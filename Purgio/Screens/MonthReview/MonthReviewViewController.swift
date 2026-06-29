@@ -85,8 +85,8 @@ final class MonthReviewViewController: UIViewController {
     let historyManager = UndoHistoryManager.shared
     let haptics = HapticFeedbackManager.shared
     let settingsStore = SettingsStore.shared
-    lazy var imageManager = PHCachingImageManager()
     let imageCache = ImageCacheService.shared
+    lazy var imageManager = PHCachingImageManager()
 
     var reviewAssets: [ReviewAsset] = []
     var currentIndex = 0
@@ -253,11 +253,13 @@ final class MonthReviewViewController: UIViewController {
         loadingTask?.cancel()
 
         for (_, requestID) in imageRequestIDs {
-            imageManager.cancelImageRequest(requestID)
+            imageCache.cancelRequest(requestID)
         }
         imageRequestIDs.removeAll()
 
-        imageCache.stopCachingAllImages()
+        if isMovingFromParent {
+            imageCache.stopCachingAllImages()
+        }
 
         cleanupVideo()
 

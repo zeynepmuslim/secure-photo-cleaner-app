@@ -571,6 +571,9 @@ class SimilarPhotosViewController: UIViewController {
         view.addSubview(tableView)
         view.addSubview(activityIndicator)
         view.addSubview(statusLabel)
+
+        tableView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 80, right: 0)
+        tableView.scrollIndicatorInsets = UIEdgeInsets(top: 0, left: 0, bottom: 80, right: 0)
     }
 
     private func setupConstraint() {

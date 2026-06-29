@@ -179,6 +179,8 @@ final class MonthsListViewController: UIViewController {
         // Add targets
         tableView.dataSource = self
         tableView.delegate = self
+        tableView.register(YearAggregateCell.self,
+            forCellReuseIdentifier: YearAggregateCell.reuseIdentifier)
         helpButton.addTarget(self, action: #selector(handleHelpTap), for: .touchUpInside)
         permissionButton.addTarget(self, action: #selector(handlePermissionTap), for: .touchUpInside)
 
@@ -317,8 +319,12 @@ final class MonthsListViewController: UIViewController {
     }
 
     private func presentLimitedLibraryPicker() {
-        guard #available(iOS 14.0, *) else { return }
-        PHPhotoLibrary.shared().presentLimitedLibraryPicker(from: self)
+        var config = PHPickerConfiguration(photoLibrary: .shared())
+        config.selectionLimit = 0
+        config.filter = isVideo ? .videos : .images
+        let picker = PHPickerViewController(configuration: config)
+        picker.delegate = self
+        present(picker, animated: true)
     }
 
     // MARK: - Permission
@@ -346,6 +352,8 @@ final class MonthsListViewController: UIViewController {
     // MARK: - Data Loading
 
     private func loadMonths() {
+        let status = photoLibraryService.authorizationStatus()
+        guard status == .authorized || status == .limited else { return }
         showSkeletonLoading()
         Task {
             let buckets = await photoLibraryService.loadMonthBuckets(mediaType: mediaType)
@@ -618,7 +626,10 @@ extension MonthsListViewController: UITableViewDataSource, UITableViewDelegate {
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return yearSections[section].months.count
+        let ys = yearSections[section]
+        return ys.totalItemCount < GeneralConstants.BulkYear.sparseYearThreshold
+            ? 1
+            : ys.months.count
     }
 
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
@@ -634,23 +645,67 @@ extension MonthsListViewController: UITableViewDataSource, UITableViewDelegate {
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let ys = yearSections[indexPath.section]
+        if ys.totalItemCount < GeneralConstants.BulkYear.sparseYearThreshold {
+            let cell = tableView.dequeueReusableCell(
+                withIdentifier: YearAggregateCell.reuseIdentifier,
+                for: indexPath) as! YearAggregateCell
+            cell.configure(with: makeYearItem(for: ys))
+            return cell
+        }
+
         let reuseIdentifier = "MonthCell"
         let cell =
             tableView.dequeueReusableCell(withIdentifier: reuseIdentifier) as? MonthListCell
             ?? MonthListCell(style: .default, reuseIdentifier: reuseIdentifier)
-
-        let item = yearSections[indexPath.section].months[indexPath.row]
-        cell.configure(with: item)
-
+        cell.configure(with: ys.months[indexPath.row])
         return cell
     }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        let item = yearSections[indexPath.section].months[indexPath.row]
+        let ys = yearSections[indexPath.section]
+        if ys.totalItemCount < GeneralConstants.BulkYear.sparseYearThreshold {
+            let vc = MonthFilterCardsViewController(
+                monthTitle: ys.year,
+                monthKey: "year-\(ys.year)",
+                mediaType: mediaType,
+                yearSection: ys)
+            navigationController?.pushViewController(vc, animated: true)
+            return
+        }
+        let item = ys.months[indexPath.row]
         let viewController = MonthFilterCardsViewController(
             monthTitle: item.title, monthKey: item.key, mediaType: mediaType)
         navigationController?.pushViewController(viewController, animated: true)
+    }
+}
+
+// MARK: - Year Aggregate Helpers
+
+extension MonthsListViewController {
+    private func makeYearItem(for yearSection: YearSection) -> YearItem {
+        let key = "year-\(yearSection.year)"
+        let p = ReviewProgressStore.shared.getProgress(forMonthKey: key, mediaType: mediaType)
+        return YearItem(
+            year: yearSection.year,
+            key: key,
+            months: yearSection.months,
+            currentTotalCount: yearSection.totalItemCount,
+            reviewedCount: p.reviewedCount,
+            deletedCount: p.deletedCount,
+            keptCount: p.keptCount,
+            storedCount: p.storedCount,
+            originalTotalCount: p.originalTotalCount,
+            mediaType: mediaType
+        )
+    }
+}
+
+extension MonthsListViewController: PHPickerViewControllerDelegate {
+    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+        picker.dismiss(animated: true)
+        loadMonths()
     }
 }
 

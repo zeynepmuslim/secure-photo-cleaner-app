@@ -29,10 +29,6 @@ private enum Device {
     static var isCompactHeight: Bool {
         UIScreen.main.bounds.height <= 667
     }
-    
-    static var isRegularCompactHeight: Bool {
-        UIScreen.main.bounds.height <= 812
-    }
 }
 
 final class TipJarViewController: UIViewController {
@@ -40,21 +36,11 @@ final class TipJarViewController: UIViewController {
     private let manager = TipJarManager.shared
     private var cancellables = Set<AnyCancellable>()
 
-    private lazy var tierMetas: [(title: String, symbol: String, symbolSize: CGFloat)] = {
-        let sizes: (CGFloat, CGFloat, CGFloat)
-        if Device.isCompactHeight {
-            sizes = (20, 24, 28)
-        } else if Device.isRegularCompactHeight {
-            sizes = (16, 20, 20)
-        } else {
-            sizes = (20, 24, 24)
-        }
-        return [
-            (Strings.tierSmall, "sparkle", sizes.0),
-            (Strings.tierMedium, "sparkles", sizes.1),
-            (Strings.tierLarge, "wand.and.sparkles.inverse", sizes.2)
-        ]
-    }()
+    private lazy var tierMetas: [(title: String, imageName: String, symbolSize: CGFloat)] = [
+        (Strings.tierSmall, "small-tip", 26),
+        (Strings.tierMedium, "mid-tip", 34),
+        (Strings.tierLarge, "large-tip", 30),
+    ]
 
     private let contentStack: UIStackView = {
         let stack = UIStackView()
@@ -476,11 +462,11 @@ final class TipJarViewController: UIViewController {
         for (index, product) in products.enumerated() {
             let meta = index < tierMetas.count
                 ? tierMetas[index]
-                : (title: product.displayName, symbol: "heart.fill", symbolSize: CGFloat(32))
+                : (title: product.displayName, imageName: "mid-tip", symbolSize: CGFloat(32))
             let card = TipTier(
                 title: meta.title,
-                symbol: meta.symbol,
-                symbolSize: meta.symbolSize,
+                imageName: meta.imageName,
+                imageSize: meta.symbolSize,
                 price: product.displayPrice
             )
             card.addAction(UIAction { [weak self] _ in

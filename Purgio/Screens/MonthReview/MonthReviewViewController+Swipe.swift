@@ -45,7 +45,7 @@ extension MonthReviewViewController {
             let minThreshold: CGFloat = 15.0 // Minimum movement before showing gradient
 
             if absX > minThreshold || absY > minThreshold {
-                if absY > absX && translation.y < 0 {
+                if absY > absX * 1.5 && translation.y < 0 {
                     let verticalProgress = min(abs(translation.y) / 200.0, 1.0)
                     topGradient.alpha = verticalProgress
                     leftGradient.alpha = 0
@@ -78,7 +78,12 @@ extension MonthReviewViewController {
             let threshold: CGFloat = 100
             let velocityThreshold: CGFloat = 800
 
-            let isUpSwipe = translation.y < -threshold || velocity.y < -velocityThreshold
+            // Thump arcs curve upward before going right, we require 60 degree from horizontal. to avoid treating a rightward arc as an up swipe.
+            let translationAngle = atan2(abs(translation.y), max(abs(translation.x), 1))
+            let velocityAngle = atan2(abs(velocity.y), max(abs(velocity.x), 1))
+            let upAngleThreshold = CGFloat.pi / 3  // 60
+            let isUpSwipe = (translation.y < -threshold && translationAngle > upAngleThreshold)
+                || (velocity.y < -velocityThreshold && velocityAngle > upAngleThreshold)
 
             if isUpSwipe {
                 completeSwipe(direction: .up)
@@ -203,16 +208,21 @@ extension MonthReviewViewController {
 
         statsStore.recordReview(for: mediaType)
         currentIndex += 1
-        
+        let indexBeforeSkip = currentIndex
+
+        // Assets already processed in another filter session (similar, screenshots, etc.)
+        // are skipped here too, so the index may jump by more than one.
         advanceToFirstUnprocessedIndex()
-//        print("[FILTER-STATS] advanceToNext — action=\(actionType), filter=\(filterContext), newIndex=\(currentIndex), deleted=\(deletedCount), kept=\(keptCount), stored=\(storedCount)")
+        let didSkip = currentIndex > indexBeforeSkip
+        updateTitleForYearSession()
+
         saveProgress()
 
         let recycledCard = cardStack.removeLast()
 
         if let oldAssetId = recycledCard.assetIdentifier,
            let requestID = imageRequestIDs[oldAssetId] {
-            imageManager.cancelImageRequest(requestID)
+            imageCache.cancelRequest(requestID)
             imageRequestIDs.removeValue(forKey: oldAssetId)
         }
 
@@ -233,6 +243,13 @@ extension MonthReviewViewController {
 
         let newBottomIndex = currentIndex + 2
         configureCard(recycledCard, at: newBottomIndex)
+
+        // Stale cards still point to skipped indices, reconfigure for the new position.
+        if didSkip {
+            let n = cardStack.count
+            if n > 2 { configureCard(cardStack[n - 1], at: currentIndex) }
+            if n > 1 { configureCard(cardStack[n - 2], at: currentIndex + 1) }
+        }
 
         let bottomReverseIndex = CGFloat(cardStack.count - 1)
         let bottomScale = 1.0 - (bottomReverseIndex * 0.05)

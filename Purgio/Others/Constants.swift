@@ -44,4 +44,8 @@ enum GeneralConstants {
         static let buttonBottom: CGFloat = 24
     }
 
+    enum BulkYear {
+        static let sparseYearThreshold: Int = 50
+    }
+
 }

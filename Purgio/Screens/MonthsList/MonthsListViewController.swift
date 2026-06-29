@@ -319,8 +319,12 @@ final class MonthsListViewController: UIViewController {
     }
 
     private func presentLimitedLibraryPicker() {
-        guard #available(iOS 14.0, *) else { return }
-        PHPhotoLibrary.shared().presentLimitedLibraryPicker(from: self)
+        var config = PHPickerConfiguration(photoLibrary: .shared())
+        config.selectionLimit = 0
+        config.filter = isVideo ? .videos : .images
+        let picker = PHPickerViewController(configuration: config)
+        picker.delegate = self
+        present(picker, animated: true)
     }
 
     // MARK: - Permission
@@ -348,6 +352,8 @@ final class MonthsListViewController: UIViewController {
     // MARK: - Data Loading
 
     private func loadMonths() {
+        let status = photoLibraryService.authorizationStatus()
+        guard status == .authorized || status == .limited else { return }
         showSkeletonLoading()
         Task {
             let buckets = await photoLibraryService.loadMonthBuckets(mediaType: mediaType)
@@ -693,6 +699,13 @@ extension MonthsListViewController {
             originalTotalCount: p.originalTotalCount,
             mediaType: mediaType
         )
+    }
+}
+
+extension MonthsListViewController: PHPickerViewControllerDelegate {
+    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+        picker.dismiss(animated: true)
+        loadMonths()
     }
 }
 

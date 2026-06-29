@@ -78,6 +78,8 @@ extension MonthReviewViewController {
                             if i == partial.count - 1 { earlyStart = partial.count }
                         }
 
+                        guard earlyStart < partial.count else { break }
+
                         await MainActor.run { [weak self] in
                             guard let self, self.reviewAssets.isEmpty else { return }
                             self.reviewAssets = partial

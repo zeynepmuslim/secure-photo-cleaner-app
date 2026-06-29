@@ -63,7 +63,7 @@ final class TipTier: UIControl {
     private let symbolImageView: UIImageView = {
         let imageView = UIImageView()
         imageView.translatesAutoresizingMaskIntoConstraints = false
-        imageView.contentMode = .center
+        imageView.contentMode = .scaleAspectFit
         imageView.tintColor = .tipJarRed100
         imageView.setContentHuggingPriority(.required, for: .vertical)
         imageView.setContentHuggingPriority(.required, for: .horizontal)
@@ -104,14 +104,13 @@ final class TipTier: UIControl {
         return stack
     }()
 
-    init(title: String, symbol: String, symbolSize: CGFloat, price: String) {
+    init(title: String, imageName: String, imageSize: CGFloat, price: String) {
         super.init(frame: .zero)
         translatesAutoresizingMaskIntoConstraints = false
 
         titleLabel.text = title
         priceLabel.text = price
-        let symbolConfig = UIImage.SymbolConfiguration(pointSize: symbolSize, weight: .semibold)
-        symbolImageView.image = UIImage(systemName: symbol, withConfiguration: symbolConfig)
+        symbolImageView.image = UIImage(named: imageName)?.withRenderingMode(.alwaysTemplate)
 
         containerView.layer.borderColor = Self.defaultBorderColor.cgColor
         containerView.layer.borderWidth = Self.defaultBorderWidth
@@ -142,6 +141,9 @@ final class TipTier: UIControl {
             contentStack.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -8),
             contentStack.topAnchor.constraint(greaterThanOrEqualTo: containerView.topAnchor, constant: 20),
             contentStack.bottomAnchor.constraint(lessThanOrEqualTo: containerView.bottomAnchor, constant: -20),
+
+            symbolImageView.widthAnchor.constraint(equalToConstant: imageSize),
+            symbolImageView.heightAnchor.constraint(equalToConstant: imageSize),
         ])
     }
 
@@ -174,13 +176,13 @@ import SwiftUI
 @available(iOS 17.0, *)
 private struct TipTierPreviewWrapper: UIViewRepresentable {
     let title: String
-    let symbol: String
-    let symbolSize: CGFloat
+    let imageName: String
+    let imageSize: CGFloat
     let price: String
     let selected: Bool
 
     func makeUIView(context: Context) -> TipTier {
-        let view = TipTier(title: title, symbol: symbol, symbolSize: symbolSize, price: price)
+        let view = TipTier(title: title, imageName: imageName, imageSize: imageSize, price: price)
         view.setSelected(selected)
         return view
     }
@@ -193,9 +195,9 @@ private struct TipTierPreviewWrapper: UIViewRepresentable {
 @available(iOS 17.0, *)
 #Preview("All Tiers") {
     HStack(spacing: 12) {
-        TipTierPreviewWrapper(title: "Small Tip", symbol: "sparkle", symbolSize: 28, price: "₺34,99", selected: false)
-        TipTierPreviewWrapper(title: "Medium Tip", symbol: "sparkles", symbolSize: 34, price: "₺94,99", selected: true)
-        TipTierPreviewWrapper(title: "Large Tip", symbol: "wand.and.sparkles.inverse", symbolSize: 40, price: "₺159,99", selected: false)
+        TipTierPreviewWrapper(title: "Small Tip", imageName: "small-tip", imageSize: 32, price: "₺34,99", selected: false)
+        TipTierPreviewWrapper(title: "Medium Tip", imageName: "mid-tip", imageSize: 38, price: "₺94,99", selected: true)
+        TipTierPreviewWrapper(title: "Large Tip", imageName: "large-tip", imageSize: 36, price: "₺159,99", selected: false)
     }
     .frame(height: 160)
     .padding()
@@ -204,9 +206,9 @@ private struct TipTierPreviewWrapper: UIViewRepresentable {
 @available(iOS 17.0, *)
 #Preview("All Tiers — Dark") {
     HStack(spacing: 12) {
-        TipTierPreviewWrapper(title: "Small Tip", symbol: "sparkle", symbolSize: 28, price: "₺34,99", selected: false)
-        TipTierPreviewWrapper(title: "Medium Tip", symbol: "sparkles", symbolSize: 34, price: "₺94,99", selected: true)
-        TipTierPreviewWrapper(title: "Large Tip", symbol: "wand.and.sparkles.inverse", symbolSize: 40, price: "₺159,99", selected: false)
+        TipTierPreviewWrapper(title: "Small Tip", imageName: "small-tip", imageSize: 28, price: "₺34,99", selected: false)
+        TipTierPreviewWrapper(title: "Medium Tip", imageName: "mid-tip", imageSize: 34, price: "₺94,99", selected: true)
+        TipTierPreviewWrapper(title: "Large Tip", imageName: "large-tip", imageSize: 40, price: "₺159,99", selected: false)
     }
     .frame(height: 160)
     .padding()

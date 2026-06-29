@@ -394,7 +394,9 @@ final class MonthFilterCardsViewController: UIViewController {
         if progress.originalTotalCount == 0 {
             // Year keys can't be parsed as dates, skip the fetch fallback and wait for preloadYearAssets() to complete
             guard !monthKey.hasPrefix("year-") else {
+                #if DEBUG
                 print("[MonthFilterCards] year key detected, skipping fetchPhotos fallback for \(monthKey)")
+                #endif
                 return
             }
             Task {
@@ -489,7 +491,9 @@ final class MonthFilterCardsViewController: UIViewController {
     private func checkForNewContentAndResetFinished() {
 
         guard !monthKey.hasPrefix("year-") else {
+            #if DEBUG
             print("[MonthFilterCards] skipping checkForNewContent for year key \(monthKey)")
+            #endif
             return
         }
         let storedProgress = ReviewProgressStore.shared.getProgress(forMonthKey: monthKey, mediaType: mediaType)
@@ -690,8 +694,9 @@ final class MonthFilterCardsViewController: UIViewController {
             await MainActor.run { [weak self] in
                 guard let self else { return }
                 self.preloadedYearAssets = assets
+                #if DEBUG
                 print("[MonthFilterCards] year assets preloaded: \(assets.count) assets for \(self.monthKey)")
-
+                #endif
                 // Save total count so updateStats() can display the correct number
                 let existing = ReviewProgressStore.shared.getProgress(forMonthKey: self.monthKey, mediaType: self.mediaType)
                 if existing.originalTotalCount == 0 && !assets.isEmpty {
@@ -704,7 +709,9 @@ final class MonthFilterCardsViewController: UIViewController {
                         storedCount: existing.storedCount,
                         originalTotalCount: assets.count
                     )
+                    #if DEBUG
                     print("[MonthFilterCards] saved originalTotalCount=\(assets.count) for \(self.monthKey)")
+                    #endif
                 }
                 self.updateStats()
             }

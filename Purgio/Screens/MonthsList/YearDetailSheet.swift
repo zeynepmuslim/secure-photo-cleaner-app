@@ -168,7 +168,7 @@ final class YearDetailSheet: UIViewController {
     }
 }
 
-// MARK: - MonthDetailRowViewiew
+// MARK: - MonthDetailRowView
 private final class MonthDetailRowView: UIView {
     private let monthNameLabel: UILabel = {
         let label = UILabel()

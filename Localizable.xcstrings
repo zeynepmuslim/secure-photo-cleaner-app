@@ -7296,13 +7296,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Large Tip"
+            "value" : "Large\nTip"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Büyük Bahşiş"
+            "value" : "Büyük\nBahşiş"
           }
         }
       }
@@ -7313,13 +7313,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Medium Tip"
+            "value" : "Medium\nTip"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Orta Bahşiş"
+            "value" : "Orta\nBahşiş"
           }
         }
       }
@@ -7330,13 +7330,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Small Tip"
+            "value" : "Small\nTip"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Küçük Bahşiş"
+            "value" : "Küçük\nBahşiş"
           }
         }
       }

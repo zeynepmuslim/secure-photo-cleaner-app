@@ -146,7 +146,6 @@ final class YearAggregateCell: UITableViewCell {
     override func prepareForReuse() {
         super.prepareForReuse()
         progressBackgroundView.backgroundColor = .clear
-        progressBackgroundView.frame.size.width = 0
         removeProgressConstraint()
     }
 

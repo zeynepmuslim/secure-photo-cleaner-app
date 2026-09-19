@@ -13,6 +13,7 @@
 		D7E939332F2BFBDD002BE331 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D7E939322F2BFBDD002BE331 /* SwiftUI.framework */; };
 		D7E939422F2BFBE0002BE331 /* StorageAnalysisWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D7E9392E2F2BFBDD002BE331 /* StorageAnalysisWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		D7EC5C922F90D532004D5B83 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D7EC5C912F90D532004D5B83 /* StoreKit.framework */; };
+		D7F1A0022F9A000000000001 /* PhotosUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D7F1A0012F9A000000000001 /* PhotosUI.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -46,6 +47,7 @@
 		D7E939302F2BFBDD002BE331 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		D7E939322F2BFBDD002BE331 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		D7EC5C912F90D532004D5B83 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
+		D7F1A0012F9A000000000001 /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PhotosUI.framework; path = System/Library/Frameworks/PhotosUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -90,6 +92,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D7EC5C922F90D532004D5B83 /* StoreKit.framework in Frameworks */,
+				D7F1A0022F9A000000000001 /* PhotosUI.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -129,6 +132,7 @@
 			isa = PBXGroup;
 			children = (
 				D7EC5C912F90D532004D5B83 /* StoreKit.framework */,
+				D7F1A0012F9A000000000001 /* PhotosUI.framework */,
 				D7E939302F2BFBDD002BE331 /* WidgetKit.framework */,
 				D7E939322F2BFBDD002BE331 /* SwiftUI.framework */,
 			);

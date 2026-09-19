@@ -319,12 +319,12 @@ final class MonthsListViewController: UIViewController {
     }
 
     private func presentLimitedLibraryPicker() {
-        var config = PHPickerConfiguration(photoLibrary: .shared())
-        config.selectionLimit = 0
-        config.filter = isVideo ? .videos : .images
-        let picker = PHPickerViewController(configuration: config)
-        picker.delegate = self
-        present(picker, animated: true)
+        PHPhotoLibrary.shared().presentLimitedLibraryPicker(from: self) { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.photoLibraryService.invalidateMonthBucketsCache()
+                self?.loadMonths()
+            }
+        }
     }
 
     // MARK: - Permission
@@ -699,13 +699,6 @@ extension MonthsListViewController {
             originalTotalCount: p.originalTotalCount,
             mediaType: mediaType
         )
-    }
-}
-
-extension MonthsListViewController: PHPickerViewControllerDelegate {
-    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
-        picker.dismiss(animated: true)
-        loadMonths()
     }
 }
 

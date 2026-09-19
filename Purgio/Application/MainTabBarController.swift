@@ -43,6 +43,8 @@ class MainTabBarController: UITabBarController, UINavigationControllerDelegate {
     private var binButtonTrailingConstraint: NSLayoutConstraint?
     private var binButtonLeadingConstraint: NSLayoutConstraint?
     private var binButtonFixedWidthConstraint: NSLayoutConstraint?
+    private var binButtonAboveTabBarConstraint: NSLayoutConstraint?
+    private var binButtonAlignedWithTabBarConstraint: NSLayoutConstraint?
 
     // Context for month-filtered navigation
     private var currentMonthContext: (key: String, title: String)?
@@ -84,17 +86,24 @@ class MainTabBarController: UITabBarController, UINavigationControllerDelegate {
         view.addSubview(binButton)
         binButton.translatesAutoresizingMaskIntoConstraints = false
 
-        binButtonTrailingConstraint = binButton.trailingAnchor.constraint(
-            equalTo: view.trailingAnchor, constant: -GeneralConstants.EdgePadding.medium)
-        binButtonLeadingConstraint = binButton.leadingAnchor.constraint(
-            equalTo: view.leadingAnchor, constant: GeneralConstants.EdgePadding.medium)
-
         let binButtonBottom: NSLayoutConstraint
         if #available(iOS 26.0, *) {
-            binButtonBottom = binButton.bottomAnchor.constraint(
+            binButtonTrailingConstraint = binButton.trailingAnchor.constraint(
+                equalTo: contentLayoutGuide.trailingAnchor, constant: -GeneralConstants.EdgePadding.medium)
+            binButtonLeadingConstraint = binButton.leadingAnchor.constraint(
+                equalTo: contentLayoutGuide.leadingAnchor, constant: GeneralConstants.EdgePadding.medium)
+
+            binButtonAboveTabBarConstraint = binButton.bottomAnchor.constraint(
                 equalTo: contentLayoutGuide.bottomAnchor,
                 constant: -GeneralConstants.Spacer.buttonBottom)
+            binButtonAlignedWithTabBarConstraint = binButton.bottomAnchor.constraint(
+                equalTo: tabBar.bottomAnchor)
+            binButtonBottom = binButtonAboveTabBarConstraint!
         } else {
+            binButtonTrailingConstraint = binButton.trailingAnchor.constraint(
+                equalTo: view.trailingAnchor, constant: -GeneralConstants.EdgePadding.medium)
+            binButtonLeadingConstraint = binButton.leadingAnchor.constraint(
+                equalTo: view.leadingAnchor, constant: GeneralConstants.EdgePadding.medium)
             binButtonBottom = binButton.bottomAnchor.constraint(
                 equalTo: tabBar.topAnchor,
                 constant: -GeneralConstants.Spacer.buttonBottom)
@@ -273,6 +282,22 @@ extension MainTabBarController: UITabBarControllerDelegate {
             let edgePadding = GeneralConstants.EdgePadding.medium
             let targetWidth = (view.bounds.width / 2) - (edgePadding * 1.5)
             binButtonFixedWidthConstraint?.constant = targetWidth
+        }
+
+        // mode/sidebar.preferredPlacement don't give tab bar behavior. need calculation
+        if let aboveTabBar = binButtonAboveTabBarConstraint,
+            let alignedWithTabBar = binButtonAlignedWithTabBarConstraint
+        {
+            let tabBarIsVertical = tabBar.bounds.height > tabBar.bounds.width
+            if tabBarIsVertical {
+                // 8 for internal padding part
+                alignedWithTabBar.constant = -tabBar.safeAreaInsets.bottom + 8
+                aboveTabBar.isActive = false
+                alignedWithTabBar.isActive = true
+            } else {
+                alignedWithTabBar.isActive = false
+                aboveTabBar.isActive = true
+            }
         }
     }
 

@@ -192,6 +192,11 @@ final class DeleteBinViewController: UIViewController {
         setupUI()
         setupConstraint()
         calculateThumbnailSize()
+        if #available(iOS 17.0, *) {
+            registerForTraitChanges([UITraitDisplayScale.self]) { (self: DeleteBinViewController, _) in
+                self.calculateThumbnailSize()
+            }
+        }
 
         if skipAutoLoad {
             updateUI()
@@ -536,7 +541,7 @@ final class DeleteBinViewController: UIViewController {
         let totalSpacing = (columns - 1) * spacing + insets
         let containerWidth = collectionView.bounds.width > 0 ? collectionView.bounds.width : view.bounds.width
         let width = (containerWidth - totalSpacing) / columns
-        thumbnailSize = CGSize(width: width * UIScreen.main.scale, height: width * UIScreen.main.scale)
+        thumbnailSize = CGSize(width: width * traitCollection.displayScale, height: width * traitCollection.displayScale)
 
         if let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
             layout.itemSize = CGSize(width: width, height: width)
@@ -1119,8 +1124,10 @@ extension DeleteBinViewController: UICollectionViewDataSource {
             for: asset,
             quality: .thumbnail,
             screenSize: CGSize(
-                width: thumbnailSize.width / UIScreen.main.scale, height: thumbnailSize.height / UIScreen.main.scale),
-            allowNetworkAccess: SettingsStore.shared.allowInternetAccess
+                width: thumbnailSize.width / traitCollection.displayScale,
+                height: thumbnailSize.height / traitCollection.displayScale),
+            allowNetworkAccess: SettingsStore.shared.allowInternetAccess,
+            traitCollection: traitCollection
         ) { image, isInCloud, _ in
             guard cell.representedAssetIdentifier == asset.localIdentifier else { return }
 

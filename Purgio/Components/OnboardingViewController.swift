@@ -62,8 +62,7 @@ final class OnboardingViewController: UIViewController {
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.text = Strings.title
-        let isSmallScreen = UIScreen.main.bounds.height < 700
-        label.font = .systemFont(ofSize: isSmallScreen ? 22 : 28, weight: .bold)
+        label.font = .systemFont(ofSize: 28, weight: .bold)
         label.textColor = .textPrimary
         label.textAlignment = .center
         label.numberOfLines = 0
@@ -74,8 +73,7 @@ final class OnboardingViewController: UIViewController {
     private let subtitleLabel: UILabel = {
         let label = UILabel()
         label.text = Strings.subtitle
-        let isSmallScreen = UIScreen.main.bounds.height < 700
-        label.font = .systemFont(ofSize: isSmallScreen ? 14 : 16, weight: .medium)
+        label.font = .systemFont(ofSize: 16, weight: .medium)
         label.textColor = .textSecondary
         label.textAlignment = .center
         label.numberOfLines = 0
@@ -85,8 +83,7 @@ final class OnboardingViewController: UIViewController {
 
     private let swipeIconView: UIImageView = {
         let imageView = UIImageView()
-        let isSmallScreen = UIScreen.main.bounds.height < 700
-        let config = UIImage.SymbolConfiguration(pointSize: isSmallScreen ? 50 : 70, weight: .ultraLight)
+        let config = UIImage.SymbolConfiguration(pointSize: 70, weight: .ultraLight)
         imageView.image = UIImage(systemName: "hand.draw", withConfiguration: config)
         imageView.tintColor = .textPrimary
         imageView.contentMode = .scaleAspectFit
@@ -131,12 +128,23 @@ final class OnboardingViewController: UIViewController {
         return stack
     }()
 
+    private var didSetupLayout = false
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        setupUI()
-        setupConstraint()
         setupGestures()
         presentationController?.delegate = self
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        guard !didSetupLayout else { return }
+        didSetupLayout = true
+
+        let isSmallScreen = view.bounds.height < 700
+        applySizeVariant(isSmallScreen: isSmallScreen)
+        setupUI(isSmallScreen: isSmallScreen)
+        setupConstraint(isSmallScreen: isSmallScreen)
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -144,7 +152,16 @@ final class OnboardingViewController: UIViewController {
         startPulseAnimation()
     }
 
-    private func setupUI() {
+    private func applySizeVariant(isSmallScreen: Bool) {
+        titleLabel.font = .systemFont(ofSize: isSmallScreen ? 22 : 28, weight: .bold)
+        subtitleLabel.font = .systemFont(ofSize: isSmallScreen ? 14 : 16, weight: .medium)
+        swipeIconView.image = UIImage(
+            systemName: "hand.draw",
+            withConfiguration: UIImage.SymbolConfiguration(pointSize: isSmallScreen ? 50 : 70, weight: .ultraLight)
+        )
+    }
+
+    private func setupUI(isSmallScreen: Bool) {
         if #available(iOS 26.0, *) {
             view.backgroundColor = .clear
         } else {
@@ -186,7 +203,6 @@ final class OnboardingViewController: UIViewController {
         gradientContainerView.addSubview(leftStack)
         gradientContainerView.addSubview(rightStack)
 
-        let isSmallScreen = UIScreen.main.bounds.height < 700
         if isSmallScreen {
             buttonStack.addArrangedSubview(UIView.flexibleSpacer())
             buttonStack.addArrangedSubview(closeButton)
@@ -197,8 +213,7 @@ final class OnboardingViewController: UIViewController {
         }
     }
 
-    private func setupConstraint() {
-        let isSmallScreen = UIScreen.main.bounds.height < 700
+    private func setupConstraint(isSmallScreen: Bool) {
         let topPadding: CGFloat = isSmallScreen ? 12 : 30
         let stackSpacing: CGFloat = isSmallScreen ? 10 : 20
         let sideStackTopSpacing: CGFloat = isSmallScreen ? 30 : 60

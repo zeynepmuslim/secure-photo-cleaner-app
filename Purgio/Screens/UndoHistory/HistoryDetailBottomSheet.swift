@@ -360,13 +360,14 @@ final class HistoryMediaPreviewViewController: UIViewController {
         fatalError("init(coder:) has not been implemented")
     }
     
+    private var didLoadMedia = false
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
 
         setupUI()
         setupConstraint()
-        loadMedia()
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -475,15 +476,16 @@ final class HistoryMediaPreviewViewController: UIViewController {
         videoController.controlsContainer.isHidden = true
 
         let targetSize = CGSize(
-            width: view.bounds.width * UIScreen.main.scale,
-            height: view.bounds.height * UIScreen.main.scale
+            width: view.bounds.width * traitCollection.displayScale,
+            height: view.bounds.height * traitCollection.displayScale
         )
 
         ImageCacheService.shared.loadImage(
             for: asset,
             quality: .full,
             screenSize: targetSize,
-            allowNetworkAccess: SettingsStore.shared.allowInternetAccess
+            allowNetworkAccess: SettingsStore.shared.allowInternetAccess,
+            traitCollection: traitCollection
         ) { [weak self] image, _, _ in
             guard let self = self else { return }
 
@@ -534,6 +536,11 @@ final class HistoryMediaPreviewViewController: UIViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         videoController.playerLayer?.frame = view.bounds
+
+        if !didLoadMedia {
+            didLoadMedia = true
+            loadMedia()
+        }
     }
     
     private func showError(message: String) {

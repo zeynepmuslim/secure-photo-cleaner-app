@@ -57,7 +57,6 @@ final class FilterCard: UIControl {
         label.minimumScaleFactor = 0.75
         label.lineBreakMode = .byTruncatingTail
         label.isUserInteractionEnabled = false
-        label.isHidden = UIScreen.main.bounds.width < 390
         return label
     }()
 
@@ -139,6 +138,11 @@ final class FilterCard: UIControl {
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        subtitleLabel.isHidden = (window?.bounds.width ?? bounds.width) < 390
     }
 
     private func setupUI() {

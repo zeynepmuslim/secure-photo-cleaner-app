@@ -113,12 +113,11 @@ final class AskPermissionBoardingViewController: UIViewController {
     private var hasAnimated = false
     private var photoOverlay: UIView?
 
-    private let isSmallScreen = UIScreen.main.bounds.height < 700
+    private var didSetupConstraint = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        setupConstraint()
 
         switch status {
         case .permissionRequest:
@@ -234,7 +233,8 @@ final class AskPermissionBoardingViewController: UIViewController {
     }
 
     private func setupConstraint() {
-        let screenWidth = UIScreen.main.bounds.width
+        let screenWidth = view.bounds.width
+        let isSmallScreen = view.bounds.height < 700
         let isVeryNarrow = screenWidth < 370 // iPhone 7
         let ballDiameter: CGFloat
         if isVeryNarrow {

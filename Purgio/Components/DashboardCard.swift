@@ -81,6 +81,11 @@ class DashboardCard: UIView {
     private var buttonAction: (() -> Void)?
     private var currentContent: DashboardCardContent?
 
+    private var iconWidthConstraint: NSLayoutConstraint?
+    private var iconHeightConstraint: NSLayoutConstraint?
+    private var leadingConstraint: NSLayoutConstraint?
+    private var trailingConstraint: NSLayoutConstraint?
+
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupUI()
@@ -89,6 +94,31 @@ class DashboardCard: UIView {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        applySizeVariant()
+    }
+
+    private func applySizeVariant() {
+        let isSmallScreen = (window?.bounds.width ?? bounds.width) < 390
+
+        let iconPointSize: CGFloat = isSmallScreen ? 20 : 24
+        iconView.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: iconPointSize, weight: .medium)
+
+        let titleSize: CGFloat = isSmallScreen ? 15 : 18
+        titleLabel.font = ThemeManager.Fonts.titleFont(size: titleSize, weight: .semibold)
+
+        headerStack.spacing = isSmallScreen ? 10 : 12
+
+        let iconDimension: CGFloat = isSmallScreen ? 24 : 28
+        iconWidthConstraint?.constant = iconDimension
+        iconHeightConstraint?.constant = iconDimension
+
+        let horizontalPadding: CGFloat = isSmallScreen ? 14 : 18
+        leadingConstraint?.constant = horizontalPadding
+        trailingConstraint?.constant = -horizontalPadding
+    }
     
     private func setupUI() {
         backgroundColor = .cardBackground
@@ -96,17 +126,6 @@ class DashboardCard: UIView {
         layer.borderWidth = 0
         layer.borderColor = UIColor.separator.cgColor
         translatesAutoresizingMaskIntoConstraints = false
-
-        let isSmallScreen = UIScreen.main.bounds.width < 390
-
-        let iconPointSize: CGFloat = isSmallScreen ? 20 : 24
-        let iconConfig = UIImage.SymbolConfiguration(pointSize: iconPointSize, weight: .medium)
-        iconView.preferredSymbolConfiguration = iconConfig
-
-        let titleSize: CGFloat = isSmallScreen ? 15 : 18
-        titleLabel.font = ThemeManager.Fonts.titleFont(size: titleSize, weight: .semibold)
-
-        headerStack.spacing = isSmallScreen ? 10 : 12
 
         actionButton.addTarget(self, action: #selector(buttonTapped), for: .touchUpInside)
 
@@ -123,20 +142,27 @@ class DashboardCard: UIView {
 
         addSubview(alignmentStack)
 
-        setupConstraint(isSmallScreen: isSmallScreen)
+        setupConstraint()
+        applySizeVariant()
     }
 
-    private func setupConstraint(isSmallScreen: Bool) {
-        let iconDimension: CGFloat = isSmallScreen ? 24 : 28
-        let horizontalPadding: CGFloat = isSmallScreen ? 14 : 18
+    private func setupConstraint() {
+        let iconWidthConstraint = iconView.widthAnchor.constraint(equalToConstant: 28)
+        let iconHeightConstraint = iconView.heightAnchor.constraint(equalToConstant: 28)
+        let leadingConstraint = alignmentStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 18)
+        let trailingConstraint = alignmentStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -18)
+        self.iconWidthConstraint = iconWidthConstraint
+        self.iconHeightConstraint = iconHeightConstraint
+        self.leadingConstraint = leadingConstraint
+        self.trailingConstraint = trailingConstraint
 
         NSLayoutConstraint.activate([
-            iconView.widthAnchor.constraint(equalToConstant: iconDimension),
-            iconView.heightAnchor.constraint(equalToConstant: iconDimension),
+            iconWidthConstraint,
+            iconHeightConstraint,
 
             alignmentStack.topAnchor.constraint(equalTo: topAnchor, constant: 12),
-            alignmentStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: horizontalPadding),
-            alignmentStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -horizontalPadding),
+            leadingConstraint,
+            trailingConstraint,
             alignmentStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12),
 
             actionButton.heightAnchor.constraint(equalToConstant: 36),

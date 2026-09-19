@@ -216,8 +216,25 @@ final class StorageAnalysisLiteView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
 
+        applyHeaderLayoutVariant()
+
         if let data = currentData, let percentage = currentAvailablePercentage {
             updateSavedSpaceOverlay(data: data, availablePercentage: percentage)
+        }
+    }
+
+    private func applyHeaderLayoutVariant() {
+        let isSmallScreen = (window?.bounds.width ?? bounds.width) < 390
+        if isSmallScreen {
+            headerStack.axis = .vertical
+            headerStack.alignment = .leading
+            headerStack.spacing = 2
+            usageLabel.textAlignment = .left
+        } else {
+            headerStack.axis = .horizontal
+            headerStack.alignment = .center
+            headerStack.distribution = .equalSpacing
+            usageLabel.textAlignment = .right
         }
     }
 
@@ -245,19 +262,6 @@ final class StorageAnalysisLiteView: UIView {
         layer.cornerRadius = 14
         layer.borderWidth = 0
         layer.borderColor = UIColor.separator.cgColor
-
-        let isSmallScreen = UIScreen.main.bounds.width < 390
-        if isSmallScreen {
-            headerStack.axis = .vertical
-            headerStack.alignment = .leading
-            headerStack.spacing = 2
-            usageLabel.textAlignment = .left
-        } else {
-            headerStack.axis = .horizontal
-            headerStack.alignment = .center
-            headerStack.distribution = .equalSpacing
-            usageLabel.textAlignment = .right
-        }
 
         refreshButton.addTarget(self, action: #selector(refreshTapped), for: .touchUpInside)
         retryButton.addTarget(self, action: #selector(refreshTapped), for: .touchUpInside)
@@ -402,7 +406,7 @@ final class StorageAnalysisLiteView: UIView {
         }
 
         // Use 2-row layout on small screens (iPhone SE, 7, 8 = 375pt width)
-        let isSmallScreen = UIScreen.main.bounds.width < 390
+        let isSmallScreen = (window?.bounds.width ?? bounds.width) < 390
 
         if isSmallScreen && items.count > 2 {
             let row1 = UIStackView()
@@ -605,7 +609,7 @@ final class StorageAnalysisLiteView: UIView {
             items.append(savedItem)
         }
 
-        let isSmallScreen = UIScreen.main.bounds.width < 390
+        let isSmallScreen = (window?.bounds.width ?? bounds.width) < 390
 
         if !isSmallScreen && items.count >= 5 {
             // 3 columns: (2, 2, 1) — last item vertically centered

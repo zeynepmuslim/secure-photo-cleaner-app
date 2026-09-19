@@ -13,7 +13,6 @@ final class ImageCacheService {
 
     private let cache = NSCache<NSString, UIImage>()
     private let imageManager = PHCachingImageManager()
-    private let screenScale: CGFloat
     private var keysByAsset: [String: Set<NSString>] = [:]
 
     enum ImageQuality {
@@ -42,8 +41,6 @@ final class ImageCacheService {
     }
 
     private init() {
-        self.screenScale = UIScreen.main.scale
-
         cache.totalCostLimit = 100 * 1024 * 1024
         cache.countLimit = 50
 
@@ -96,6 +93,7 @@ final class ImageCacheService {
     }
 
     @discardableResult
+    @available(*, deprecated, message: "use loadImage(for:quality:screenSize:allowNetworkAccess:traitCollection:completion:) instead")
     func loadImage(
         for asset: PHAsset,
         quality: ImageQuality,
@@ -103,7 +101,26 @@ final class ImageCacheService {
         allowNetworkAccess: Bool,
         completion: @escaping (UIImage?, Bool, Bool) -> Void   // (image, isInCloud, isDegraded)
     ) -> PHImageRequestID {
-        let targetSize = quality.targetSize(for: screenSize, scale: screenScale)
+        loadImage(
+            for: asset,
+            quality: quality,
+            screenSize: screenSize,
+            allowNetworkAccess: allowNetworkAccess,
+            traitCollection: .current,
+            completion: completion
+        )
+    }
+
+    @discardableResult
+    func loadImage(
+        for asset: PHAsset,
+        quality: ImageQuality,
+        screenSize: CGSize,
+        allowNetworkAccess: Bool,
+        traitCollection: UITraitCollection,
+        completion: @escaping (UIImage?, Bool, Bool) -> Void   // (image, isInCloud, isDegraded)
+    ) -> PHImageRequestID {
+        let targetSize = quality.targetSize(for: screenSize, scale: traitCollection.displayScale)
 
         if let cachedImage = getImage(for: asset.localIdentifier, size: targetSize, quality: quality) {
             let isInCloud = asset.isCloudOnly
@@ -182,8 +199,13 @@ final class ImageCacheService {
         }
     }
 
+    @available(*, deprecated, message: "use startCaching(assets:quality:screenSize:traitCollection:) instead")
     func startCaching(assets: [PHAsset], quality: ImageQuality, screenSize: CGSize) {
-        let targetSize = quality.targetSize(for: screenSize, scale: screenScale)
+        startCaching(assets: assets, quality: quality, screenSize: screenSize, traitCollection: .current)
+    }
+
+    func startCaching(assets: [PHAsset], quality: ImageQuality, screenSize: CGSize, traitCollection: UITraitCollection) {
+        let targetSize = quality.targetSize(for: screenSize, scale: traitCollection.displayScale)
 
         let options = PHImageRequestOptions()
         options.deliveryMode = quality.deliveryMode
@@ -197,8 +219,13 @@ final class ImageCacheService {
         )
     }
 
+    @available(*, deprecated, message: "use stopCaching(assets:quality:screenSize:traitCollection:) instead")
     func stopCaching(assets: [PHAsset], quality: ImageQuality, screenSize: CGSize) {
-        let targetSize = quality.targetSize(for: screenSize, scale: screenScale)
+        stopCaching(assets: assets, quality: quality, screenSize: screenSize, traitCollection: .current)
+    }
+
+    func stopCaching(assets: [PHAsset], quality: ImageQuality, screenSize: CGSize, traitCollection: UITraitCollection) {
+        let targetSize = quality.targetSize(for: screenSize, scale: traitCollection.displayScale)
 
         let options = PHImageRequestOptions()
         options.deliveryMode = quality.deliveryMode

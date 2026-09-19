@@ -113,6 +113,8 @@ final class StoreTutorialSheetViewController: UIViewController {
         fatalError("init(coder:) has not been implemented")
     }
 
+    private var didSetupConstraints = false
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
@@ -123,6 +125,12 @@ final class StoreTutorialSheetViewController: UIViewController {
         configureSheet()
         setupInitialAlbums()
         setupUI()
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        guard !didSetupConstraints else { return }
+        didSetupConstraints = true
         setupConstraints()
     }
 
@@ -161,7 +169,7 @@ final class StoreTutorialSheetViewController: UIViewController {
     }
 
     private func setupConstraints() {
-        let screenWidth = UIScreen.main.bounds.width
+        let screenWidth = view.bounds.width
         let cellSize = (screenWidth - 24 - 24 - 16) / 2
         let collectionHeight = 24 + (cellSize * 3) + (20 * 2) + 24
 
@@ -189,7 +197,7 @@ final class StoreTutorialSheetViewController: UIViewController {
             logoImageView.heightAnchor.constraint(equalToConstant: 80)
         ])
 
-        let isSmallScreen = UIScreen.main.bounds.height <= 667
+        let isSmallScreen = view.bounds.height <= 667
         if isSmallScreen {
             logoImageView.centerYAnchor.constraint(equalTo: collectionView.topAnchor).isActive = true
         } else {

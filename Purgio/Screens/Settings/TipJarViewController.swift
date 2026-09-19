@@ -25,12 +25,6 @@ private enum Strings {
     static let gateEnableButton = NSLocalizedString("tipJar.gate.enableButton", comment: "Button to enable internet access from tip jar")
 }
 
-private enum Device {
-    static var isCompactHeight: Bool {
-        UIScreen.main.bounds.height <= 667
-    }
-}
-
 final class TipJarViewController: UIViewController {
 
     private let manager = TipJarManager.shared
@@ -269,6 +263,8 @@ final class TipJarViewController: UIViewController {
 
     // MARK: - Lifecycle
 
+    private var didConfigureForSize = false
+
     override func viewDidLoad() {
         super.viewDidLoad()
         if #available(iOS 26.0, *) {
@@ -292,6 +288,16 @@ final class TipJarViewController: UIViewController {
         #endif
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        guard !didConfigureForSize else { return }
+        didConfigureForSize = true
+
+        let isCompactHeight = (view.window?.bounds.height ?? view.bounds.height) <= 667
+        sheetPresentationController?.detents = isCompactHeight ? [.large()] : [.medium()]
+        setupSizeDependentConstraints(isCompactHeight: isCompactHeight)
+    }
+
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         guard isBeingDismissed, didEnableInternetForSession else { return }
@@ -309,7 +315,6 @@ final class TipJarViewController: UIViewController {
 
     private func configureSheet() {
         guard let sheet = sheetPresentationController else { return }
-        sheet.detents = Device.isCompactHeight ? [.large()] : [.medium()]
         sheet.prefersGrabberVisible = true
         sheet.prefersScrollingExpandsWhenScrolledToEdge = false
     }
@@ -359,8 +364,10 @@ final class TipJarViewController: UIViewController {
 
         view.addSubview(contentStack)
         view.addSubview(loadingIndicator)
+    }
 
-        if Device.isCompactHeight {
+    private func setupSizeDependentConstraints(isCompactHeight: Bool) {
+        if isCompactHeight {
             cardsStack.heightAnchor.constraint(equalToConstant: 160).isActive = true
             heroIconView.heightAnchor.constraint(greaterThanOrEqualToConstant: 56).isActive = true
             heroIconView.setContentHuggingPriority(.defaultLow - 1, for: .vertical)
@@ -369,7 +376,7 @@ final class TipJarViewController: UIViewController {
             heroIconView.heightAnchor.constraint(equalToConstant: 72).isActive = true
         }
 
-        let bottomInset: CGFloat = Device.isCompactHeight ? -24 : 0
+        let bottomInset: CGFloat = isCompactHeight ? -24 : 0
 
         NSLayoutConstraint.activate([
             contentStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 24),

@@ -21,7 +21,7 @@ private enum Strings {
 }
 
 final class SimilarPhotosHelpSheet: UIViewController {
-    private let isSmallScreen = UIScreen.main.bounds.height <= 667
+    private var didConfigureForSize = false
 
     private let contentStack: UIStackView = {
         let stack = UIStackView()
@@ -189,7 +189,6 @@ final class SimilarPhotosHelpSheet: UIViewController {
         modalPresentationStyle = .pageSheet
 
         if let sheet = sheetPresentationController {
-            sheet.detents = isSmallScreen ? [.large()] : [.medium()]
             sheet.prefersGrabberVisible = true
             sheet.prefersScrollingExpandsWhenScrolledToEdge = false
             sheet.prefersEdgeAttachedInCompactHeight = true
@@ -201,24 +200,29 @@ final class SimilarPhotosHelpSheet: UIViewController {
         fatalError("init(coder:) has not been implemented")
     }
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        setupUI()
-        setupConstraint()
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        guard !didConfigureForSize else { return }
+        didConfigureForSize = true
+
+        let isSmallScreen = (view.window?.bounds.height ?? view.bounds.height) <= 667
+        sheetPresentationController?.detents = isSmallScreen ? [.large()] : [.medium()]
+        setupUI(isSmallScreen: isSmallScreen)
+        setupConstraint(isSmallScreen: isSmallScreen)
     }
 
-    private func setupUI() {
+    private func setupUI(isSmallScreen: Bool) {
         view.backgroundColor = .systemBackground
 
         keepCard = createStateCard(
             icon: "checkmark.circle.fill", color: ThemeManager.Colors.statusGreen, label: Strings.keep,
-            subtitle: Strings.keepDesc)
+            subtitle: Strings.keepDesc, isSmallScreen: isSmallScreen)
         deleteCard = createStateCard(
             icon: "xmark.circle.fill", color: ThemeManager.Colors.statusRed, label: Strings.delete,
-            subtitle: Strings.deleteDesc)
+            subtitle: Strings.deleteDesc, isSmallScreen: isSmallScreen)
         storeCard = createStateCard(
             icon: "archivebox.fill", color: ThemeManager.Colors.statusYellow, label: Strings.store,
-            subtitle: Strings.storeDesc)
+            subtitle: Strings.storeDesc, isSmallScreen: isSmallScreen)
 
         titleSection.addArrangedSubview(titleIcon)
         titleSection.addArrangedSubview(titleLabel)
@@ -270,7 +274,7 @@ final class SimilarPhotosHelpSheet: UIViewController {
         view.addSubview(contentStack)
     }
 
-    private func setupConstraint() {
+    private func setupConstraint(isSmallScreen: Bool) {
         NSLayoutConstraint.activate([
             contentStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 24),
             contentStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
@@ -312,7 +316,9 @@ final class SimilarPhotosHelpSheet: UIViewController {
         storeCard.widthAnchor.constraint(equalTo: keepCard.widthAnchor).isActive = true
     }
 
-    private func createStateCard(icon: String, color: UIColor, label: String, subtitle: String) -> UIView {
+    private func createStateCard(
+        icon: String, color: UIColor, label: String, subtitle: String, isSmallScreen: Bool
+    ) -> UIView {
         let cardView = UIView()
         cardView.backgroundColor = color.withAlphaComponent(0.15)
         cardView.layer.cornerRadius = 20

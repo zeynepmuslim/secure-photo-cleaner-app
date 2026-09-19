@@ -31,31 +31,54 @@ final class UndoHistoryViewController: UIViewController {
     private var storeButton: DynamicGlassButton!
     private var undoButton: DynamicGlassButton!
 
+    private func applyToolbarButtonStyle(
+        _ button: DynamicGlassButton, title: String, systemImage: String, color: UIColor, showTitles: Bool
+    ) {
+        button.configure(
+            title: showTitles ? title : nil,
+            systemImage: systemImage,
+            style: .prominent,
+            backgroundColor: color,
+            fontSize: 13,
+            iconSize: showTitles ? 11 : 18,
+            contentInsets: NSDirectionalEdgeInsets(top: 12, leading: 10, bottom: 12, trailing: 10)   // Tighter insets
+        )
+        if showTitles {
+            button.titleLabel?.numberOfLines = 1
+            button.titleLabel?.lineBreakMode = .byTruncatingTail
+            button.titleLabel?.adjustsFontSizeToFitWidth = true
+            button.titleLabel?.minimumScaleFactor = 0.7
+        } else {
+            button.accessibilityLabel = title
+        }
+    }
+
+    // Re-applies title/icon-size styling once the view's real width is known (see viewDidLayoutSubviews);
+    // the initial width read in setupSelectionToolbar can be 0 before the sheet finishes presenting.
+    private func updateSelectionToolbarButtonStyle(showTitles: Bool) {
+        applyToolbarButtonStyle(
+            keepButton, title: NSLocalizedString("undoHistory.keep", comment: "Keep button"),
+            systemImage: "checkmark.circle.fill", color: .systemGreen, showTitles: showTitles)
+        applyToolbarButtonStyle(
+            deleteButton, title: NSLocalizedString("undoHistory.delete", comment: "Delete button"),
+            systemImage: "trash.fill", color: .systemRed, showTitles: showTitles)
+        applyToolbarButtonStyle(
+            storeButton, title: NSLocalizedString("undoHistory.store", comment: "Store button"),
+            systemImage: "archivebox.fill", color: .systemYellow, showTitles: showTitles)
+        applyToolbarButtonStyle(
+            undoButton, title: NSLocalizedString("undoHistory.undo", comment: "Undo button"),
+            systemImage: "arrow.uturn.backward", color: .systemGray, showTitles: showTitles)
+    }
+
     private func setupSelectionToolbar() {
         view.addSubview(selectionToolbar)
         selectionToolbar.isHidden = true
 
-        let showTitles = UIScreen.main.bounds.width >= 430
+        let showTitles = view.bounds.width >= 430
 
         func createButton(title: String, systemImage: String, color: UIColor, action: Selector) -> DynamicGlassButton {
             let button = DynamicGlassButton()
-            button.configure(
-                title: showTitles ? title : nil,
-                systemImage: systemImage,
-                style: .prominent,
-                backgroundColor: color,
-                fontSize: 13,
-                iconSize: showTitles ? 11 : 18,
-                contentInsets: NSDirectionalEdgeInsets(top: 12, leading: 10, bottom: 12, trailing: 10)   // Tighter insets
-            )
-            if showTitles {
-                button.titleLabel?.numberOfLines = 1
-                button.titleLabel?.lineBreakMode = .byTruncatingTail
-                button.titleLabel?.adjustsFontSizeToFitWidth = true
-                button.titleLabel?.minimumScaleFactor = 0.7
-            } else {
-                button.accessibilityLabel = title
-            }
+            applyToolbarButtonStyle(button, title: title, systemImage: systemImage, color: color, showTitles: showTitles)
             button.addTarget(self, action: action, for: .touchUpInside)
             return button
         }
@@ -106,10 +129,17 @@ final class UndoHistoryViewController: UIViewController {
         return stack
     }()
 
+    private var didRefreshSelectionToolbarStyle = false
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
         calculateThumbnailSize()
+        if #available(iOS 17.0, *) {
+            registerForTraitChanges([UITraitDisplayScale.self]) { (self: UndoHistoryViewController, _) in
+                self.calculateThumbnailSize()
+            }
+        }
 
         NotificationCenter.default.addObserver(
             self,
@@ -119,6 +149,13 @@ final class UndoHistoryViewController: UIViewController {
         )
 
         historyManager.removeActionsForDeletedAssets()
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        guard !didRefreshSelectionToolbarStyle else { return }
+        didRefreshSelectionToolbarStyle = true
+        updateSelectionToolbarButtonStyle(showTitles: view.bounds.width >= 430)
     }
 
     deinit {
@@ -190,7 +227,7 @@ final class UndoHistoryViewController: UIViewController {
     }
 
     private func calculateThumbnailSize() {
-        let scale = UIScreen.main.scale
+        let scale = traitCollection.displayScale
         let size: CGFloat = 60
         thumbnailSize = CGSize(width: size * scale, height: size * scale)
     }
@@ -409,7 +446,8 @@ extension UndoHistoryViewController: UITableViewDataSource {
                 for: asset,
                 quality: .thumbnail,
                 screenSize: CGSize(width: 60, height: 60),
-                allowNetworkAccess: SettingsStore.shared.allowInternetAccess
+                allowNetworkAccess: SettingsStore.shared.allowInternetAccess,
+                traitCollection: traitCollection
             ) { [weak self] image, _, _ in
                 if let image = image {
                     self?.thumbnailCache[action.assetLocalIdentifier] = image
@@ -446,7 +484,8 @@ extension UndoHistoryViewController: UITableViewDelegate {
             for: asset,
             quality: .full,
             screenSize: CGSize(width: 1000, height: 1000),
-            allowNetworkAccess: SettingsStore.shared.allowInternetAccess
+            allowNetworkAccess: SettingsStore.shared.allowInternetAccess,
+            traitCollection: traitCollection
         ) { [weak self] image, _, _ in
             guard let self = self else { return }
 

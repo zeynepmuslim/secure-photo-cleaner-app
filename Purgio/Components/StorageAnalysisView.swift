@@ -429,7 +429,7 @@ final class StorageAnalysisView: UIView {
             items.append(savedItem)
         }
 
-        let isSmallScreen = UIScreen.main.bounds.width < 390
+        let isSmallScreen = (window?.bounds.width ?? bounds.width) < 390
 
         if !isSmallScreen && items.count >= 5 {
             // 3 columns: (2, 2, 1) — last item vertically centered
@@ -806,7 +806,7 @@ final class StorageAnalysisView: UIView {
             items.append(savedItem)
         }
 
-        let isSmallScreen = UIScreen.main.bounds.width < 390
+        let isSmallScreen = (window?.bounds.width ?? bounds.width) < 390
 
         if !isSmallScreen && items.count >= 5 {
             // 3 columns: (2, 2, 1) — last item vertically centered

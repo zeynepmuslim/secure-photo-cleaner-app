@@ -89,10 +89,20 @@ class MainTabBarController: UITabBarController, UINavigationControllerDelegate {
         binButtonLeadingConstraint = binButton.leadingAnchor.constraint(
             equalTo: view.leadingAnchor, constant: GeneralConstants.EdgePadding.medium)
 
+        let binButtonBottom: NSLayoutConstraint
+        if #available(iOS 26.0, *) {
+            binButtonBottom = binButton.bottomAnchor.constraint(
+                equalTo: contentLayoutGuide.bottomAnchor,
+                constant: -GeneralConstants.Spacer.buttonBottom)
+        } else {
+            binButtonBottom = binButton.bottomAnchor.constraint(
+                equalTo: tabBar.topAnchor,
+                constant: -GeneralConstants.Spacer.buttonBottom)
+        }
+
         NSLayoutConstraint.activate([
             binButtonTrailingConstraint!,
-            binButton.bottomAnchor.constraint(
-                equalTo: tabBar.topAnchor, constant: -GeneralConstants.Spacer.buttonBottom),
+            binButtonBottom,
             binButton.heightAnchor.constraint(equalToConstant: GeneralConstants.ButtonSize.large)
         ])
 

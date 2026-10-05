@@ -18,6 +18,7 @@ final class PhotoGridCell: UICollectionViewCell {
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
         imageView.layer.cornerRadius = 8
+        imageView.layer.cornerCurve = .continuous
         imageView.translatesAutoresizingMaskIntoConstraints = false
         return imageView
     }()
@@ -25,6 +26,7 @@ final class PhotoGridCell: UICollectionViewCell {
     private let imageOverlayView: UIView = {
         let view = UIView()
         view.layer.cornerRadius = 8
+        view.layer.cornerCurve = .continuous
         view.clipsToBounds = true
         view.translatesAutoresizingMaskIntoConstraints = false
         view.isHidden = true
@@ -34,6 +36,7 @@ final class PhotoGridCell: UICollectionViewCell {
     private let stateOverlayContainer: UIView = {
         let view = UIView()
         view.layer.cornerRadius = 12
+        view.layer.cornerCurve = .continuous
         view.clipsToBounds = true
         view.translatesAutoresizingMaskIntoConstraints = false
         view.isHidden = true
@@ -56,6 +59,7 @@ final class PhotoGridCell: UICollectionViewCell {
     override init(frame: CGRect) {
         super.init(frame: frame)
         layer.cornerRadius = 8
+        layer.cornerCurve = .continuous
         clipsToBounds = true
         setupUI()
         setupConstraint()
@@ -125,6 +129,7 @@ final class PhotoGridCell: UICollectionViewCell {
         contentView.layer.borderColor = state.borderColor.cgColor
         contentView.layer.borderWidth = 3
         contentView.layer.cornerRadius = 8
+        contentView.layer.cornerCurve = .continuous
 
         stateOverlayContainer.isHidden = false
         stateOverlayContainer.backgroundColor = state.overlayColor

@@ -323,6 +323,7 @@ final class StoreTutorialSheetViewController: UIViewController {
         flyingView.contentMode = .scaleAspectFill
         flyingView.clipsToBounds = true
         flyingView.layer.cornerRadius = 12
+        flyingView.layer.cornerCurve = .continuous
 
         let startWidth = targetFrame.width
         let startHeight = targetFrame.height

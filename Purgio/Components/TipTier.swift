@@ -118,6 +118,7 @@ final class TipTier: UIControl {
             // capsule — resolved in layoutSubviews once height is known
         } else {
             containerView.layer.cornerRadius = Self.legacyCornerRadius
+            containerView.layer.cornerCurve = .continuous
         }
 
         addSubview(containerView)
@@ -155,6 +156,7 @@ final class TipTier: UIControl {
         super.layoutSubviews()
         if #available(iOS 26.0, *) {
             containerView.layer.cornerRadius = containerView.bounds.width / 2
+            containerView.layer.cornerCurve = .continuous
         }
     }
 

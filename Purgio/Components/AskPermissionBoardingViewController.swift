@@ -333,6 +333,7 @@ final class AskPermissionBoardingViewController: UIViewController {
         imageView.translatesAutoresizingMaskIntoConstraints = false
         imageView.contentMode = .scaleAspectFit
         imageView.layer.cornerRadius = 28
+        imageView.layer.cornerCurve = .continuous
         imageView.clipsToBounds = true
         imageView.transform = CGAffineTransform(scaleX: 0.6, y: 0.6)
         container.addSubview(imageView)

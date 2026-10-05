@@ -36,6 +36,7 @@ final class SegmentedBarView: UIView {
     var cornerRadius: CGFloat = 4 {
         didSet {
             backgroundBar.layer.cornerRadius = cornerRadius
+            backgroundBar.layer.cornerCurve = .continuous
             updateCornerRadius()
         }
     }
@@ -75,6 +76,7 @@ final class SegmentedBarView: UIView {
 
     private func setupUI() {
         backgroundBar.layer.cornerRadius = cornerRadius
+        backgroundBar.layer.cornerCurve = .continuous
         addSubview(backgroundBar)
         setupConstraint()
     }
@@ -189,6 +191,7 @@ final class SegmentedBarView: UIView {
         segmentViews.forEach { segment in
             segment.layer.maskedCorners = []
             segment.layer.cornerRadius = cornerRadius
+            segment.layer.cornerCurve = .continuous
         }
     }
 

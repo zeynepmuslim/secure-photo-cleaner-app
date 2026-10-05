@@ -34,6 +34,7 @@ final class HistoryDetailBottomSheet: UIViewController {
         imageView.contentMode = .scaleAspectFit
         imageView.clipsToBounds = true
         imageView.layer.cornerRadius = 12
+        imageView.layer.cornerCurve = .continuous
         imageView.backgroundColor = .textPrimary.withAlphaComponent(CGFloat(0.2))
         imageView.translatesAutoresizingMaskIntoConstraints = false
         imageView.isUserInteractionEnabled = true
@@ -93,6 +94,7 @@ final class HistoryDetailBottomSheet: UIViewController {
         button.tintColor = .white
         button.backgroundColor = UIColor.black.withAlphaComponent(0.4)
         button.layer.cornerRadius = 4
+        button.layer.cornerCurve = .continuous
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()

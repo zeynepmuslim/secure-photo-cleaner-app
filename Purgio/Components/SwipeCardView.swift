@@ -166,6 +166,7 @@ final class SwipeCardView: UIView {
         let view = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
         view.translatesAutoresizingMaskIntoConstraints = false
         view.layer.cornerRadius = 12
+        view.layer.cornerCurve = .continuous
         view.layer.masksToBounds = true
         view.alpha = 0
         return view
@@ -184,6 +185,7 @@ final class SwipeCardView: UIView {
         let view = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
         view.translatesAutoresizingMaskIntoConstraints = false
         view.layer.cornerRadius = 16
+        view.layer.cornerCurve = .continuous
         view.layer.masksToBounds = true
         view.alpha = 0
         view.setContentHuggingPriority(.defaultLow, for: .vertical)

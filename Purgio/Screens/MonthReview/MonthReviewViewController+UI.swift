@@ -166,6 +166,7 @@ extension MonthReviewViewController {
             undoButton.tintColor = .label
             undoButton.backgroundColor = .secondarySystemFill
             undoButton.layer.cornerRadius = GeneralConstants.ButtonSize.large / 2
+            undoButton.layer.cornerCurve = .continuous
             undoButton.clipsToBounds = true
         }
         undoButton.addTarget(self, action: #selector(handleUndo), for: .touchUpInside)
@@ -186,6 +187,7 @@ extension MonthReviewViewController {
             historyButton.tintColor = .label
             historyButton.backgroundColor = .secondarySystemFill
             historyButton.layer.cornerRadius = GeneralConstants.ButtonSize.large / 2
+            historyButton.layer.cornerCurve = .continuous
             historyButton.clipsToBounds = true
         }
         historyButton.addTarget(self, action: #selector(showUndoHistory), for: .touchUpInside)
@@ -198,6 +200,7 @@ extension MonthReviewViewController {
         historyBadge.textColor = .white
         historyBadge.backgroundColor = .systemBlue
         historyBadge.layer.cornerRadius = 10
+        historyBadge.layer.cornerCurve = .continuous
         historyBadge.layer.masksToBounds = true
         historyBadge.layer.borderWidth = 2
         historyBadge.layer.borderColor = UIColor.systemBackground.cgColor

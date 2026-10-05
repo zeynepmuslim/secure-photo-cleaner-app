@@ -240,6 +240,7 @@ final class SettingsViewController: UIViewController {
 
         internetToggleContainer.backgroundColor = .cardBackground
         internetToggleContainer.layer.cornerRadius = 14
+        internetToggleContainer.layer.cornerCurve = .continuous
         internetToggleContainer.layer.borderWidth = 0
         internetToggleContainer.layer.borderColor = UIColor.separator.cgColor
         internetToggleContainer.translatesAutoresizingMaskIntoConstraints = false
@@ -268,6 +269,7 @@ final class SettingsViewController: UIViewController {
 
         skipICloudToggleContainer.backgroundColor = .cardBackground
         skipICloudToggleContainer.layer.cornerRadius = 14
+        skipICloudToggleContainer.layer.cornerCurve = .continuous
         skipICloudToggleContainer.layer.borderWidth = 0
         skipICloudToggleContainer.layer.borderColor = UIColor.separator.cgColor
         skipICloudToggleContainer.translatesAutoresizingMaskIntoConstraints = false
@@ -296,6 +298,7 @@ final class SettingsViewController: UIViewController {
 
         remindersToggleContainer.backgroundColor = .cardBackground
         remindersToggleContainer.layer.cornerRadius = 14
+        remindersToggleContainer.layer.cornerCurve = .continuous
         remindersToggleContainer.layer.borderWidth = 0
         remindersToggleContainer.layer.borderColor = UIColor.separator.cgColor
         remindersToggleContainer.clipsToBounds = true
@@ -401,6 +404,7 @@ final class SettingsViewController: UIViewController {
 
         helpLinksContainer.backgroundColor = .cardBackground
         helpLinksContainer.layer.cornerRadius = 14
+        helpLinksContainer.layer.cornerCurve = .continuous
         helpLinksContainer.clipsToBounds = true
         helpLinksContainer.translatesAutoresizingMaskIntoConstraints = false
 

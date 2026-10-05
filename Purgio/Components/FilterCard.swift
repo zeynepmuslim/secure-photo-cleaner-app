@@ -93,6 +93,7 @@ final class FilterCard: UIControl {
     private let statusBadge: UIView = {
         let view = UIView()
         view.layer.cornerRadius = 10
+        view.layer.cornerCurve = .continuous
         view.translatesAutoresizingMaskIntoConstraints = false
         view.isUserInteractionEnabled = false
         return view
@@ -147,7 +148,7 @@ final class FilterCard: UIControl {
 
     private func setupUI() {
         backgroundColor = .cardBackground
-        layer.cornerRadius = 16
+        layer.cornerRadius = GeneralConstants.CornerRadius.card
         layer.cornerCurve = .continuous
 
         textStack.addArrangedSubview(titleLabel)

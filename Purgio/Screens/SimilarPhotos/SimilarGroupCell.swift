@@ -88,6 +88,7 @@ class SimilarGroupCell: UITableViewCell {
         let view = UIView()
         view.backgroundColor = .cardBackground
         view.layer.cornerRadius = 24
+        view.layer.cornerCurve = .continuous
         view.clipsToBounds = true
         view.translatesAutoresizingMaskIntoConstraints = false
         return view

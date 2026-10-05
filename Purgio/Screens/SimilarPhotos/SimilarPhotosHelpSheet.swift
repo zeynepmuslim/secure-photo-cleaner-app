@@ -166,6 +166,7 @@ final class SimilarPhotosHelpSheet: UIViewController {
         let view = UIView()
         view.backgroundColor = .secondarySystemBackground
         view.layer.cornerRadius = 12
+        view.layer.cornerCurve = .continuous
         return view
     }()
 
@@ -322,6 +323,7 @@ final class SimilarPhotosHelpSheet: UIViewController {
         let cardView = UIView()
         cardView.backgroundColor = color.withAlphaComponent(0.15)
         cardView.layer.cornerRadius = 20
+        cardView.layer.cornerCurve = .continuous
         cardView.translatesAutoresizingMaskIntoConstraints = false
         let ratio: CGFloat = isSmallScreen ? 0.7 : 1.0
         cardView.heightAnchor.constraint(equalTo: cardView.widthAnchor, multiplier: ratio).isActive = true

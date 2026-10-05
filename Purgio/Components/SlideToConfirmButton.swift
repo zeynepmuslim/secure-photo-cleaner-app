@@ -141,8 +141,11 @@ final class SlideToConfirmButton: UIControl {
     override func layoutSubviews() {
         super.layoutSubviews()
         trackView.layer.cornerRadius = controlHeight / 2
+        trackView.layer.cornerCurve = .continuous
         greenOverlayView.layer.cornerRadius = controlHeight / 2
+        greenOverlayView.layer.cornerCurve = .continuous
         thumbView.layer.cornerRadius = thumbDiameter / 2
+        thumbView.layer.cornerCurve = .continuous
     }
 
     private var maxTravel: CGFloat {

@@ -93,6 +93,7 @@ final class DeleteBinViewController: UIViewController {
         label.textAlignment = .center
         label.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.95)
         label.layer.cornerRadius = 16
+        label.layer.cornerCurve = .continuous
         label.layer.masksToBounds = true
         return label
     }()
@@ -220,6 +221,7 @@ final class DeleteBinViewController: UIViewController {
         super.viewDidLayoutSubviews()
         updateBinSpacerWidth(animated: false)
         headerLabel.layer.cornerRadius = headerLabel.bounds.height / 2
+        headerLabel.layer.cornerCurve = .continuous
     }
 
     override func viewDidAppear(_ animated: Bool) {

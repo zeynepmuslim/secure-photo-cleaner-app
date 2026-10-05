@@ -199,6 +199,7 @@ private final class MonthDetailRowView: UIView {
         let view = UIView()
         view.backgroundColor = .separator
         view.layer.cornerRadius = 1.5
+        view.layer.cornerCurve = .continuous
         view.clipsToBounds = true
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
@@ -207,6 +208,7 @@ private final class MonthDetailRowView: UIView {
     private let barFill: UIView = {
         let view = UIView()
         view.layer.cornerRadius = 1.5
+        view.layer.cornerCurve = .continuous
         view.clipsToBounds = true
         view.translatesAutoresizingMaskIntoConstraints = false
         return view

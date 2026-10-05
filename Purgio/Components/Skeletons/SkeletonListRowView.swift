@@ -13,6 +13,7 @@ final class SkeletonListRowView: UIView {
         let view = UIView()
         view.backgroundColor = UIColor.systemGray5
         view.layer.cornerRadius = 4
+        view.layer.cornerCurve = .continuous
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
     }()
@@ -30,6 +31,7 @@ final class SkeletonListRowView: UIView {
         let view = UIView()
         view.backgroundColor = UIColor.systemGray5
         view.layer.cornerRadius = 16
+        view.layer.cornerCurve = .continuous
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
     }()
@@ -68,6 +70,7 @@ final class SkeletonListRowView: UIView {
             let thumb = UIView()
             thumb.backgroundColor = UIColor.systemGray5
             thumb.layer.cornerRadius = 8
+            thumb.layer.cornerCurve = .continuous
             thumbnailStack.addArrangedSubview(thumb)
         }
 

@@ -22,6 +22,7 @@ final class MediaPreviewViewController: UIViewController {
         view.translatesAutoresizingMaskIntoConstraints = false
         view.backgroundColor = .clear
         view.layer.cornerRadius = 20
+        view.layer.cornerCurve = .continuous
         view.clipsToBounds = true
         return view
     }()

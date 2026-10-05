@@ -86,6 +86,9 @@ class DashboardCard: UIView {
     private var leadingConstraint: NSLayoutConstraint?
     private var trailingConstraint: NSLayoutConstraint?
 
+    private var bottomLeftCornerRadius: CGFloat?
+    private let cornerMaskLayer = CAShapeLayer()
+
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupUI()
@@ -98,6 +101,60 @@ class DashboardCard: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         applySizeVariant()
+        updateCornerMaskIfNeeded()
+    }
+
+    func setBottomLeftCornerRadius(_ radius: CGFloat?) {
+        bottomLeftCornerRadius = radius
+
+        guard radius != nil else {
+            layer.mask = nil
+            layer.cornerRadius = GeneralConstants.CornerRadius.card
+            layer.masksToBounds = true
+            return
+        }
+
+        layer.cornerRadius = 0
+        updateCornerMaskIfNeeded()
+    }
+
+    private func updateCornerMaskIfNeeded() {
+        guard let bottomLeftCornerRadius, bounds.width > 0, bounds.height > 0 else { return }
+        let defaultRadius = GeneralConstants.CornerRadius.card
+        cornerMaskLayer.frame = bounds
+        cornerMaskLayer.path = Self.roundedCornersPath(
+            in: bounds,
+            topLeft: defaultRadius,
+            topRight: defaultRadius,
+            bottomLeft: bottomLeftCornerRadius,
+            bottomRight: defaultRadius
+        ).cgPath
+        layer.mask = cornerMaskLayer
+    }
+
+    private static func roundedCornersPath(
+        in rect: CGRect, topLeft: CGFloat, topRight: CGFloat, bottomLeft: CGFloat, bottomRight: CGFloat
+    ) -> UIBezierPath {
+        let path = UIBezierPath()
+        path.move(to: CGPoint(x: rect.minX + topLeft, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX - topRight, y: rect.minY))
+        path.addArc(
+            withCenter: CGPoint(x: rect.maxX - topRight, y: rect.minY + topRight),
+            radius: topRight, startAngle: -.pi / 2, endAngle: 0, clockwise: true)
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - bottomRight))
+        path.addArc(
+            withCenter: CGPoint(x: rect.maxX - bottomRight, y: rect.maxY - bottomRight),
+            radius: bottomRight, startAngle: 0, endAngle: .pi / 2, clockwise: true)
+        path.addLine(to: CGPoint(x: rect.minX + bottomLeft, y: rect.maxY))
+        path.addArc(
+            withCenter: CGPoint(x: rect.minX + bottomLeft, y: rect.maxY - bottomLeft),
+            radius: bottomLeft, startAngle: .pi / 2, endAngle: .pi, clockwise: true)
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + topLeft))
+        path.addArc(
+            withCenter: CGPoint(x: rect.minX + topLeft, y: rect.minY + topLeft),
+            radius: topLeft, startAngle: .pi, endAngle: .pi * 3 / 2, clockwise: true)
+        path.close()
+        return path
     }
 
     private func applySizeVariant() {
@@ -122,7 +179,9 @@ class DashboardCard: UIView {
     
     private func setupUI() {
         backgroundColor = .cardBackground
-        layer.cornerRadius = 14
+        layer.cornerRadius = GeneralConstants.CornerRadius.card
+        layer.cornerCurve = .continuous
+        layer.masksToBounds = true
         layer.borderWidth = 0
         layer.borderColor = UIColor.separator.cgColor
         translatesAutoresizingMaskIntoConstraints = false

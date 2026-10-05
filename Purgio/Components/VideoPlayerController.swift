@@ -45,6 +45,7 @@ final class VideoPlayerController {
         let view = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
         view.translatesAutoresizingMaskIntoConstraints = false
         view.layer.cornerRadius = 12
+        view.layer.cornerCurve = .continuous
         view.layer.masksToBounds = true
         view.alpha = 0
         view.isUserInteractionEnabled = true
@@ -65,6 +66,7 @@ final class VideoPlayerController {
         let view = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
         view.translatesAutoresizingMaskIntoConstraints = false
         view.layer.cornerRadius = 40
+        view.layer.cornerCurve = .continuous
         view.layer.masksToBounds = true
         view.isUserInteractionEnabled = false
         return view
@@ -118,6 +120,7 @@ final class VideoPlayerController {
         playPauseButton.setImage(UIImage(systemName: "play.fill", withConfiguration: config), for: .normal)
         playPauseButton.tintColor = .white
         playPauseButton.layer.cornerRadius = 40
+        playPauseButton.layer.cornerCurve = .continuous
 
         playPauseButton.insertSubview(playButtonBlurView, at: 0)
         
@@ -262,6 +265,7 @@ final class VideoPlayerController {
         layer.videoGravity = configuration.videoGravity
         if configuration.layerCornerRadius > 0 {
             layer.cornerRadius = configuration.layerCornerRadius
+            layer.cornerCurve = .continuous
             layer.masksToBounds = true
         }
 

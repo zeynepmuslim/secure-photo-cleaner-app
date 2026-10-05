@@ -184,6 +184,7 @@ final class SoapBubble: UIView {
             imageView.contentMode = .scaleAspectFill
             imageView.clipsToBounds = true
             imageView.layer.cornerRadius = 8
+            imageView.layer.cornerCurve = .continuous
             imageView.translatesAutoresizingMaskIntoConstraints = true
             imageView.isUserInteractionEnabled = true
             let tap = UITapGestureRecognizer(target: self, action: #selector(handlePhotoTap(_:)))

@@ -59,6 +59,7 @@ final class StorageAnalysisView: UIView {
         bar.translatesAutoresizingMaskIntoConstraints = false
         bar.clipsToBounds = true
         bar.layer.cornerRadius = 4
+        bar.layer.cornerCurve = .continuous
         return bar
     }()
 
@@ -81,6 +82,7 @@ final class StorageAnalysisView: UIView {
     private let statusDot: UIView = {
         let view = UIView()
         view.layer.cornerRadius = 4
+        view.layer.cornerCurve = .continuous
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
     }()
@@ -105,6 +107,7 @@ final class StorageAnalysisView: UIView {
         let view = UIView()
         view.backgroundColor = .secondarySystemFill
         view.layer.cornerRadius = 10
+        view.layer.cornerCurve = .continuous
         view.isHidden = true
         return view
     }()
@@ -280,6 +283,7 @@ final class StorageAnalysisView: UIView {
     private func setupUI() {
         backgroundColor = .cardBackground
         layer.cornerRadius = 14
+        layer.cornerCurve = .continuous
         layer.borderWidth = 0
         layer.borderColor = UIColor.separator.cgColor
 
@@ -931,6 +935,7 @@ final class StorageAnalysisView: UIView {
         let colorDot = UIView()
         colorDot.backgroundColor = color
         colorDot.layer.cornerRadius = 4
+        colorDot.layer.cornerCurve = .continuous
         colorDot.translatesAutoresizingMaskIntoConstraints = false
         colorDot.widthAnchor.constraint(equalToConstant: 8).isActive = true
         colorDot.heightAnchor.constraint(equalToConstant: 8).isActive = true

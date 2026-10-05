@@ -17,6 +17,11 @@ private enum Strings {
     static let browseByMonth = NSLocalizedString("home.browseByMonth", comment: "Browse by month section header")
 }
 
+private enum DuoPadding {
+    static let trailing: CGFloat = -6
+    static let bottom: CGFloat = -20
+}
+
 final class HomeViewController: UIViewController {
 
     private let contentStack: UIStackView = {
@@ -88,6 +93,9 @@ final class HomeViewController: UIViewController {
     private var hasNavigatedAway: Bool = false   // to prevent show direct response from async
     private var dashboardRefreshTask: Task<Void, Never>?
     private var hasRunStartupFlow = false
+    private var contentTrailingConstraint: NSLayoutConstraint?
+    private var contentBottomConstraint: NSLayoutConstraint?
+    private var contentBottomToViewConstraint: NSLayoutConstraint?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -255,11 +263,18 @@ final class HomeViewController: UIViewController {
     }
 
     private func setupConstraint() {
+        let trailing = contentStack.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor)
+        let bottom = contentStack.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
+        let bottomToView = contentStack.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        contentTrailingConstraint = trailing
+        contentBottomConstraint = bottom
+        contentBottomToViewConstraint = bottomToView
+
         NSLayoutConstraint.activate([
             contentStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
-            contentStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            contentStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            contentStack.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
+            contentStack.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 20),
+            trailing,
+            bottom,
 
             storageAnalysisView.heightAnchor.constraint(greaterThanOrEqualToConstant: 110),
             dashboardCard.heightAnchor.constraint(greaterThanOrEqualToConstant: 150),
@@ -267,6 +282,39 @@ final class HomeViewController: UIViewController {
             quickAccessStack.heightAnchor.constraint(greaterThanOrEqualToConstant: 60),
             quickAccessStack.heightAnchor.constraint(lessThanOrEqualToConstant: 100)
         ])
+
+        updateOuterPaddingForTabBarShape()
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        updateOuterPaddingForTabBarShape()
+    }
+
+    private func updateOuterPaddingForTabBarShape() {
+        guard let tabBar = tabBarController?.tabBar else { return }
+        let isVerticalRail = tabBar.bounds.height > tabBar.bounds.width
+
+        guard isVerticalRail else {
+            contentBottomToViewConstraint?.isActive = false
+            contentBottomConstraint?.isActive = true
+            contentTrailingConstraint?.constant = -20
+            contentBottomConstraint?.constant = -16
+            dashboardCard.setBottomLeftCornerRadius(nil)
+            return
+        }
+
+        let isInnerScreen = traitCollection.horizontalSizeClass == .regular
+        contentTrailingConstraint?.constant = DuoPadding.trailing
+
+
+        contentBottomConstraint?.isActive = false
+        contentBottomToViewConstraint?.constant = DuoPadding.bottom
+        contentBottomToViewConstraint?.isActive = true
+
+        dashboardCard.setBottomLeftCornerRadius(
+            isInnerScreen ? GeneralConstants.CornerRadius.Duo.innerCard : GeneralConstants.CornerRadius.Duo.outerCard
+        )
     }
 
     private func updateStorageAnalysisView() {

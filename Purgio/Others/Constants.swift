@@ -25,6 +25,16 @@ enum GeneralConstants {
         static let medium: CGFloat = 16
     }
 
+    enum CornerRadius {
+        static let card: CGFloat = 16
+
+        // for left-bottom corner dynamic change and sych with device corner
+        enum Duo {
+            static let outerCard: CGFloat = 8
+            static let innerCard: CGFloat = 36
+        }
+    }
+
     enum ButtonSize {
         
         ///30

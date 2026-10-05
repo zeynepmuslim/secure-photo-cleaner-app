@@ -71,6 +71,7 @@ final class StorageAnalysisLiteView: UIView {
         bar.translatesAutoresizingMaskIntoConstraints = false
         bar.clipsToBounds = true
         bar.layer.cornerRadius = 4
+        bar.layer.cornerCurve = .continuous
         return bar
     }()
 
@@ -259,7 +260,8 @@ final class StorageAnalysisLiteView: UIView {
     // MARK: - Setup
     private func setupUI() {
         backgroundColor = .cardBackground
-        layer.cornerRadius = 14
+        layer.cornerRadius = GeneralConstants.CornerRadius.card
+        layer.cornerCurve = .continuous
         layer.borderWidth = 0
         layer.borderColor = UIColor.separator.cgColor
 
@@ -717,6 +719,7 @@ final class StorageAnalysisLiteView: UIView {
         let colorDot = UIView()
         colorDot.backgroundColor = color
         colorDot.layer.cornerRadius = 6
+        colorDot.layer.cornerCurve = .continuous
         colorDot.translatesAutoresizingMaskIntoConstraints = false
         colorDot.widthAnchor.constraint(equalToConstant: 12).isActive = true
         colorDot.heightAnchor.constraint(equalToConstant: 12).isActive = true

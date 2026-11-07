@@ -473,11 +473,8 @@ class SimilarGroupCell: UITableViewCell {
 
     // MARK: - Full-Screen Preview long pres
     private func showPreview(thumbnail: UIImage?, asset: PHAsset) {
-        guard
-            let windowScene = UIApplication.shared.connectedScenes
-                .compactMap({ $0 as? UIWindowScene }).first,
-            let window = windowScene.windows.first(where: { $0.isKeyWindow })
-        else { return }
+        // The cell's own window, never a global key-window lookup (see CLAUDE.md → Forbidden APIs).
+        guard let window = self.window else { return }
 
         let overlay = UIView(frame: window.bounds)
         overlay.alpha = 0

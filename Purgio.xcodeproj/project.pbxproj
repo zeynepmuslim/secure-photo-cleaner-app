@@ -146,6 +146,8 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = D71132AD2F08886B006A030E /* Build configuration list for PBXNativeTarget "Purgio" */;
 			buildPhases = (
+				D7FA11A12FB0000100C0DE01 /* Forbidden API check */,
+				D7FA11A22FB0000100C0DE01 /* Localization check */,
 				D71132962F088869006A030E /* Sources */,
 				D71132972F088869006A030E /* Frameworks */,
 				D71132982F088869006A030E /* Resources */,
@@ -248,6 +250,44 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		D7FA11A12FB0000100C0DE01 /* Forbidden API check */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Forbidden API check";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Scripts/forbidden-api-check.sh\"\n";
+		};
+		D7FA11A22FB0000100C0DE01 /* Localization check */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Localization check";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Scripts/localization-check.sh\"\n";
+		};
 		D7D664532F897FF900C9E13A /* Generate Localizable.xcstrings */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;

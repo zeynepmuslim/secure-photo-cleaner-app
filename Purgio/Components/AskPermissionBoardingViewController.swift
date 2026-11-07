@@ -140,6 +140,11 @@ final class AskPermissionBoardingViewController: UIViewController {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        // Sizes depend on the real view bounds, so constraints are set up once after the first layout.
+        if !didSetupConstraint, view.bounds.width > 0 {
+            didSetupConstraint = true
+            setupConstraint()
+        }
         if !hasAnimated {
             bubbleView.transform = CGAffineTransform(scaleX: 0.001, y: 0.001)
         }

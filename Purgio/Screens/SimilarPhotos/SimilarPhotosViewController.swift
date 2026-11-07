@@ -498,9 +498,7 @@ class SimilarPhotosViewController: UIViewController {
     }
 
     private func setupNavigationBar() {
-        let helpButton = HelpButton()
-        helpButton.addTarget(self, action: #selector(handleHelpTap), for: .touchUpInside)
-        navigationItem.rightBarButtonItem = UIBarButtonItem(customView: helpButton)
+        navigationItem.rightBarButtonItem = .helpItem(target: self, action: #selector(handleHelpTap))
     }
 
     @objc private func handleHelpTap() {
@@ -580,9 +578,9 @@ class SimilarPhotosViewController: UIViewController {
         NSLayoutConstraint.activate([
             tableView.topAnchor.constraint(equalTo: view.topAnchor),
             tableView.leadingAnchor.constraint(
-                equalTo: view.leadingAnchor, constant: GeneralConstants.EdgePadding.medium),
+                equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: GeneralConstants.EdgePadding.medium),
             tableView.trailingAnchor.constraint(
-                equalTo: view.trailingAnchor, constant: -GeneralConstants.EdgePadding.medium),
+                equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -GeneralConstants.EdgePadding.medium),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
             activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -608,9 +606,9 @@ class SimilarPhotosViewController: UIViewController {
             NSLayoutConstraint.activate([
                 skeleton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
                 skeleton.leadingAnchor.constraint(
-                    equalTo: view.leadingAnchor, constant: GeneralConstants.EdgePadding.medium),
+                    equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: GeneralConstants.EdgePadding.medium),
                 skeleton.trailingAnchor.constraint(
-                    equalTo: view.trailingAnchor, constant: -GeneralConstants.EdgePadding.medium),
+                    equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -GeneralConstants.EdgePadding.medium),
                 skeleton.bottomAnchor.constraint(equalTo: view.bottomAnchor)
             ])
         }

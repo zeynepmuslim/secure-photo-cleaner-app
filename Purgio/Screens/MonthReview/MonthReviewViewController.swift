@@ -116,6 +116,24 @@ final class MonthReviewViewController: UIViewController {
     var historyBadgeWidthConstraint: NSLayoutConstraint!
     var binSpacerWidthConstraint: NSLayoutConstraint?
 
+    enum Layout {
+        /// Between the card and the bottom controls row (also the skeleton's bottom).
+        static let cardToControlsGap: CGFloat = 20
+    }
+
+    // iPhone Duo fold layout (see +Fold): constraint sets swapped by pose
+    var flatLayoutConstraints: [NSLayoutConstraint] = []
+    var tablePoseLayoutConstraints: [NSLayoutConstraint] = []
+    var cardBottomToFoldConstraint: NSLayoutConstraint?
+    var statsTopToFoldConstraint: NSLayoutConstraint?
+    var playPauseCenterXConstraint: NSLayoutConstraint?
+    var undoHistoryEqualWidthConstraint: NSLayoutConstraint?
+    var undoTrailingToFoldConstraint: NSLayoutConstraint?
+    var currentFoldPose: FoldRegion.Pose = .flat
+    var duoEdges: [DuoEdgeConstraints] = []
+    /// Edges of the loading skeleton; cleared when it's removed.
+    var skeletonDuoEdges: [DuoEdgeConstraints] = []
+
     let monthTitle: String
     let monthKey: String
     let mediaType: PHAssetMediaType
@@ -218,6 +236,9 @@ final class MonthReviewViewController: UIViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         updateBinSpacerWidth(animated: false)
+        let railEdge = DuoLayout.railEdge(tabBarController, in: view)
+        (duoEdges + skeletonDuoEdges).forEach { $0.update(railEdge: railEdge) }
+        updateFoldLayout()
     }
 
     override func viewWillAppear(_ animated: Bool) {

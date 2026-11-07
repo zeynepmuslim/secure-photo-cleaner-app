@@ -53,7 +53,7 @@ final class UndoHistoryViewController: UIViewController {
         }
     }
 
-    // Re-applies title/icon-size styling once the view's real width is known (see viewDidLayoutSubviews);
+    // Re-applies title/icon-size styling whenever the view's width changes (see viewDidLayoutSubviews);
     // the initial width read in setupSelectionToolbar can be 0 before the sheet finishes presenting.
     private func updateSelectionToolbarButtonStyle(showTitles: Bool) {
         applyToolbarButtonStyle(
@@ -74,7 +74,7 @@ final class UndoHistoryViewController: UIViewController {
         view.addSubview(selectionToolbar)
         selectionToolbar.isHidden = true
 
-        let showTitles = view.bounds.width >= 430
+        let showTitles = shouldShowToolbarTitles
 
         func createButton(title: String, systemImage: String, color: UIColor, action: Selector) -> DynamicGlassButton {
             let button = DynamicGlassButton()
@@ -129,7 +129,12 @@ final class UndoHistoryViewController: UIViewController {
         return stack
     }()
 
-    private var didRefreshSelectionToolbarStyle = false
+    private var appliedToolbarShowsTitles: Bool?
+
+    /// Titles fit when the sheet itself is wide enough (regular width, or 430pt+).
+    private var shouldShowToolbarTitles: Bool {
+        traitCollection.horizontalSizeClass == .regular || view.bounds.width >= 430
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -153,9 +158,11 @@ final class UndoHistoryViewController: UIViewController {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        guard !didRefreshSelectionToolbarStyle else { return }
-        didRefreshSelectionToolbarStyle = true
-        updateSelectionToolbarButtonStyle(showTitles: view.bounds.width >= 430)
+        // Re-evaluated on every size change (sheet resize, iPhone Duo open/close)
+        let showTitles = shouldShowToolbarTitles
+        guard appliedToolbarShowsTitles != showTitles else { return }
+        appliedToolbarShowsTitles = showTitles
+        updateSelectionToolbarButtonStyle(showTitles: showTitles)
     }
 
     deinit {

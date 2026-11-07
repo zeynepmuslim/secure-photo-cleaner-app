@@ -15,11 +15,12 @@ private enum Strings {
     static let photosTitle = NSLocalizedString("home.photosTitle", comment: "Photos section title")
     static let videosTitle = NSLocalizedString("home.videosTitle", comment: "Videos section title")
     static let browseByMonth = NSLocalizedString("home.browseByMonth", comment: "Browse by month section header")
+    static let luckyItem = NSLocalizedString("home.luckyItem", comment: "Lucky bar item title (random month and filter)")
 }
 
-private enum DuoPadding {
-    static let trailing: CGFloat = -6
-    static let bottom: CGFloat = -20
+private enum HomeLayout {
+    /// Between Home's cards and groups (also the fold gap when fully open).
+    static let cardSpacing: CGFloat = 16
 }
 
 final class HomeViewController: UIViewController {
@@ -27,7 +28,7 @@ final class HomeViewController: UIViewController {
     private let contentStack: UIStackView = {
         let stack = UIStackView()
         stack.axis = .vertical
-        stack.spacing = 16
+        stack.spacing = HomeLayout.cardSpacing
         stack.translatesAutoresizingMaskIntoConstraints = false
         return stack
     }()
@@ -80,8 +81,6 @@ final class HomeViewController: UIViewController {
         return card
     }()
 
-    private let helpButton = HelpButton()
-    private let luckyButton = LuckyButton()
 
     private let photoLibraryService = PhotoLibraryService.shared
     private let statsStore = StatsStore.shared
@@ -93,9 +92,23 @@ final class HomeViewController: UIViewController {
     private var hasNavigatedAway: Bool = false   // to prevent show direct response from async
     private var dashboardRefreshTask: Task<Void, Never>?
     private var hasRunStartupFlow = false
+    private var contentLeadingConstraint: NSLayoutConstraint?
     private var contentTrailingConstraint: NSLayoutConstraint?
     private var contentBottomConstraint: NSLayoutConstraint?
     private var contentBottomToViewConstraint: NSLayoutConstraint?
+    private var quickAccessMaxHeightConstraint: NSLayoutConstraint?
+
+    // iPhone Duo inner display: overview (storage + tiles) and dashboard sit on either
+    // side of the fold. Home's own padding and margins stay the same.
+    private let overviewStack: UIStackView = {
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.spacing = HomeLayout.cardSpacing
+        return stack
+    }()
+    private var overviewEdgeToFoldConstraint: NSLayoutConstraint?
+    /// Axis the content is split along at the fold; nil means the single column.
+    private var foldSplitAxis: NSLayoutConstraint.Axis?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -227,8 +240,11 @@ final class HomeViewController: UIViewController {
 
     private func setupUI() {
 
-        navigationItem.rightBarButtonItem = UIBarButtonItem(customView: helpButton)
-        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: luckyButton)
+        // Titled standard items (not customViews), so on iPhone Duo they move into the
+        // vertical bar with the other screens' items
+        navigationItem.rightBarButtonItem = .helpItem(target: self, action: #selector(handleHelpTap))
+        navigationItem.leftBarButtonItem = .luckyItem(
+            title: Strings.luckyItem, target: self, action: #selector(handleLuckyTap))
 
         quickAccessStack.addArrangedSubview(quickPhotosCard)
         quickAccessStack.addArrangedSubview(quickVideosCard)
@@ -250,8 +266,6 @@ final class HomeViewController: UIViewController {
         quickPhotosCard.addTarget(self, action: #selector(handleQuickPhotosTap), for: .touchUpInside)
         quickVideosCard.addTarget(self, action: #selector(handleQuickVideosTap), for: .touchUpInside)
 
-        helpButton.addTarget(self, action: #selector(handleHelpTap), for: .touchUpInside)
-        luckyButton.addTarget(self, action: #selector(handleLuckyTap), for: .touchUpInside)
 
         isFirstLaunch = !cardManager.hasEverGeneratedContent
         let initialContent = cardManager.getCachedOrDefaultContent()
@@ -263,16 +277,19 @@ final class HomeViewController: UIViewController {
     }
 
     private func setupConstraint() {
+        let leading = contentStack.leadingAnchor.constraint(
+            equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: GeneralConstants.EdgePadding.content)
         let trailing = contentStack.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor)
         let bottom = contentStack.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         let bottomToView = contentStack.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        contentLeadingConstraint = leading
         contentTrailingConstraint = trailing
         contentBottomConstraint = bottom
         contentBottomToViewConstraint = bottomToView
 
         NSLayoutConstraint.activate([
             contentStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
-            contentStack.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 20),
+            leading,
             trailing,
             bottom,
 
@@ -280,41 +297,117 @@ final class HomeViewController: UIViewController {
             dashboardCard.heightAnchor.constraint(greaterThanOrEqualToConstant: 150),
 
             quickAccessStack.heightAnchor.constraint(greaterThanOrEqualToConstant: 60),
-            quickAccessStack.heightAnchor.constraint(lessThanOrEqualToConstant: 100)
         ])
+
+        let quickAccessMaxHeight = quickAccessStack.heightAnchor.constraint(lessThanOrEqualToConstant: 100)
+        quickAccessMaxHeight.isActive = true
+        quickAccessMaxHeightConstraint = quickAccessMaxHeight
 
         updateOuterPaddingForTabBarShape()
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        updateFoldSplit()
         updateOuterPaddingForTabBarShape()
     }
 
-    private func updateOuterPaddingForTabBarShape() {
-        guard let tabBar = tabBarController?.tabBar else { return }
-        let isVerticalRail = tabBar.bounds.height > tabBar.bounds.width
+    /// Splits Home at the fold when one crosses the view (inactive included, so the
+    /// columns don't jump when the device folds). A vertical fold puts the two groups
+    /// side by side; a horizontal one stacks them above and below it.
+    private func updateFoldSplit() {
+        let fold = FoldRegion.splittingFold(in: view)
+        let axis: NSLayoutConstraint.Axis? = fold.map { $0.height > $0.width ? .horizontal : .vertical }
+        if axis != foldSplitAxis {
+            rebuildContent(splitAlong: axis)
+        }
 
-        guard isVerticalRail else {
-            contentBottomToViewConstraint?.isActive = false
-            contentBottomConstraint?.isActive = true
-            contentTrailingConstraint?.constant = -20
-            contentBottomConstraint?.constant = -16
-            dashboardCard.setBottomLeftCornerRadius(nil)
+        guard let fold = fold, let axis = axis else { return }
+        let foldStart = axis == .horizontal ? fold.minX : fold.minY
+        let foldLength = axis == .horizontal ? fold.width : fold.height
+        let foldCenter = foldStart + foldLength / 2
+        // Fully open, the groups keep the regular 16pt card spacing, centered on the fold
+        // line. Folded, they clear the whole region (its frame already includes the
+        // margins content keeps from the fold), never less than the card spacing.
+        let isFolded = FoldRegion.activeFold(in: view) != nil
+        let spacing = isFolded ? max(HomeLayout.cardSpacing, foldLength) : HomeLayout.cardSpacing
+        let overviewEdge = foldCenter - spacing / 2
+        if overviewEdgeToFoldConstraint?.constant != overviewEdge {
+            overviewEdgeToFoldConstraint?.constant = overviewEdge
+        }
+        if contentStack.spacing != spacing {
+            contentStack.spacing = spacing
+        }
+    }
+
+    private func rebuildContent(splitAlong axis: NSLayoutConstraint.Axis?) {
+        foldSplitAxis = axis
+        overviewEdgeToFoldConstraint?.isActive = false
+        overviewEdgeToFoldConstraint = nil
+        (contentStack.arrangedSubviews + overviewStack.arrangedSubviews).forEach { $0.removeFromSuperview() }
+
+        guard let axis = axis else {
+            contentStack.axis = .vertical
+            contentStack.spacing = HomeLayout.cardSpacing
+            quickAccessMaxHeightConstraint?.isActive = true
+            contentStack.addArrangedSubview(storageAnalysisView)
+            contentStack.addArrangedSubview(quickAccessStack)
+            contentStack.addArrangedSubview(dashboardCard)
             return
         }
 
-        let isInnerScreen = traitCollection.horizontalSizeClass == .regular
-        contentTrailingConstraint?.constant = DuoPadding.trailing
+        // Tiles grow to fill the overview group instead of capping at 100pt
+        quickAccessMaxHeightConstraint?.isActive = false
+        overviewStack.addArrangedSubview(storageAnalysisView)
+        overviewStack.addArrangedSubview(quickAccessStack)
+        contentStack.axis = axis
+        contentStack.addArrangedSubview(overviewStack)
+        contentStack.addArrangedSubview(dashboardCard)
 
+        let edgeToFold = axis == .horizontal
+            ? overviewStack.trailingAnchor.constraint(equalTo: view.leadingAnchor)
+            : overviewStack.bottomAnchor.constraint(equalTo: view.topAnchor)
+        edgeToFold.isActive = true
+        overviewEdgeToFoldConstraint = edgeToFold
+    }
+
+    private func updateOuterPaddingForTabBarShape() {
+        guard let railSide = DuoLayout.railSide(tabBarController, in: view) else {
+            contentBottomToViewConstraint?.isActive = false
+            contentBottomConstraint?.isActive = true
+            contentLeadingConstraint?.constant = GeneralConstants.EdgePadding.content
+            contentTrailingConstraint?.constant = -GeneralConstants.EdgePadding.content
+            contentBottomConstraint?.constant = -16
+            updateCardCorners(isVerticalRail: false)
+            return
+        }
+
+        // The rail is on the app's outer edge: trailing on the full display, leading in
+        // Split View on the left half. Content keeps 6pt from the rail either way.
+        let isLeftToRight = view.effectiveUserInterfaceLayoutDirection == .leftToRight
+        let railIsLeading = (railSide == .left) == isLeftToRight
+        // Rail leading (Split View on the left half): the 6pt gap moves next to the rail
+        // and the far edge gets the standard content padding.
+        let nextToRail = DuoLayout.RailPadding.nextToRail
+        let content = GeneralConstants.EdgePadding.content
+        contentLeadingConstraint?.constant = railIsLeading ? nextToRail : content
+        contentTrailingConstraint?.constant = railIsLeading ? -content : -nextToRail
 
         contentBottomConstraint?.isActive = false
-        contentBottomToViewConstraint?.constant = DuoPadding.bottom
+        contentBottomToViewConstraint?.constant = -DuoLayout.RailPadding.bottom
         contentBottomToViewConstraint?.isActive = true
 
-        dashboardCard.setBottomLeftCornerRadius(
-            isInnerScreen ? GeneralConstants.CornerRadius.Duo.innerCard : GeneralConstants.CornerRadius.Duo.outerCard
-        )
+        updateCardCorners(isVerticalRail: true)
+    }
+
+    /// On the vertical rail the card in the device's bottom corner follows its curve: the
+    /// dashboard, or the Photos tile when the groups sit side by side at the fold.
+    private func updateCardCorners(isVerticalRail: Bool) {
+        // The cards' frames are only final once the stacks are laid out
+        if isVerticalRail { contentStack.layoutIfNeeded() }
+        [dashboardCard, quickPhotosCard, quickVideosCard].forEach {
+            $0.updateCardCorners(followingDeviceCorner: isVerticalRail)
+        }
     }
 
     private func updateStorageAnalysisView() {

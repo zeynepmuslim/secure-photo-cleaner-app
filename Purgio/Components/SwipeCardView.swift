@@ -42,6 +42,7 @@ final class SwipeCardView: UIView {
     var onSkipTap: (() -> Void)?
     var assetIdentifier: String?
     var mediaType: MediaType = .photo
+    private weak var embeddedVideoLayer: CALayer?
 
     private let backgroundImageView: UIImageView = {
         let imageView = UIImageView()
@@ -415,6 +416,18 @@ final class SwipeCardView: UIView {
     func embedVideoLayer(_ videoLayer: CALayer) {
         videoLayer.frame = bounds
         layer.insertSublayer(videoLayer, above: imageView.layer)
+        embeddedVideoLayer = videoLayer
+    }
+
+    /// Keeps the video sized to the card when the display changes (iPhone Duo open/close).
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard let videoLayer = embeddedVideoLayer, videoLayer.superlayer === layer,
+              videoLayer.frame != bounds else { return }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        videoLayer.frame = bounds
+        CATransaction.commit()
     }
 
     func reset() {

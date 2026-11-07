@@ -101,10 +101,12 @@ final class DeleteBinViewController: UIViewController {
     private let emptyStateView = EmptyStateView()
 
     private lazy var collectionView: UICollectionView = {
-        let layout = UICollectionViewFlowLayout()
-        layout.minimumInteritemSpacing = 2
-        layout.minimumLineSpacing = 2
+        let layout = FoldSplitFlowLayout()
+        layout.minimumInteritemSpacing = GridGeometry.spacing
+        layout.minimumLineSpacing = GridGeometry.spacing
         layout.sectionInset = UIEdgeInsets(top: 2, left: 2, bottom: 2, right: 2)
+        // Keep thumbnails out of side safe areas (vertical bars on iPhone Duo)
+        layout.sectionInsetReference = .fromSafeArea
         let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collectionView.backgroundColor = .systemBackground
         collectionView.register(PhotoThumbnailCell.self, forCellWithReuseIdentifier: "PhotoCell")
@@ -158,6 +160,11 @@ final class DeleteBinViewController: UIViewController {
 
     private var photoAssets: [PHAsset] = []
     private var thumbnailSize: CGSize = .zero
+    private var lastGridGeometry: GridGeometry?
+    private var skeletonLeadingConstraint: NSLayoutConstraint?
+    private var skeletonTrailingConstraint: NSLayoutConstraint?
+    private var headerCenterXConstraint: NSLayoutConstraint?
+    private var editButtonsEdges: DuoEdgeConstraints?
 
     private enum EmptyKind {
         case defaultEmpty
@@ -217,8 +224,26 @@ final class DeleteBinViewController: UIViewController {
         }
     }
 
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        // Width, rail and fold changes all change the geometry
+        guard gridContentWidth > 0 else { return }
+        let geometry = gridGeometry
+        guard geometry != lastGridGeometry else { return }
+        let isFirstLayout = lastGridGeometry == nil
+        lastGridGeometry = geometry
+        calculateThumbnailSize()
+        collectionView.collectionViewLayout.invalidateLayout()
+        if !isFirstLayout {
+            // Reload visible thumbnails at the new size; keeps edit-mode selection
+            collectionView.reconfigureItems(at: collectionView.indexPathsForVisibleItems)
+        }
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        editButtonsEdges?.update(railEdge: DuoLayout.railEdge(tabBarController, in: view))
+        updateRailHeader()
         updateBinSpacerWidth(animated: false)
         headerLabel.layer.cornerRadius = headerLabel.bounds.height / 2
         headerLabel.layer.cornerCurve = .continuous
@@ -281,28 +306,38 @@ final class DeleteBinViewController: UIViewController {
         headerLabel.translatesAutoresizingMaskIntoConstraints = false
         editButtonsStack.translatesAutoresizingMaskIntoConstraints = false
 
+        let headerCenterX = headerLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+        headerCenterXConstraint = headerCenterX
+
         NSLayoutConstraint.activate([
             collectionView.topAnchor.constraint(equalTo: view.topAnchor),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
 
             headerLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12),
-            headerLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            headerCenterX,
             headerLabel.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor, constant: -32),
             headerLabel.heightAnchor.constraint(equalToConstant: 32),
 
             emptyStateView.topAnchor.constraint(equalTo: view.topAnchor),
-            emptyStateView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            emptyStateView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            emptyStateView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            emptyStateView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
             emptyStateView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
-            editButtonsStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            editButtonsStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            editButtonsStack.bottomAnchor.constraint(
-                equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -GeneralConstants.Spacer.buttonBottom),
             editButtonsStack.heightAnchor.constraint(equalToConstant: GeneralConstants.ButtonSize.large),
             removeSelectedButton.widthAnchor.constraint(equalTo: binSpacerView.widthAnchor)
         ])
+
+        // Side and bottom edges follow Home's vertical-rail padding on iPhone Duo; with the
+        // rail trailing, the leading edge matches the wide bin button's corner clearance
+        let edges = DuoEdgeConstraints(
+            item: editButtonsStack, in: view,
+            standardLeading: GeneralConstants.EdgePadding.content,
+            standardTrailing: GeneralConstants.EdgePadding.content,
+            railTrailingFarLeading: DuoLayout.RailPadding.cornerClearance,
+            standardBottom: GeneralConstants.Spacer.buttonBottom)
+        editButtonsEdges = edges
+        NSLayoutConstraint.activate(edges.initialConstraints)
 
         binSpacerWidthConstraint = binSpacerView.widthAnchor.constraint(equalToConstant: 0)
         binSpacerWidthConstraint?.priority = .defaultLow
@@ -312,40 +347,34 @@ final class DeleteBinViewController: UIViewController {
         collectionViewBottomConstraint.isActive = true
     }
 
+    // Titled standard items (no custom "more" menu): the system picks the
+    // representation and overflow on iPhone Duo; the ellipsis stays reserved for overflow.
     private func setupNavigationItems() {
-        if filterMonthKey != nil {
-            let menuButton = UIButton(type: .system)
-            menuButton.setImage(UIImage(systemName: "ellipsis.circle"), for: .normal)
-            menuButton.tintColor = .label
-            menuButton.showsMenuAsPrimaryAction = true
-            menuButton.menu = makeEditMenu()
-            navigationItem.rightBarButtonItem = UIBarButtonItem(customView: menuButton)
-        } else {
-            let editButton = UIBarButtonItem(
-                image: UIImage(systemName: "pencil"),
-                style: .plain,
-                target: self,
-                action: #selector(handleEditTap)
-            )
-            navigationItem.rightBarButtonItem = editButton
+        let editButton = UIBarButtonItem(
+            image: UIImage(systemName: "pencil"),
+            style: .plain,
+            target: self,
+            action: #selector(handleEditTap)
+        )
+        editButton.title = Strings.editMode
+
+        guard filterMonthKey != nil else {
+            navigationItem.rightBarButtonItems = [editButton]
+            return
         }
 
-    }
-
-    private func makeEditMenu() -> UIMenu {
-        let editAction = UIAction(
-            title: Strings.editMode,
-            image: UIImage(systemName: "pencil")
-        ) { [weak self] _ in
-            self?.handleEditTap()
+        let generalBinButton = UIBarButtonItem(
+            image: UIImage(systemName: "tray.full"),
+            style: .plain,
+            target: self,
+            action: #selector(handleShowWholeBin)
+        )
+        generalBinButton.title = Strings.goToGeneralBin
+        if #available(iOS 27.1, *) {
+            editButton.visibilityPriority = .high
+            generalBinButton.visibilityPriority = .low
         }
-        let showAllAction = UIAction(
-            title: Strings.goToGeneralBin,
-            image: UIImage(systemName: "tray.full")
-        ) { [weak self] _ in
-            self?.handleShowWholeBin()
-        }
-        return UIMenu(title: "", children: [editAction, showAllAction])
+        navigationItem.rightBarButtonItems = [editButton, generalBinButton]
     }
 
     @objc private func handleShowWholeBin() {
@@ -399,7 +428,7 @@ final class DeleteBinViewController: UIViewController {
         }
 
         if editing {
-            navigationItem.rightBarButtonItem = doneBarButtonItem
+            navigationItem.rightBarButtonItems = [doneBarButtonItem]
         } else {
             setupNavigationItems()
         }
@@ -536,18 +565,110 @@ final class DeleteBinViewController: UIViewController {
     }
 
     // MARK: - UI Updates
-    private func calculateThumbnailSize() {
-        let columns: CGFloat = 3
-        let spacing: CGFloat = 2
-        let insets: CGFloat = 4
-        let totalSpacing = (columns - 1) * spacing + insets
+    /// Grid width inside the side safe areas (matches `sectionInsetReference = .fromSafeArea`).
+    private var gridContentWidth: CGFloat {
         let containerWidth = collectionView.bounds.width > 0 ? collectionView.bounds.width : view.bounds.width
-        let width = (containerWidth - totalSpacing) / columns
-        thumbnailSize = CGSize(width: width * traitCollection.displayScale, height: width * traitCollection.displayScale)
+        return containerWidth - view.safeAreaInsets.left - view.safeAreaInsets.right
+    }
 
-        if let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
-            layout.itemSize = CGSize(width: width, height: width)
+    /// Physical side section insets, lined up with the wide bin button. On a vertical rail
+    /// (iPhone Duo only) the grid keeps 6pt from the rail. Across from a right-side rail the
+    /// safe area is ~0, so it keeps clear of the device's rounded corner; across from a
+    /// left-side rail (Split View, left half) it uses the bin button's standard padding.
+    /// Elsewhere the original 2pt insets.
+    private var gridSideInsets: (left: CGFloat, right: CGFloat) {
+        switch DuoLayout.railSide(tabBarController, in: view) {
+        case nil: return (2, 2)
+        case .right: return (DuoLayout.RailPadding.cornerClearance, DuoLayout.RailPadding.nextToRail)
+        case .left: return (DuoLayout.RailPadding.nextToRail, GeneralConstants.EdgePadding.medium)
         }
+    }
+
+    /// Vertical rail only: the header centers over the grid instead of the whole view
+    /// (the side insets differ).
+    private func updateRailHeader() {
+        var headerOffset: CGFloat = 0
+        if DuoLayout.isVerticalRail(tabBarController) {
+            let geometry = gridGeometry
+            let safeArea = view.safeAreaInsets
+            headerOffset = ((safeArea.left + geometry.leftInset) - (safeArea.right + geometry.rightInset)) / 2
+        }
+        if let headerCenterX = headerCenterXConstraint, headerCenterX.constant != headerOffset {
+            headerCenterX.constant = headerOffset
+        }
+    }
+
+    /// 3 columns in compact width; an even count in regular width so the grid
+    /// splits cleanly at the iPhone Duo fold (4, or 6 once cells would exceed 180pt).
+    private func gridColumnCount(for width: CGFloat) -> CGFloat {
+        guard traitCollection.horizontalSizeClass == .regular else { return 3 }
+        return width / 4 > 180 ? 6 : 4
+    }
+
+    /// Item size and physical side insets of the grid.
+    private struct GridGeometry: Equatable {
+        static let spacing: CGFloat = 2
+
+        var columns: Int
+        var side: CGFloat
+        var leftInset: CGFloat
+        var rightInset: CGFloat
+        /// Collection view x where the right half starts, when the grid splits at a fold.
+        var splitX: CGFloat?
+        /// Space added to the gap at `splitX` (0 while the device is fully open).
+        var extraGap: CGFloat = 0
+    }
+
+    /// The regular grid inside `gridSideInsets`. With a vertical iPhone Duo fold across it
+    /// (regular width, even column count), the two halves sit on either side of the fold
+    /// line instead: the regular 2pt gap centered on it while fully open, the whole fold
+    /// region while folded, so no thumbnail sits on the fold.
+    private var gridGeometry: GridGeometry {
+        let spacing = GridGeometry.spacing
+        let base = gridSideInsets
+        let width = gridContentWidth
+        let columns = Int(gridColumnCount(for: width))
+        let regularSide = floor((width - base.left - base.right - CGFloat(columns - 1) * spacing) / CGFloat(columns))
+        let regular = GridGeometry(columns: columns, side: regularSide, leftInset: base.left, rightInset: base.right)
+
+        guard columns.isMultiple(of: 2), traitCollection.horizontalSizeClass == .regular,
+              let fold = FoldRegion.splittingFold(in: view), fold.height > fold.width else { return regular }
+
+        let gap = FoldRegion.activeFold(in: view).map { max(spacing, $0.width) } ?? spacing
+        let safeLeft = view.safeAreaInsets.left
+        // Grid coordinates: from the safe area's left edge (`sectionInsetReference = .fromSafeArea`)
+        let foldCenter = fold.midX - safeLeft
+        let halfColumns = CGFloat(columns / 2)
+        let halfRoom = min(foldCenter - gap / 2 - base.left, width - base.right - (foldCenter + gap / 2))
+        let side = floor((halfRoom - (halfColumns - 1) * spacing) / halfColumns)
+        guard side > 0 else { return regular }
+
+        let halfWidth = halfColumns * side + (halfColumns - 1) * spacing
+        let leftInset = foldCenter - gap / 2 - halfWidth
+        let extraGap = gap - spacing
+        // The flow layout sees the regular spacing everywhere; the right inset leaves room
+        // for the right half's shift
+        let rightInset = width - leftInset - CGFloat(columns) * side - CGFloat(columns - 1) * spacing - extraGap
+        return GridGeometry(
+            columns: columns, side: side, leftInset: leftInset, rightInset: rightInset,
+            splitX: safeLeft + leftInset + halfWidth + spacing / 2, extraGap: extraGap)
+    }
+
+    private func calculateThumbnailSize() {
+        let geometry = gridGeometry
+        skeletonGridView?.columns = geometry.columns
+        let scale = traitCollection.displayScale
+        thumbnailSize = CGSize(width: geometry.side * scale, height: geometry.side * scale)
+
+        if let layout = collectionView.collectionViewLayout as? FoldSplitFlowLayout {
+            layout.itemSize = CGSize(width: geometry.side, height: geometry.side)
+            layout.sectionInset.left = geometry.leftInset
+            layout.sectionInset.right = geometry.rightInset
+            layout.splitX = geometry.splitX
+            layout.extraGap = geometry.extraGap
+        }
+        skeletonLeadingConstraint?.constant = geometry.leftInset
+        skeletonTrailingConstraint?.constant = -geometry.rightInset
     }
 
     // MARK: - Data Loading
@@ -624,15 +745,24 @@ final class DeleteBinViewController: UIViewController {
         headerLabel.isHidden = true
 
         if skeletonGridView == nil {
-            let skeleton = SkeletonGridView(columns: 3, rows: 5)
+            let geometry = gridGeometry
+            let skeleton = SkeletonGridView(columns: geometry.columns)
             skeleton.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview(skeleton)
             self.skeletonGridView = skeleton
 
+            // Same grid as the collection view: 50pt top content inset plus the section
+            // insets (wider leading on a vertical rail), inside the side safe areas (`sectionInsetReference = .fromSafeArea`)
+            let leading = skeleton.leadingAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: geometry.leftInset)
+            let trailing = skeleton.trailingAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -geometry.rightInset)
+            skeletonLeadingConstraint = leading
+            skeletonTrailingConstraint = trailing
             NSLayoutConstraint.activate([
-                skeleton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 50),
-                skeleton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 2),
-                skeleton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -2),
+                skeleton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 52),
+                leading,
+                trailing,
                 skeleton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20)
             ])
 
@@ -643,6 +773,8 @@ final class DeleteBinViewController: UIViewController {
     private func hideLoadingState() {
         skeletonGridView?.fadeOut { [weak self] in
             self?.skeletonGridView = nil
+            self?.skeletonLeadingConstraint = nil
+            self?.skeletonTrailingConstraint = nil
         }
     }
 
@@ -711,7 +843,7 @@ final class DeleteBinViewController: UIViewController {
         emptyStateView.show(animated: true)
         collectionView.isHidden = true
         headerLabel.isHidden = true
-        navigationItem.rightBarButtonItem?.isEnabled = false
+        navigationItem.rightBarButtonItems?.forEach { $0.isEnabled = false }
         findFloatingBinButton()?.isEnabled = false
         findFloatingBinButton()?.alpha = 0.5
     }
@@ -884,7 +1016,7 @@ final class DeleteBinViewController: UIViewController {
         emptyStateView.isHidden = true
         collectionView.isHidden = false
         headerLabel.isHidden = false
-        navigationItem.rightBarButtonItem?.isEnabled = true
+        navigationItem.rightBarButtonItems?.forEach { $0.isEnabled = true }
         findFloatingBinButton()?.isEnabled = true
         findFloatingBinButton()?.alpha = 1.0
     }

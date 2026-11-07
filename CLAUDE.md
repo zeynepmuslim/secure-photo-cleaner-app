@@ -118,21 +118,23 @@ Declare each name as a `Notification.Name` extension next to its owner, with the
   - Keep constraints that change as stored `NSLayoutConstraint?` and toggle `isActive`.
 - **Size-dependent decisions run after layout, never in `init`, `viewDidLoad` or lazy initializers.** The window's size is unknown there and changes on the Duo.
   - Views re-apply in `layoutSubviews()`, e.g. `StorageAnalysisLiteView.applyHeaderLayoutVariant()`, `DashboardCard.applySizeVariant()` and `FilterCard`.
-  - View controllers configure in `viewDidLayoutSubviews` or `viewWillAppear` behind a once-flag, e.g. `didSetupLayout` (Onboarding), `didConfigureForSize` (TipJar, SimilarPhotosHelpSheet) and `didRefreshSelectionToolbarStyle` (UndoHistory).
-  - Thresholds read `view.window?.bounds ?? view.bounds`:
-    - `< 390` wide: compact cards, smaller fonts
-    - `<= 667` tall: large detents
-    - `>= 430` wide: toolbar titles
+  - View controllers configure in `viewDidLayoutSubviews` or `viewWillAppear`, either behind a once-flag (`didSetupLayout` in Onboarding, `didConfigureForSize` in TipJar and SimilarPhotosHelpSheet) or re-applied whenever the value changes (`appliedToolbarShowsTitles` in UndoHistory).
+  - **Compact variants follow the view's own width**, not the window's, so they follow display, column and Split View changes:
+    - Cards compare `bounds.width` with `GeneralConstants.CompactContentWidth`: `fullWidthCard` (350) for full-width cards (`DashboardCard`, `StorageAnalysisLiteView`), `halfWidthCard` (167) for two-up cards (`FilterCard`). Both are calibrated so 375pt iPhones get the compact look and 390pt+ the regular one.
+    - UndoHistory's toolbar shows titles in regular width or at 430pt+ of its own width.
+  - Sheet detents still read `view.window?.bounds ?? view.bounds`: `<= 667` tall gets large detents.
 - **Scale** comes from `traitCollection.displayScale`.
   - On iOS 17+, re-render thumbnails with `registerForTraitChanges([UITraitDisplayScale.self])`.
   - `ImageCacheService`'s overloads without `traitCollection:` are `@available(*, deprecated)` shims. Don't use them in new code.
 - **Edge paddings 16, 18 and 20 are deliberately different.** Name each by its role and never merge them:
-  - **20:** screen content (Home, MonthReview card and controls, DeleteBin buttons, MediaPreview, sheet titles)
+  - **20:** screen content (`GeneralConstants.EdgePadding.content`: Home, MonthReview card and controls, DeleteBin buttons, MediaPreview, sheet titles)
   - **16:** floating controls and sheet content (`GeneralConstants.EdgePadding.medium`: the bin button, LuckyPicker, UndoHistory, HistoryDetail)
   - **18:** Settings rows and cards' inner padding (`SettingsViewController`, `SettingsInfoCardView`, `SettingsLinkRowView`, `DashboardCard`, `StorageAnalysisView`), and the clearance from the device corner opposite a trailing rail
 - **Tokens:** use `GeneralConstants` (`Purgio/Others/Constants.swift`) instead of new literals:
-  - `EdgePadding.small` 10, `EdgePadding.medium` 16
-  - `CornerRadius.card` 16; `CornerRadius.Duo.outerCard` 8, `CornerRadius.Duo.innerCard` 36
+  - `EdgePadding.small` 10, `EdgePadding.medium` 16, `EdgePadding.content` 20. Values are positive; apply the edge's sign at the constraint.
+  - `CornerRadius.card` 16
+  - `CompactContentWidth.fullWidthCard` 350, `CompactContentWidth.halfWidthCard` 167
+  - Vertical rail (`DuoLayout.RailPadding`, `Purgio/Others/DuoLayout.swift`): `nextToRail` 6, `bottom` 20, `cornerClearance` 18
   - `ButtonSize.small` 30, `medium` 44, `mediumLarge` 50, `large` 56
   - `Spacer.buttonBottom` 24
   - `BulkYear.sparseYearThreshold` 50
@@ -159,60 +161,58 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
 
 ### Rules
 - **Never add `UIRequiresFullScreen`.** It's deprecated since iOS 26, and with it the unfolded Duo shows the app in a letterboxed portrait window. Without it the app fills the display and every screen must lay out at any size. The forbidden-API script checks for it.
-- **Detect the Duo with `UIHingeInteraction`, never with screen sizes.** Use the same `observeHinge()` shape as Photolift:
-  ```swift
-  /// Any hinge means the iPhone Duo (`UIHingeInteraction`, iOS 27.1); other devices get updates without one.
-  private func observeHinge() {
-      guard #available(iOS 27.1, *) else { return }
-      view.addInteraction(UIHingeInteraction { [weak self] _, update in
-          guard let self else { return }
-          isOnDuo = update.hinge != nil
-          usesFoldedLayout = update.hinge?.status == .closed      // cover display
-          isHalfFolded = update.hinge?.status == .partiallyOpen   // fold runs across the inner display
-          view.setNeedsLayout()
-      })
-  }
-  ```
+- **Never detect the Duo with screen sizes.** Layout reacts to what the view sees, on every layout pass: the tab rail's shape, the fold region, the size class and the view's own bounds.
   - **Inner vs cover display:** `traitCollection.horizontalSizeClass` is `.regular` on the inner display and `.compact` on the cover.
   - **Inner display held sideways:** additionally `view.bounds.width > view.bounds.height`.
-  - The hinge update can arrive after the first layout, so layout code must handle the state changing later.
-- **Camera and fold regions** are read in `viewDidLayoutSubviews` (or a `updateReach()`-style method it calls), inside `#available(iOS 27.1, *)`:
+  - No screen needs the hinge state today. If one does, use `UIHingeInteraction` (iOS 27.1); its update can arrive after the first layout, so layout code must handle the state changing later.
+- **Camera and fold regions** are read in `viewDidLayoutSubviews` (or a method it calls), inside `#available(iOS 27.1, *)`:
   - Camera: `view.reservedRegions(kind: .occlusion).map(\.frame)`. On the cover display, controls may run under the system's side bar only where none of these frames intersect them.
-  - Fold: `view.reservedRegions(kind: .division).first(where: \.isActive)?.frame`. **Nothing tappable goes on the fold.** Inner layouts split at the fold's real position.
-    - Home's inner layout follows this: storage plus the Photos/Videos tiles on one side, the dashboard on the other.
-- **Detecting the tab rail:** no API reports where the tab bar sits (`mode` and `sidebar.preferredPlacement` don't), so use geometry: `let isVerticalRail = tabBar.bounds.height > tabBar.bounds.width`, evaluated in `viewDidLayoutSubviews`.
+  - Fold: use `FoldRegion` (`Purgio/Others/FoldRegion.swift`), which wraps `reservedRegions(kind: .division)`:
+    - `activeFold(in:)`: the fold while the device is partly folded, else nil. `pose(for:)` turns it into `.flat`, `.book` (vertical band) or `.table` (horizontal band).
+    - `splittingFold(in:)`: the fold even while fully open, but only when it leaves at least a third of the view on each side. Use it for where columns split, so the layout doesn't jump when the device folds (and doesn't split in Split View).
+  - **Nothing tappable goes on the fold.** Inner layouts split at the fold's real position:
+    - Home: storage plus the Photos/Videos tiles on one side, the dashboard on the other.
+    - MonthFilterCards: stats plus All Photos/Videos on one side, the four filters on the other (one per row when side by side).
+    - MonthReview (`+Fold.swift`): a vertical fold splits the undo/history row (undo ends before the fold, history starts after it). In the table pose the card sits on the raised half and stats plus controls on the base; in the book pose the video play button moves to the larger side of the fold.
+    - DeleteBin: a vertical fold splits the grid into two equal halves on either side of the fold line (`FoldSplitFlowLayout` widens the gap there). The half with less room sets the cell size, so the other side gets a wider margin.
+    - The wide "Delete All" bin button keeps to the trailing side of the fold in the book pose.
+    - Split controls the same way Home splits content: use `splittingFold` so they don't jump when the device folds, center the gap on the fold line while fully open, and clear the whole fold region (`activeFold`'s width) while folded.
+- **Detecting the tab rail:** no API reports where the tab bar sits (`mode` and `sidebar.preferredPlacement` don't), so use geometry, evaluated in `viewDidLayoutSubviews`. `DuoLayout` wraps it:
+  - `isVerticalRail(tabBarController)`: the tab bar is taller than wide.
+  - `railSide(_:in:)`: the physical side (`.left` / `.right`). The rail sits on the app's outer edge: right on the full display, left in Split View on the left half.
+  - `railEdge(_:in:)`: the same as a layout edge (`.leading` / `.trailing`), for leading/trailing constraints.
+- **Bar items are standard titled `UIBarButtonItem`s, never `customView`s.** The system can then move them into the vertical bar or the overflow menu. Give every item a `title`, even when it shows an image. Shared items live in `UIBarButtonItem+Common.swift` (`.helpItem`, `.luckyItem`). Set `visibilityPriority` (iOS 27.1) on screens with more than one item, so the frequent action overflows last.
 - **Horizontal edges come from the safe area, never the superview.**
-  - Every view a view controller adds to `view` pins its sides to `view.safeAreaLayoutGuide.leadingAnchor` / `trailingAnchor`, or to the margins guide below, never to `view.leadingAnchor` / `trailingAnchor`.
+  - Every view a view controller adds to `view` pins its sides to `view.safeAreaLayoutGuide.leadingAnchor` / `trailingAnchor`, never to `view.leadingAnchor` / `trailingAnchor`.
   - Portrait iPhones can have a horizontal safe area: the Duo's 84pt camera strip.
   - **Exception — sideways-scrolling content spans the full width.** A collection view or scroll view that scrolls sideways pins to `view` and lets the safe area inset its content, so items rest inside it and scroll under the camera.
     - Set `contentInsetAdjustmentBehavior = .always`. With `.automatic` the trailing inset stayed 0 on the Duo.
     - For a compositional layout's `.continuous` sections, leave `contentInsetsReference` at its default; with `.none`, the last item rests under the camera.
     - A vertical scroll view that holds a sideways row also spans the full width. Pin its content's sides to `view.safeAreaLayoutGuide`, and set the `contentLayoutGuide` width to the `frameLayoutGuide`'s.
   - **Exception — full-screen decoration spans the full width.** Artwork, gradients and backgrounds with nothing to read or tap pin to `view`, e.g. the iOS 26 top gradient in MonthsList. Text and controls drawn over them still follow the safe-area rule.
-  - **Today most screens still pin to `view.leadingAnchor`.** Home is the exception. Bring every screen you touch up to this rule.
-- **Padding comes from layout margins.** Don't pad with constants from a container's edges. Put the padding in the container's `directionalLayoutMargins` and pin the content to its margins guide:
+  - Home, MonthFilterCards, MonthReview, DeleteBin and SimilarPhotos follow this rule. Other screens still pin to `view.leadingAnchor` (see **Known issues**); bring every screen you touch up to it.
+- **Padding is a constraint constant from the safe area,** using the role's token (see **Layout**). Don't rely on system layout margins for padding: UIKit raises them to the system minimum, and 16pt quietly becomes 20pt on the Duo. Gaps between siblings are constants too.
+- **Screen edges that must follow the vertical rail use `DuoEdgeConstraints`** (`Purgio/Others/DuoLayout.swift`). It builds the leading, trailing and (optionally) bottom constraints and switches them between the screen's standard padding and Home's rail padding:
   ```swift
-  viewRespectsSystemMinimumLayoutMargins = false
-  view.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 0, leading: 20, bottom: 16, trailing: 20)
-  let margins: UILayoutGuide
-  if #available(iOS 26.0, *) { margins = view.layoutGuide(for: .margins()) } else { margins = view.layoutMarginsGuide }
-  NSLayoutConstraint.activate([
-      content.leadingAnchor.constraint(equalTo: margins.leadingAnchor),
-      content.trailingAnchor.constraint(equalTo: margins.trailingAnchor),
-  ])
+  let edges = DuoEdgeConstraints(
+      item: controlsStack, in: view,
+      standardLeading: GeneralConstants.EdgePadding.content,
+      standardTrailing: GeneralConstants.EdgePadding.content,
+      standardBottom: GeneralConstants.Spacer.buttonBottom)
+  duoEdges = [edges]
+  NSLayoutConstraint.activate(edges.initialConstraints)
+
+  // viewDidLayoutSubviews
+  duoEdges.forEach { $0.update(railEdge: DuoLayout.railEdge(tabBarController, in: view)) }
   ```
-  - Margins are measured from the safe area (`insetsLayoutMarginsFromSafeArea` stays on), so the margins guide is the safe area inset by the padding. Padded views follow both rules at once.
-  - **In a view controller, set `viewRespectsSystemMinimumLayoutMargins = false`.** Otherwise UIKit raises the margins to the system minimum, and 16pt quietly becomes 20pt on the Duo.
-  - **Set `directionalLayoutMargins` whole, never one edge in place.** The value you read back includes the safe area, so `view.directionalLayoutMargins.bottom = …` adds the Duo's 84pt camera strip to the trailing margin a second time.
-  - **Content that needs different padding from its siblings goes in its own container.** That container follows the safe-area rule, sets its own `directionalLayoutMargins` and lays out in its own margins guide. Stack views use `isLayoutMarginsRelativeArrangement`.
-  - Containers inside scroll content or a floating card set `insetsLayoutMarginsFromSafeArea = false`, so their margins are only the padding.
-  - Gaps between siblings stay constraint constants. They are spacing, not padding.
-  - **Leave out `cornerAdaptation`** and use plain `.margins()`. `.horizontal` widens the margins to clear the display's rounded corners, turning 16pt into 18pt on the iPhone 17.
-  - iOS 27.1 adds no newer margins API.
-- **Home is the reference.** Don't change `HomeViewController`'s padding or margins in Duo work; make the other screens match its edges, the bottom edge most of all.
-  - With the rail showing, `updateOuterPaddingForTabBarShape()` uses `DuoPadding.trailing` (−6) and `DuoPadding.bottom` (−20 from `view.bottomAnchor`).
-  - It also calls `dashboardCard.setBottomLeftCornerRadius(_:)`: `CornerRadius.Duo.innerCard` (36) on the inner display, `outerCard` (8) on the cover, so the card's corner follows the device corner. Passing `nil` restores the uniform 16.
+  - With a rail: `RailPadding.nextToRail` (6) from the safe area on the rail's side, the standard padding on the other side, and the bottom at `view.bottomAnchor` − `RailPadding.bottom` (20), not the safe area.
+  - `railTrailingFarLeading`: a different leading distance while the rail is trailing. Full-width rows that would touch the device's rounded corner pass `RailPadding.cornerClearance` (18), e.g. DeleteBin's edit buttons and the wide bin button.
+  - `standardBottom: nil` leaves the bottom to other constraints. `railBottomOffset` lifts a view that sits above the bottom row instead of on it (MonthReview's loading skeleton).
+- **Home is the reference.** Don't change `HomeViewController`'s padding or margins in Duo work (its only Duo layout change is the split at the fold); make the other screens match its edges, the bottom edge most of all.
+  - `updateOuterPaddingForTabBarShape()`: with the rail showing, 6pt next to the rail, 20pt (`EdgePadding.content`) on the far side, and the bottom 20pt above `view.bottomAnchor`.
   - Bottom rows, the bin button and Home's content sit on the same baseline.
+- **Card corners follow the device corner on the rail.** `UIView.updateCardCorners(followingDeviceCorner:)` (`UIView+CardCorners.swift`, iOS 26+) gives every corner the standard 16, except a bottom corner that sits in the window's bottom corner, which becomes container-concentric. Call it after layout, with `followingDeviceCorner` set to whether the rail shows. Home (dashboard and Photos/Videos tiles) and MonthFilterCards use it.
+- **`Docs/iPhone-Duo-Transformation.md`** is the step-by-step guide. Follow it for any layout or bar change.
 - **Bin button on iOS 26:** pinned to `contentLayoutGuide` (see **Floating bin button**).
 
 ### Verifying on the Duo
@@ -230,8 +230,8 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
 | `#available(iOS 16.0, *)` | `UISheetPresentationController.Detent.custom` (Home ×3, StorageAnalysisBottomSheet, YearDetailSheet, MonthsList, iCloudWarningSheet) |
 | `#available(iOS 16.2, *)` | Live Activities: only in `StorageAnalysisManager+LiveActivity.swift`. The activity is stored as `Any?` so the class compiles for iOS 15 |
 | `#available(iOS 17.0, *)` | `registerForTraitChanges` (DeleteBin, UndoHistory, GradientView); `@available(iOS 17.0, *)` on `#Preview`s |
-| `#available(iOS 26.0, *)` | Liquid Glass: `.prominentGlass()` / `.glass()` button configurations, clear sheet backgrounds, MonthsList's top gradient, the bin button's `contentLayoutGuide`, `layoutGuide(for: .margins())` |
-| `#available(iOS 27.1, *)` | iPhone Duo APIs (see **iPhone Duo**) |
+| `#available(iOS 26.0, *)` | Liquid Glass: `.prominentGlass()` / `.glass()` button configurations, clear sheet backgrounds, MonthsList's top gradient, the bin button's `contentLayoutGuide`, card corners (`cornerConfiguration`) |
+| `#available(iOS 27.1, *)` | iPhone Duo APIs: `reservedRegions` (`FoldRegion`), `visibilityPriority` (see **iPhone Duo**) |
 
 - **Liquid Glass buttons:** on iOS 26 use `UIButton.Configuration.prominentGlass()` / `.glass()` with `tintColor`. Before iOS 26 fall back to `.filled()` / `.gray()` with `.capsule`.
   - `DynamicGlassButton` wraps this: `configure(title:…style: .prominent|.regular, backgroundColor:…)`, and `animateConfigure(...)` cross-dissolves. Disabled is alpha 0.5 via `configurationUpdateHandler`. It is the general-purpose button; use it for new buttons.
@@ -271,7 +271,8 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
   - Morphs use a spring (0.4 s, damping 0.75, velocity 0.8). Fades take 0.25–0.3 s.
   - No `UIViewPropertyAnimator` or `CADisplayLink`.
 - **Reusable components** (`Purgio/Components`, `Purgio/Views`):
-  - Buttons: `DynamicGlassButton`, `FloatingBinButton`, `CloseButton` (44×44), `HelpButton`, `LuckyButton`.
+  - Buttons: `DynamicGlassButton`, `FloatingBinButton`, `CloseButton` (44×44).
+  - Bar items: `UIBarButtonItem.helpItem(target:action:)` and `.luckyItem(title:target:action:)`.
   - Cards and rows: `FilterCard`, `DashboardCard`, `SwipeCardView`, `StatItemView`, `MonthStatItemView`, `ImpactStatsView`, `SettingsInfoCardView`, `SettingsLinkRowView`, `TipTier`, `FakeAlbumCell`.
   - Progress: `SegmentedBarView`, `CircularProgressView`, `MiniProgressRing`, `AnalysisProgressRing`.
   - Controls and players: `SlideToConfirmButton`, `VideoPlayerController`.
@@ -433,8 +434,8 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
 - `AskPermissionBoardingViewController(status: .noAction)` is the same screen as a read-only privacy sheet. Settings' Privacy card opens it.
 
 ### Home (`Screens/Home`)
-- **Layout:** a vertical stack of `StorageAnalysisLiteView`, a row of Photos and Videos `FilterCard`s ("Browse by month"), and a `DashboardCard`.
-- **Bar buttons:** `LuckyButton` on the left, `HelpButton` on the right (presents onboarding again).
+- **Layout:** a vertical stack of `StorageAnalysisLiteView`, a row of Photos and Videos `FilterCard`s ("Browse by month"), and a `DashboardCard`. On the Duo's inner display it splits at the fold (see **iPhone Duo**).
+- **Bar buttons:** `.luckyItem` on the left, `.helpItem` on the right (presents onboarding again).
 - **Data:** `loadData()` returns early while access is `.notDetermined`. Otherwise it shows the cached storage data, calls `refreshIfNeeded()` and refreshes the dashboard. It observes the storage notifications.
 - **Storage view tap:** presents `StorageAnalysisBottomSheet` (55% detent, a ring while loading). Ignored while iCloud Photos sync is on.
 - **Photos / Videos cards:** select tab 1 or 2 and pop to root.
@@ -475,7 +476,7 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
 - On iOS 26 a top gradient covers the area above the safe area.
 
 ### Month filter cards (`Screens/MonthFilterCards`)
-- **The hub for a month or year session.** Its title is `"<month> · Photos|Videos"`.
+- **The hub for a month or year session.** Its title is the month (or year) alone; the selected Photos/Videos tab names the media type.
 - **Stats card:** a `CircularProgressView` plus Reviewed / Delete / Keep / Store `MonthStatItemView`s, clamped so the numbers stay consistent.
 - **Cards:**
   - Photos: Similar & Duplicated | Largest First, Eyes Closed | Screenshots, All Photos.
@@ -566,9 +567,9 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
 
 ### Delete bin (`Screens/DeleteBin`) — the only place assets are deleted
 - **Data:** `DeleteBinStore` ids → `fetchAssets(withLocalIdentifiers:)`. With `filterMonthKey`, it keeps only assets from that month.
-  - A 3-column grid. A header pill shows "N photos and M videos · ~size", with the size summed off main.
+  - A grid with 3 columns in compact width, and 4 (or 6 once cells would pass 180pt) in regular width, so it splits evenly at the fold. Side insets follow the safe area and the rail. A header pill shows "N photos and M videos · ~size", with the size summed off main.
 - **Edit mode:**
-  - Unfiltered bin: the pencil button. Filtered bin: the ellipsis menu, which also has "Go to general bin".
+  - The pencil bar item ("Edit"). The filtered bin also has a "Go to general bin" bar item, with a lower `visibilityPriority`.
   - Multi-select; Remove (with confirmation) only takes items out of the bin.
   - The floating bin becomes a half-width "Delete" button through `.deleteBinEditStateDidChange`.
 - **Preview:** a tap or long-press opens `MediaPreviewViewController`:
@@ -590,7 +591,7 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
 ### Undo history (`Screens/UndoHistory`)
 - Lists the current session's actions, newest first, with a stats header. On load it removes actions whose asset no longer exists, and it dismisses itself when the list is empty.
 - **Tapping a row** opens `HistoryDetailBottomSheet`: the image or video (full-screen zoom up to 4×, pan down to dismiss), plus Keep, Delete and Store.
-- **Edit mode:** multi-select with a Keep / Delete / Store / Undo toolbar. Titles show at a width of 430pt or more, icons only below that.
+- **Edit mode:** multi-select with a Keep / Delete / Store / Undo toolbar. Titles show in regular width or at 430pt or more, icons only below that, re-evaluated on every size change.
 - **"Undo all"** asks first.
 - **Undo vs change type:**
   - **Undo** removes the action and puts the asset back in the deck.
@@ -799,7 +800,7 @@ These are real behaviors today. Don't build on them, and fix them only when aske
   - the "Will Be Stored" album name
 - **Settings shows version "1.0" hard-coded** instead of `CFBundleShortVersionString` (the real version is 1.1).
 - **DeleteBin** prints `[BIN DEBUG]` / `[BIN SYNC]` lines in `numberOfItems` / `cellForItem` without `#if DEBUG`.
-- **Most screens pin their horizontal edges to `view` instead of the safe area** (see **iPhone Duo**).
+- **Screens outside the Duo work pin their horizontal edges to `view` instead of the safe area** (sheets, Settings, MonthsList's permission and empty states, ProcessingLoading, Onboarding; see **iPhone Duo**).
 - **`PHPhotoLibraryPreventAutomaticLimitedAccessAlert` isn't set,** so iOS may show its own "select more photos" alert.
 - **Storage analysis:**
   - The resume indices can point at different assets if the library changed in between.

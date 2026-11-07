@@ -24,6 +24,7 @@ private enum Strings {
     static let allYears = NSLocalizedString("monthsList.allYears", comment: "All years filter option")
     static let year = NSLocalizedString("monthsList.year", comment: "Year filter label")
     static let filter = NSLocalizedString("monthsList.filter", comment: "Filter button label")
+    static let resetFilters = NSLocalizedString("monthsList.resetFilters", comment: "Reset filters button title")
     static let photos = NSLocalizedString("monthsList.photos", comment: "Photos tab/nav title")
     static let videos = NSLocalizedString("monthsList.videos", comment: "Videos tab/nav title")
     static let noPhotosYet = NSLocalizedString("monthsList.noPhotosYet", comment: "Empty state title for photos")
@@ -50,8 +51,6 @@ final class MonthsListViewController: UIViewController {
         table.translatesAutoresizingMaskIntoConstraints = false
         return table
     }()
-
-    private let helpButton = HelpButton()
 
     private let permissionStack: UIStackView = {
         let stack = UIStackView()
@@ -81,6 +80,7 @@ final class MonthsListViewController: UIViewController {
 
     // Skeleton loading
     private var skeletonListView: SkeletonMonthListView?
+    private var skeletonBottomConstraint: NSLayoutConstraint?
 
     // iOS 26+ top gradient blur view
     private var topGradientView: GradientView?
@@ -173,6 +173,11 @@ final class MonthsListViewController: UIViewController {
         configureGlobalBinButton()
     }
 
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        updateBinButtonInset()
+    }
+
     // MARK: - Setup
 
     private func setupUI() {
@@ -181,7 +186,6 @@ final class MonthsListViewController: UIViewController {
         tableView.delegate = self
         tableView.register(YearAggregateCell.self,
             forCellReuseIdentifier: YearAggregateCell.reuseIdentifier)
-        helpButton.addTarget(self, action: #selector(handleHelpTap), for: .touchUpInside)
         permissionButton.addTarget(self, action: #selector(handlePermissionTap), for: .touchUpInside)
 
         // Build view hierarchy
@@ -191,9 +195,32 @@ final class MonthsListViewController: UIViewController {
         view.addSubview(tableView)
         view.addSubview(permissionStack)
 
-        // Add content inset to tableView so content doesn't get hidden behind floating button
-        tableView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 100, right: 0)
-        tableView.scrollIndicatorInsets = UIEdgeInsets(top: 0, left: 0, bottom: 100, right: 0)
+        // Wide displays (iPhone Duo inner display in landscape) keep rows at a readable width
+        tableView.cellLayoutMarginsFollowReadableWidth = true
+
+        updateBinButtonInset()
+    }
+
+    /// Room for the floating bin button, which sits above a bottom tab bar. On iPhone Duo's
+    /// vertical rail the button moves down to the bottom edge, so the last row ends on Home's
+    /// baseline (view bottom − 20) like the button, without the safe area and last footer gap.
+    /// The loading skeleton ends on the same line.
+    private func updateBinButtonInset() {
+        let isVerticalRail = DuoLayout.isVerticalRail(tabBarController)
+        let skeletonBottom: CGFloat = isVerticalRail ? -DuoLayout.RailPadding.bottom : 0
+        if skeletonBottomConstraint?.constant != skeletonBottom {
+            skeletonBottomConstraint?.constant = skeletonBottom
+        }
+
+        var bottom: CGFloat = 100
+        if isVerticalRail {
+            let lastSection = tableView.numberOfSections - 1
+            let lastFooterHeight = lastSection >= 0 ? tableView.rectForFooter(inSection: lastSection).height : 0
+            bottom = DuoLayout.RailPadding.bottom - lastFooterHeight - tableView.safeAreaInsets.bottom
+        }
+        guard tableView.contentInset.bottom != bottom else { return }
+        tableView.contentInset.bottom = bottom
+        tableView.verticalScrollIndicatorInsets.bottom = max(bottom, 0)
     }
 
     private func setupConstraint() {
@@ -414,14 +441,21 @@ final class MonthsListViewController: UIViewController {
             skeleton.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview(skeleton)
 
+            // Same width as the inset-grouped rows, which follow the readable width
+            // and the side safe areas (vertical rail, Split View). Its bottom follows
+            // the table's last row (see updateBinButtonInset), so rows past it are clipped.
+            skeleton.clipsToBounds = true
+            let bottom = skeleton.bottomAnchor.constraint(equalTo: view.bottomAnchor)
             NSLayoutConstraint.activate([
                 skeleton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-                skeleton.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-                skeleton.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-                skeleton.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+                skeleton.leadingAnchor.constraint(equalTo: tableView.readableContentGuide.leadingAnchor),
+                skeleton.trailingAnchor.constraint(equalTo: tableView.readableContentGuide.trailingAnchor),
+                bottom
             ])
 
             self.skeletonListView = skeleton
+            skeletonBottomConstraint = bottom
+            updateBinButtonInset()
             skeleton.startAnimating()
         }
         skeletonListView?.isHidden = false
@@ -431,6 +465,7 @@ final class MonthsListViewController: UIViewController {
         tableView.isHidden = false
         skeletonListView?.fadeOut()
         skeletonListView = nil
+        skeletonBottomConstraint = nil
     }
 
     // MARK: - Filters
@@ -449,6 +484,7 @@ final class MonthsListViewController: UIViewController {
                 target: self,
                 action: #selector(handleResetFiltersTap)
             )
+            resetButton.title = Strings.resetFilters
             resetButton.tintColor = .textPrimary
             navigationItem.leftBarButtonItem = resetButton
         } else {
@@ -523,6 +559,7 @@ final class MonthsListViewController: UIViewController {
         setupFilterButton()   // Update menu selection state and available years
         updateResetButton()   // Show/hide reset button based on active filters
         tableView.reloadData()
+        updateBinButtonInset()   // Depends on the last section's footer
         updateEmptyState()
     }
 
@@ -571,10 +608,21 @@ final class MonthsListViewController: UIViewController {
         } else {
             let config = UIImage.SymbolConfiguration(pointSize: 17, weight: .semibold)
             let image = UIImage(systemName: "line.3.horizontal.decrease.circle", withConfiguration: config)
-            let barButton = UIBarButtonItem(title: nil, image: image, primaryAction: nil, menu: menu)
+            let barButton = UIBarButtonItem(title: Strings.filter, image: image, primaryAction: nil, menu: menu)
             barButton.tintColor = .textPrimary
             filterBarButton = barButton
-            navigationItem.rightBarButtonItems = [barButton, UIBarButtonItem(customView: helpButton)]
+            let helpItem = UIBarButtonItem.helpItem(target: self, action: #selector(handleHelpTap))
+            if #available(iOS 27.1, *) {
+                // Filter is the screen's frequent action; it overflows last on iPhone Duo
+                barButton.visibilityPriority = .high
+            }
+            if #available(iOS 16.0, *) {
+                navigationItem.trailingItemGroups = [
+                    UIBarButtonItemGroup(barButtonItems: [helpItem, barButton], representativeItem: nil)
+                ]
+            } else {
+                navigationItem.rightBarButtonItems = [barButton, helpItem]
+            }
         }
     }
 

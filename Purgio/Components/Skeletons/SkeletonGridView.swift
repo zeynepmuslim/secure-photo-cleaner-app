@@ -7,66 +7,72 @@
 
 import UIKit
 
+/// Square shimmer cells in the same grid as the bin's collection view. Rows fill the
+/// view's height; set `columns` to match the real grid when its width changes.
 final class SkeletonGridView: UIView {
 
-    private let stackView: UIStackView = {
-        let stack = UIStackView()
-        stack.axis = .vertical
-        stack.spacing = 2
-        stack.distribution = .fillEqually
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        return stack
-    }()
-
+    private let spacing: CGFloat = 2
     private var skeletonCells: [SkeletonCellView] = []
-    private let columns: Int
-    private let rows: Int
+    private var isAnimating = false
 
-    init(columns: Int = 3, rows: Int = 4) {
-        self.columns = columns
-        self.rows = rows
+    var columns: Int {
+        didSet {
+            if columns != oldValue { setNeedsLayout() }
+        }
+    }
+
+    init(columns: Int = 3) {
+        self.columns = max(1, columns)
         super.init(frame: .zero)
-        setupUI()
-        setupConstraint()
+        clipsToBounds = true
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
-    private func setupUI() {
-        addSubview(stackView)
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard bounds.width > 0, bounds.height > 0 else { return }
 
-        for _ in 0 ..< rows {
-            let rowStack = UIStackView()
-            rowStack.axis = .horizontal
-            rowStack.spacing = 2
-            rowStack.distribution = .fillEqually
+        let columnCount = CGFloat(max(1, columns))
+        let side = floor((bounds.width - (columnCount - 1) * spacing) / columnCount)
+        guard side > 0 else { return }
+        // Flow layout spreads the leftover of the floored side across a row's gaps,
+        // so the last column ends on the same edge as the real grid
+        let columnSpacing = columnCount > 1
+            ? (bounds.width - columnCount * side) / (columnCount - 1)
+            : spacing
+        let rows = Int(ceil((bounds.height + spacing) / (side + spacing)))
+        let cellCount = rows * Int(columnCount)
 
-            for _ in 0 ..< columns {
-                let cell = SkeletonCellView()
-                skeletonCells.append(cell)
-                rowStack.addArrangedSubview(cell)
-            }
+        while skeletonCells.count < cellCount {
+            let cell = SkeletonCellView()
+            addSubview(cell)
+            skeletonCells.append(cell)
+            if isAnimating { cell.startShimmerAnimation() }
+        }
+        while skeletonCells.count > cellCount {
+            let cell = skeletonCells.removeLast()
+            cell.stopShimmerAnimation()
+            cell.removeFromSuperview()
+        }
 
-            stackView.addArrangedSubview(rowStack)
+        for (index, cell) in skeletonCells.enumerated() {
+            let row = CGFloat(index / Int(columnCount))
+            let column = CGFloat(index % Int(columnCount))
+            cell.frame = CGRect(
+                x: column * (side + columnSpacing), y: row * (side + spacing), width: side, height: side)
         }
     }
 
-    private func setupConstraint() {
-        NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: topAnchor),
-            stackView.leadingAnchor.constraint(equalTo: leadingAnchor),
-            stackView.trailingAnchor.constraint(equalTo: trailingAnchor),
-            stackView.bottomAnchor.constraint(equalTo: bottomAnchor)
-        ])
-    }
-
     func startAnimating() {
+        isAnimating = true
         skeletonCells.forEach { $0.startShimmerAnimation() }
     }
 
     func stopAnimating() {
+        isAnimating = false
         skeletonCells.forEach { $0.stopShimmerAnimation() }
     }
 
@@ -91,7 +97,7 @@ final class SkeletonGridView: UIView {
 
     @available(iOS 17.0, *)
     #Preview("Skeleton Grid") {
-        let grid = SkeletonGridView(columns: 3, rows: 4)
+        let grid = SkeletonGridView(columns: 3)
         grid.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             grid.widthAnchor.constraint(equalToConstant: 300),

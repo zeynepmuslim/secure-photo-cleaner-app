@@ -13,8 +13,12 @@ extension MonthReviewViewController {
         cardContainerView.addSubview(videoController.playPauseButton)
         cardContainerView.addSubview(videoController.controlsContainer)
 
+        let playPauseCenterX = videoController.playPauseButton.centerXAnchor.constraint(
+            equalTo: cardContainerView.centerXAnchor)
+        playPauseCenterXConstraint = playPauseCenterX
+
         NSLayoutConstraint.activate([
-            videoController.playPauseButton.centerXAnchor.constraint(equalTo: cardContainerView.centerXAnchor),
+            playPauseCenterX,
             videoController.playPauseButton.centerYAnchor.constraint(equalTo: cardContainerView.centerYAnchor),
             videoController.playPauseButton.widthAnchor.constraint(equalToConstant: 80),
             videoController.playPauseButton.heightAnchor.constraint(equalToConstant: 80),

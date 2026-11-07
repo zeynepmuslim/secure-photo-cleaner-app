@@ -34,16 +34,24 @@ extension MonthReviewViewController {
         view.addSubview(skeleton)
         self.skeletonStack = skeleton
 
-        NSLayoutConstraint.activate([
+        // Same frame as the card container in setupMainUI: it ends 20pt above the
+        // bottom controls row, whose edges follow Home's vertical-rail padding
+        let controlsAndGap = GeneralConstants.ButtonSize.large + Layout.cardToControlsGap
+        let skeletonEdges = DuoEdgeConstraints(
+            item: skeleton, in: view,
+            standardLeading: GeneralConstants.EdgePadding.content,
+            standardTrailing: GeneralConstants.EdgePadding.content,
+            standardBottom: GeneralConstants.Spacer.buttonBottom + controlsAndGap,
+            railBottomOffset: controlsAndGap)
+        skeletonDuoEdges = [skeletonEdges]
+
+        NSLayoutConstraint.activate(skeletonEdges.initialConstraints + [
             skeletonStats.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 4),
-            skeletonStats.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            skeletonStats.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
             skeletonStats.widthAnchor.constraint(equalToConstant: 100),
             skeletonStats.heightAnchor.constraint(equalToConstant: 18),
 
             skeleton.topAnchor.constraint(equalTo: skeletonStats.bottomAnchor, constant: 16),
-            skeleton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            skeleton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            skeleton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -100)
         ])
 
         skeleton.startAnimating()
@@ -63,6 +71,7 @@ extension MonthReviewViewController {
                 self?.historyBadge.alpha = (self?.historyManager.undoCount ?? 0) > 0 ? 1.0 : 0.0
             }
         ) { [weak self] _ in
+            self?.skeletonDuoEdges = []
             self?.skeletonStack?.stopAnimating()
             self?.skeletonStack?.removeFromSuperview()
             self?.skeletonStack = nil
@@ -98,31 +107,59 @@ extension MonthReviewViewController {
         view.addSubview(bottomControlsStack)
         bottomControlsStack.alpha = 0
 
-        NSLayoutConstraint.activate([
-            cardContainerView.topAnchor.constraint(equalTo: statsLabel.bottomAnchor, constant: 16),
-            cardContainerView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            cardContainerView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            cardContainerView.bottomAnchor.constraint(equalTo: bottomControlsStack.topAnchor, constant: -20),
-
+        // Stats on top, card, controls at the bottom. The table-pose set (iPhone Duo)
+        // puts the card on the raised half and stats + controls on the flat base.
+        flatLayoutConstraints = [
             statsLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 4),
-            statsLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            cardContainerView.topAnchor.constraint(equalTo: statsLabel.bottomAnchor, constant: 16),
+            cardContainerView.bottomAnchor.constraint(
+                equalTo: bottomControlsStack.topAnchor, constant: -Layout.cardToControlsGap)
+        ]
+        let cardBottomToFold = cardContainerView.bottomAnchor.constraint(equalTo: view.topAnchor)
+        let statsTopToFold = statsLabel.topAnchor.constraint(equalTo: view.topAnchor)
+        cardBottomToFoldConstraint = cardBottomToFold
+        statsTopToFoldConstraint = statsTopToFold
+        tablePoseLayoutConstraints = [
+            cardContainerView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 4),
+            cardBottomToFold,
+            statsTopToFold
+        ]
+        NSLayoutConstraint.activate(flatLayoutConstraints)
 
-            bottomControlsStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            bottomControlsStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            bottomControlsStack.bottomAnchor.constraint(
-                equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -GeneralConstants.Spacer.buttonBottom),
+        // Side and bottom edges follow Home's vertical-rail padding on iPhone Duo
+        let cardEdges = DuoEdgeConstraints(
+            item: cardContainerView, in: view,
+            standardLeading: GeneralConstants.EdgePadding.content, standardTrailing: GeneralConstants.EdgePadding.content)
+        let controlsEdges = DuoEdgeConstraints(
+            item: bottomControlsStack, in: view,
+            standardLeading: GeneralConstants.EdgePadding.content,
+            standardTrailing: GeneralConstants.EdgePadding.content,
+            standardBottom: GeneralConstants.Spacer.buttonBottom)
+        duoEdges = [cardEdges, controlsEdges]
+        NSLayoutConstraint.activate(cardEdges.initialConstraints + controlsEdges.initialConstraints)
+
+        NSLayoutConstraint.activate([
+            statsLabel.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
+
             bottomControlsStack.heightAnchor.constraint(equalToConstant: GeneralConstants.ButtonSize.large),
 
             undoButton.heightAnchor.constraint(equalToConstant: GeneralConstants.ButtonSize.large),
             historyButton.heightAnchor.constraint(equalToConstant: GeneralConstants.ButtonSize.large),
             binSpacerView.heightAnchor.constraint(equalToConstant: GeneralConstants.ButtonSize.large),
 
-            undoButton.widthAnchor.constraint(equalTo: historyButton.widthAnchor),
-
             historyBadge.trailingAnchor.constraint(equalTo: historyButton.trailingAnchor, constant: 4),
             historyBadge.topAnchor.constraint(equalTo: historyButton.topAnchor, constant: -4),
             historyBadge.heightAnchor.constraint(equalToConstant: 20)
         ])
+
+        // Equal halves normally; on iPhone Duo with a vertical fold, undo ends before the fold
+        // instead (see +Fold)
+        let equalWidths = undoButton.widthAnchor.constraint(equalTo: historyButton.widthAnchor)
+        equalWidths.isActive = true
+        undoHistoryEqualWidthConstraint = equalWidths
+        let undoTrailingToFold = undoButton.trailingAnchor.constraint(equalTo: view.leadingAnchor)
+        undoTrailingToFold.priority = .init(999)
+        undoTrailingToFoldConstraint = undoTrailingToFold
 
         historyBadgeWidthConstraint = historyBadge.widthAnchor.constraint(equalToConstant: 20)
         binSpacerWidthConstraint = binSpacerView.widthAnchor.constraint(equalToConstant: 0)

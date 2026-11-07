@@ -136,6 +136,7 @@ final class SettingsViewController: UIViewController {
             target: self,
             action: #selector(tipJarBarButtonTapped)
         )
+        tipJarButton.title = Strings.supportTitle
         tipJarButton.tintColor = .tipJarRed100
         tipJarButton.accessibilityLabel = Strings.supportTitle
         navigationItem.rightBarButtonItem = tipJarButton

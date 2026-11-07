@@ -45,6 +45,7 @@ class MainTabBarController: UITabBarController, UINavigationControllerDelegate {
     private var binButtonFixedWidthConstraint: NSLayoutConstraint?
     private var binButtonAboveTabBarConstraint: NSLayoutConstraint?
     private var binButtonAlignedWithTabBarConstraint: NSLayoutConstraint?
+    private var isDeleteBinEditing = false
 
     // Context for month-filtered navigation
     private var currentMonthContext: (key: String, title: String)?
@@ -96,8 +97,9 @@ class MainTabBarController: UITabBarController, UINavigationControllerDelegate {
             binButtonAboveTabBarConstraint = binButton.bottomAnchor.constraint(
                 equalTo: contentLayoutGuide.bottomAnchor,
                 constant: -GeneralConstants.Spacer.buttonBottom)
+            // Vertical rail: same bottom edge as Home's content (DuoLayout.RailPadding)
             binButtonAlignedWithTabBarConstraint = binButton.bottomAnchor.constraint(
-                equalTo: tabBar.bottomAnchor)
+                equalTo: view.bottomAnchor, constant: -DuoLayout.RailPadding.bottom)
             binButtonBottom = binButtonAboveTabBarConstraint!
         } else {
             binButtonTrailingConstraint = binButton.trailingAnchor.constraint(
@@ -254,13 +256,12 @@ extension MainTabBarController: UITabBarControllerDelegate {
             let selectedCount = userInfo["selectedCount"] as? Int
         else { return }
 
+        isDeleteBinEditing = isEditMode
         if isEditMode {
             // Deactivate leading first, then activate width
             binButtonLeadingConstraint?.isActive = false
             binButtonTrailingConstraint?.isActive = true
-            let edgePadding = GeneralConstants.EdgePadding.medium
-            let targetWidth = (view.bounds.width / 2) - (edgePadding * 1.5)
-            binButtonFixedWidthConstraint?.constant = targetWidth
+            binButtonFixedWidthConstraint?.constant = editModeHalfWidth
             binButtonFixedWidthConstraint?.isActive = true
             binButton.setWideTitle(Strings.delete, enabled: selectedCount > 0)
         } else {
@@ -276,22 +277,41 @@ extension MainTabBarController: UITabBarControllerDelegate {
         }
     }
 
+    /// Half of the width the button is laid out in (content guide on iOS 26+,
+    /// which excludes vertical bars on iPhone Duo).
+    private var editModeHalfWidth: CGFloat {
+        var availableWidth = view.bounds.width
+        if #available(iOS 26.0, *) {
+            availableWidth = contentLayoutGuide.layoutFrame.width
+        }
+        return (availableWidth / 2) - (GeneralConstants.EdgePadding.medium * 1.5)
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        if binButtonFixedWidthConstraint?.isActive == true {
-            let edgePadding = GeneralConstants.EdgePadding.medium
-            let targetWidth = (view.bounds.width / 2) - (edgePadding * 1.5)
-            binButtonFixedWidthConstraint?.constant = targetWidth
+        if binButtonFixedWidthConstraint?.isActive == true, isDeleteBinEditing {
+            binButtonFixedWidthConstraint?.constant = editModeHalfWidth
         }
+        updateWideBinButtonForFold()
 
         // mode/sidebar.preferredPlacement don't give tab bar behavior. need calculation
         if let aboveTabBar = binButtonAboveTabBarConstraint,
             let alignedWithTabBar = binButtonAlignedWithTabBarConstraint
         {
-            let tabBarIsVertical = tabBar.bounds.height > tabBar.bounds.width
+            // 6pt next to the rail on either side. Across from a trailing rail the wide button
+            // keeps clear of the device corner; across from a leading rail (Split View, left
+            // half) it keeps the standard padding.
+            let railEdge = DuoLayout.railEdge(self, in: view)
+            let tabBarIsVertical = railEdge != nil
+            let medium = GeneralConstants.EdgePadding.medium
+            let nextToRail = DuoLayout.RailPadding.nextToRail
+            binButtonTrailingConstraint?.constant = railEdge == .trailing ? -nextToRail : -medium
+            switch railEdge {
+            case nil: binButtonLeadingConstraint?.constant = medium
+            case .trailing: binButtonLeadingConstraint?.constant = DuoLayout.RailPadding.cornerClearance
+            case .leading: binButtonLeadingConstraint?.constant = nextToRail
+            }
             if tabBarIsVertical {
-                // 8 for internal padding part
-                alignedWithTabBar.constant = -tabBar.safeAreaInsets.bottom + 8
                 aboveTabBar.isActive = false
                 alignedWithTabBar.isActive = true
             } else {
@@ -301,7 +321,27 @@ extension MainTabBarController: UITabBarControllerDelegate {
         }
     }
 
+    /// iPhone Duo book pose: the full-width "Delete All" button would sit in the fold,
+    /// so it keeps to the trailing side of the fold (edit mode is already two halves).
+    private func updateWideBinButtonForFold() {
+        guard case .wide = binButton.currentMode, !isDeleteBinEditing,
+              let fixedWidth = binButtonFixedWidthConstraint else { return }
+
+        let fold = FoldRegion.activeFold(in: view)
+        if FoldRegion.pose(for: fold) == .book, let fold = fold {
+            let width = binButton.frame.maxX - fold.maxX - GeneralConstants.EdgePadding.medium
+            guard width > 0 else { return }
+            binButtonLeadingConstraint?.isActive = false
+            if fixedWidth.constant != width { fixedWidth.constant = width }
+            fixedWidth.isActive = true
+        } else if fixedWidth.isActive {
+            fixedWidth.isActive = false
+            binButtonLeadingConstraint?.isActive = true
+        }
+    }
+
     private func morphButtonToCompact() {
+        isDeleteBinEditing = false
         binButtonLeadingConstraint?.isActive = false
         binButtonTrailingConstraint?.isActive = true
         binButtonFixedWidthConstraint?.isActive = false

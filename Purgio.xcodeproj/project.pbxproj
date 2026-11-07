@@ -250,6 +250,27 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		D7D664532F897FF900C9E13A /* Generate Localizable.xcstrings */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/Localization/translations.csv",
+				"$(SRCROOT)/Localization/csv_to_xcstrings.py",
+			);
+			name = "Generate Localizable.xcstrings";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Localizable.xcstrings",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\npython3 \"${SRCROOT}/Localization/csv_to_xcstrings.py\" --csv \"${SRCROOT}/Localization/translations.csv\" --output \"${SRCROOT}/Localizable.xcstrings\"\n";
+		};
 		D7FA11A12FB0000100C0DE01 /* Forbidden API check */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -287,27 +308,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${SRCROOT}/Scripts/localization-check.sh\"\n";
-		};
-		D7D664532F897FF900C9E13A /* Generate Localizable.xcstrings */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/Localization/translations.csv",
-				"$(SRCROOT)/Localization/csv_to_xcstrings.py",
-			);
-			name = "Generate Localizable.xcstrings";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Localizable.xcstrings",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\npython3 \"${SRCROOT}/Localization/csv_to_xcstrings.py\" --csv \"${SRCROOT}/Localization/translations.csv\" --output \"${SRCROOT}/Localizable.xcstrings\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

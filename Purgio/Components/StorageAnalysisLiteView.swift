@@ -202,6 +202,17 @@ final class StorageAnalysisLiteView: UIView {
 
     private var currentData: StorageAnalysisData?
     private var currentAvailablePercentage: CGFloat?
+    private var lastState: StorageAnalysisState?
+    private var lastRenderedCompactWidth: Bool?
+
+    /// Decided by the card's own width, so it follows display and column changes.
+    /// Before the first layout pass there is no width yet; fall back to the window.
+    private var isCompactWidth: Bool {
+        let width = bounds.width > 0
+            ? bounds.width
+            : (window?.bounds.width ?? 0) - 2 * GeneralConstants.EdgePadding.content
+        return width < GeneralConstants.CompactContentWidth.fullWidthCard
+    }
     private var debugSavedBytesOverride: Int64?
 
     override init(frame: CGRect) {
@@ -219,13 +230,18 @@ final class StorageAnalysisLiteView: UIView {
 
         applyHeaderLayoutVariant()
 
+        // Legend rows are built per state; rebuild them when the width variant flips.
+        if let state = lastState, lastRenderedCompactWidth != isCompactWidth {
+            update(with: state)
+        }
+
         if let data = currentData, let percentage = currentAvailablePercentage {
             updateSavedSpaceOverlay(data: data, availablePercentage: percentage)
         }
     }
 
     private func applyHeaderLayoutVariant() {
-        let isSmallScreen = (window?.bounds.width ?? bounds.width) < 390
+        let isSmallScreen = isCompactWidth
         if isSmallScreen {
             headerStack.axis = .vertical
             headerStack.alignment = .leading
@@ -322,6 +338,8 @@ final class StorageAnalysisLiteView: UIView {
 
     // MARK: - State Updates
     func update(with state: StorageAnalysisState) {
+        lastState = state
+        lastRenderedCompactWidth = isCompactWidth
         containerStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
 
         switch state {
@@ -407,8 +425,8 @@ final class StorageAnalysisLiteView: UIView {
             items.append(savedItem)
         }
 
-        // Use 2-row layout on small screens (iPhone SE, 7, 8 = 375pt width)
-        let isSmallScreen = (window?.bounds.width ?? bounds.width) < 390
+        // Use 2-row layout when the card is narrow (375pt iPhones, Home columns on the inner display)
+        let isSmallScreen = isCompactWidth
 
         if isSmallScreen && items.count > 2 {
             let row1 = UIStackView()
@@ -611,7 +629,7 @@ final class StorageAnalysisLiteView: UIView {
             items.append(savedItem)
         }
 
-        let isSmallScreen = (window?.bounds.width ?? bounds.width) < 390
+        let isSmallScreen = isCompactWidth
 
         if !isSmallScreen && items.count >= 5 {
             // 3 columns: (2, 2, 1) — last item vertically centered

@@ -10,6 +10,7 @@ import UIKit
 
 private enum Strings {
     static let reviewed = NSLocalizedString("filterCards.reviewed", comment: "Reviewed progress label")
+    static let yearDetails = NSLocalizedString("filterCards.yearDetails", comment: "Year details bar button title")
     static let delete = CommonStrings.delete
     static let keep = NSLocalizedString("filterCards.keep", comment: "Keep action label")
     static let store = NSLocalizedString("filterCards.store", comment: "Store action label")
@@ -119,6 +120,36 @@ final class MonthFilterCardsViewController: UIViewController {
         return stack
     }()
 
+    // Stats card above the cards grid. On the iPhone Duo inner display it splits at the
+    // fold like Home: overview (stats + All Photos) on one side, the four filters on the other.
+    private let contentStack: UIStackView = {
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.spacing = 12
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        return stack
+    }()
+
+    private let overviewStack: UIStackView = {
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.spacing = 12
+        return stack
+    }()
+
+    private let filtersStack: UIStackView = {
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.spacing = 12
+        stack.distribution = .fillEqually
+        return stack
+    }()
+
+    private var overviewEdgeToFoldConstraint: NSLayoutConstraint?
+    /// Axis the content is split along at the fold; nil means the single column.
+    private var foldSplitAxis: NSLayoutConstraint.Axis?
+    private var hasBuiltContent = false
+
     private let similarCard = FilterCard()
     private let largestCard = FilterCard()
     private let screenshotsCard = FilterCard()
@@ -150,6 +181,7 @@ final class MonthFilterCardsViewController: UIViewController {
     private let mediaType: PHAssetMediaType
     private let horizontalPadding: CGFloat = 16
     private let cardSpacing: CGFloat = 12
+    private var duoEdges: [DuoEdgeConstraints] = []
     private var binCountTask: Task<Void, Never>?
     private var preloadedYearAssets: [PHAsset]?
     private var yearSection: YearSection?
@@ -169,10 +201,8 @@ final class MonthFilterCardsViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .mainBackground
-        let mediaSuffix = mediaType == .video
-            ? NSLocalizedString("home.videosTitle", comment: "Videos label")
-            : NSLocalizedString("home.photosTitle", comment: "Photos label")
-        title = "\(monthTitle) · \(mediaSuffix)"
+        // The selected Photos/Videos tab already names the media type; keep the title short
+        title = monthTitle
         navigationController?.navigationBar.prefersLargeTitles = false
         navigationItem.largeTitleDisplayMode = .never
 
@@ -214,32 +244,100 @@ final class MonthFilterCardsViewController: UIViewController {
             statsStackView.addArrangedSubview($0)
         }
 
-        view.addSubview(statsContainerView)
-
         configureCards()
+        view.addSubview(contentStack)
+    }
 
-        topRowStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        middleRowStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+    /// The four filter cards in reading order (two rows of two in the grid).
+    private var filterCards: [FilterCard] {
+        mediaType == .video
+            ? [slowMotionCard, largestCard, timeLapseCard, screenRecordingsCard]
+            : [similarCard, largestCard, eyesClosedCard, screenshotsCard]
+    }
 
-        if mediaType == .video {
-            topRowStack.addArrangedSubview(slowMotionCard)
-            topRowStack.addArrangedSubview(largestCard)
-            middleRowStack.addArrangedSubview(timeLapseCard)
-            middleRowStack.addArrangedSubview(screenRecordingsCard)
-            middleRowStack.isHidden = false
-        } else {
-            topRowStack.addArrangedSubview(similarCard)
-            topRowStack.addArrangedSubview(largestCard)
-            middleRowStack.addArrangedSubview(eyesClosedCard)
-            middleRowStack.addArrangedSubview(screenshotsCard)
-            middleRowStack.isHidden = false
+    /// Splits the screen at the fold when one crosses the view (inactive included, so the
+    /// groups don't jump when the device folds), the same way Home does. A vertical fold puts
+    /// the overview and the filters side by side; a horizontal one stacks them.
+    private func updateFoldSplit() {
+        let fold = FoldRegion.splittingFold(in: view)
+        let axis: NSLayoutConstraint.Axis? = fold.map { $0.height > $0.width ? .horizontal : .vertical }
+        if !hasBuiltContent || axis != foldSplitAxis {
+            rebuildContent(splitAlong: axis)
         }
 
-        cardsContainerStack.addArrangedSubview(topRowStack)
-        cardsContainerStack.addArrangedSubview(middleRowStack)
-        cardsContainerStack.addArrangedSubview(allPhotosCard)
+        guard let fold = fold, let axis = axis else { return }
+        let foldStart = axis == .horizontal ? fold.minX : fold.minY
+        let foldLength = axis == .horizontal ? fold.width : fold.height
+        let foldCenter = foldStart + foldLength / 2
+        // Fully open, the groups keep the regular card spacing, centered on the fold line.
+        // Folded, they clear the whole region.
+        let isFolded = FoldRegion.activeFold(in: view) != nil
+        let spacing = isFolded ? max(cardSpacing, foldLength) : cardSpacing
+        let overviewEdge = foldCenter - spacing / 2
+        if overviewEdgeToFoldConstraint?.constant != overviewEdge {
+            overviewEdgeToFoldConstraint?.constant = overviewEdge
+        }
+        if contentStack.spacing != spacing {
+            contentStack.spacing = spacing
+        }
+    }
 
-        view.addSubview(cardsContainerStack)
+    private func rebuildContent(splitAlong axis: NSLayoutConstraint.Axis?) {
+        hasBuiltContent = true
+        foldSplitAxis = axis
+        overviewEdgeToFoldConstraint?.isActive = false
+        overviewEdgeToFoldConstraint = nil
+        [contentStack, overviewStack, filtersStack, cardsContainerStack, topRowStack, middleRowStack]
+            .flatMap { $0.arrangedSubviews }
+            .forEach { $0.removeFromSuperview() }
+
+        let cards = filterCards
+        let fillGridRows = { [topRowStack, middleRowStack] in
+            topRowStack.addArrangedSubview(cards[0])
+            topRowStack.addArrangedSubview(cards[1])
+            middleRowStack.addArrangedSubview(cards[2])
+            middleRowStack.addArrangedSubview(cards[3])
+        }
+
+        guard let axis = axis else {
+            fillGridRows()
+            contentStack.axis = .vertical
+            contentStack.spacing = cardSpacing
+            cardsContainerStack.addArrangedSubview(topRowStack)
+            cardsContainerStack.addArrangedSubview(middleRowStack)
+            cardsContainerStack.addArrangedSubview(allPhotosCard)
+            contentStack.addArrangedSubview(statsContainerView)
+            contentStack.addArrangedSubview(cardsContainerStack)
+            return
+        }
+
+        overviewStack.addArrangedSubview(statsContainerView)
+        overviewStack.addArrangedSubview(allPhotosCard)
+        if axis == .horizontal {
+            // Side by side each half is too narrow for two cards with subtitles: one per row
+            cards.forEach { filtersStack.addArrangedSubview($0) }
+        } else {
+            fillGridRows()
+            filtersStack.addArrangedSubview(topRowStack)
+            filtersStack.addArrangedSubview(middleRowStack)
+        }
+        contentStack.axis = axis
+        contentStack.addArrangedSubview(overviewStack)
+        contentStack.addArrangedSubview(filtersStack)
+
+        let edgeToFold = axis == .horizontal
+            ? overviewStack.trailingAnchor.constraint(equalTo: view.leadingAnchor)
+            : overviewStack.bottomAnchor.constraint(equalTo: view.topAnchor)
+        edgeToFold.isActive = true
+        overviewEdgeToFoldConstraint = edgeToFold
+    }
+
+    /// On the vertical rail the card in the device's bottom corner follows its curve, as on Home.
+    private func updateCardCorners() {
+        let isVerticalRail = DuoLayout.isVerticalRail(tabBarController)
+        // The cards' frames are only final once the stacks are laid out
+        contentStack.layoutIfNeeded()
+        (filterCards + [allPhotosCard]).forEach { $0.updateCardCorners(followingDeviceCorner: isVerticalRail) }
     }
 
     private func setupConstraint() {
@@ -247,10 +345,15 @@ final class MonthFilterCardsViewController: UIViewController {
         let statsHeight: CGFloat = 80
         let bottomPadding: CGFloat = 16
 
+        // Side and bottom edges follow Home's vertical-rail padding on iPhone Duo
+        let contentEdges = DuoEdgeConstraints(
+            item: contentStack, in: view, standardLeading: horizontalPadding, standardTrailing: horizontalPadding,
+            standardBottom: bottomPadding)
+        duoEdges = [contentEdges]
+        NSLayoutConstraint.activate(contentEdges.initialConstraints)
+
         NSLayoutConstraint.activate([
-            statsContainerView.topAnchor.constraint(equalTo: safeArea.topAnchor, constant: 16),
-            statsContainerView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: horizontalPadding),
-            statsContainerView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -horizontalPadding),
+            contentStack.topAnchor.constraint(equalTo: safeArea.topAnchor, constant: 16),
             statsContainerView.heightAnchor.constraint(equalToConstant: statsHeight),
 
             progressRingView.leadingAnchor.constraint(equalTo: statsContainerView.leadingAnchor, constant: 16),
@@ -269,13 +372,17 @@ final class MonthFilterCardsViewController: UIViewController {
             statsStackView.leadingAnchor.constraint(equalTo: progressRingView.trailingAnchor, constant: 16),
             statsStackView.trailingAnchor.constraint(equalTo: statsContainerView.trailingAnchor, constant: -12),
             statsStackView.centerYAnchor.constraint(equalTo: statsContainerView.centerYAnchor),
-            statsStackView.heightAnchor.constraint(equalToConstant: 50),
-
-            cardsContainerStack.topAnchor.constraint(equalTo: statsContainerView.bottomAnchor, constant: cardSpacing),
-            cardsContainerStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: horizontalPadding),
-            cardsContainerStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -horizontalPadding),
-            cardsContainerStack.bottomAnchor.constraint(equalTo: safeArea.bottomAnchor, constant: -bottomPadding)
+            statsStackView.heightAnchor.constraint(equalToConstant: 50)
         ])
+        updateFoldSplit()
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        updateFoldSplit()
+        let railEdge = DuoLayout.railEdge(tabBarController, in: view)
+        duoEdges.forEach { $0.update(railEdge: railEdge) }
+        updateCardCorners()
     }
     
     private func configureCards() {
@@ -620,6 +727,7 @@ final class MonthFilterCardsViewController: UIViewController {
         let config = UIImage.SymbolConfiguration(pointSize: 17, weight: .medium)
         let image = UIImage(systemName: "info.circle", withConfiguration: config)
         let button = UIBarButtonItem(image: image, style: .plain, target: self, action: #selector(infoButtonTapped))
+        button.title = Strings.yearDetails
         button.tintColor = .textPrimary
         navigationItem.rightBarButtonItem = button
     }

@@ -143,7 +143,7 @@ final class FilterCard: UIControl {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        subtitleLabel.isHidden = (window?.bounds.width ?? bounds.width) < 390
+        subtitleLabel.isHidden = bounds.width < GeneralConstants.CompactContentWidth.halfWidthCard
     }
 
     private func setupUI() {

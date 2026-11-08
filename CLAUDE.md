@@ -26,7 +26,7 @@ Purgio is **plain UIKit MVC**. There are no view models, coordinators, routers o
   - Use an `if #available(iOS 16.0, *)` custom detent (`.custom { $0.maximumDetentValue * 0.75 }`) with an iOS 15 fallback to `.medium()` or `.large()`.
   - Size-dependent detents are chosen in `viewWillAppear` (see **Layout**).
 - **Alerts** use `UIAlertController`. **Menus** use `UIMenu` / `UIAction`.
-- **Large view controllers are split into `+Feature.swift` extensions:** `MonthReviewViewController+DataLoading/+Swipe/+UI/+Video/+Helpers/+UndoHistory`, and `StorageAnalysisManager+ChunkedAnalysis/+BackgroundTasks/+AppLifecycle/+LiveActivity`.
+- **Large view controllers are split into `+Feature.swift` extensions:** `MonthReviewViewController+DataLoading/+Swipe/+UI/+Video/+Helpers/+UndoHistory/+Fold/+Landscape`, and `StorageAnalysisManager+ChunkedAnalysis/+BackgroundTasks/+AppLifecycle/+LiveActivity`.
   - Members used across those files must be `internal`, not `private`.
 - **Navigation:**
   - The 4 tabs live in `MainTabBarController`, each in its own `UINavigationController`. **The tab indices are fixed and used across screens:** 0 Home, 1 Photos (`MonthsListViewController(mediaType: .image)`), 2 Videos (`.video`), 3 Settings.
@@ -66,7 +66,7 @@ Dependencies are `final class` singletons with `static let shared` and `private 
 | `SettingsStore`, `OnboardingStore` | `UserDefaults` wrappers |
 | `UndoHistoryManager` | Per-session swipe undo stacks |
 | `DashboardCardManager` | Home's smart dashboard card + 5-minute gallery-context cache |
-| `DateFormatterManager` | Cached formatters: `yyyy-MM` (en_US_POSIX), `MMMM yyyy`, `MM.yyyy`, short time |
+| `DateFormatterManager` | Cached formatters: `yyyy-MM` (en_US_POSIX), `MMMM yyyy`, `MM.yyyy`, short time, `dayMonthTime` ("12 Oct, 18:30", localized template `dMMMjmm`) |
 | `HapticFeedbackManager` | All haptics |
 | `TipJarManager` (`@MainActor`, `ObservableObject`) | StoreKit 2 products and purchases |
 | `iCloudSyncLogger` | Categorized iCloud logging (off: `shouldLog = false`) |
@@ -137,6 +137,7 @@ Declare each name as a `Notification.Name` extension next to its owner, with the
   - Vertical rail (`DuoLayout.RailPadding`, `Purgio/Others/DuoLayout.swift`): `nextToRail` 6, `bottom` 20, `cornerClearance` 18
   - `ButtonSize.small` 30, `medium` 44, `mediumLarge` 50, `large` 56
   - `Spacer.buttonBottom` 24
+  - `ActionGrip` (MonthReview's sideways grips): `width` 104 (corner radius is half), `inset` 8, `storeSegmentHeight` 120
   - `BulkYear.sparseYearThreshold` 50
 
   If a value has no token yet and repeats, add the token first.
@@ -173,7 +174,7 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
   - **Nothing tappable goes on the fold.** Inner layouts split at the fold's real position:
     - Home: storage plus the Photos/Videos tiles on one side, the dashboard on the other.
     - MonthFilterCards: stats plus All Photos/Videos on one side, the four filters on the other (one per row when side by side).
-    - MonthReview (`+Fold.swift`): a vertical fold splits the undo/history row (undo ends before the fold, history starts after it). In the table pose the card sits on the raised half and stats plus controls on the base; in the book pose the video play button moves to the larger side of the fold.
+    - MonthReview (`+Fold.swift`): a vertical fold splits the undo/history row (undo ends before the fold, history starts after it). In the table pose the card sits on the raised half and stats plus controls on the base; in the book pose the video play button moves to the larger side of the fold. Held sideways (`+Landscape.swift`), the bottom row splits at the fold (Undo + History before it, the bin button's slot after it) and the video controls split into two capsules there.
     - DeleteBin: a vertical fold splits the grid into two equal halves on either side of the fold line (`FoldSplitFlowLayout` widens the gap there). The half with less room sets the cell size, so the other side gets a wider margin.
     - The wide "Delete All" bin button keeps to the trailing side of the fold in the book pose.
     - Split controls the same way Home splits content: use `splittingFold` so they don't jump when the device folds, center the gap on the fold line while fully open, and clear the whole fold region (`activeFold`'s width) while folded.
@@ -230,7 +231,7 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
 | `#available(iOS 16.0, *)` | `UISheetPresentationController.Detent.custom` (Home ×3, StorageAnalysisBottomSheet, YearDetailSheet, MonthsList, iCloudWarningSheet) |
 | `#available(iOS 16.2, *)` | Live Activities: only in `StorageAnalysisManager+LiveActivity.swift`. The activity is stored as `Any?` so the class compiles for iOS 15 |
 | `#available(iOS 17.0, *)` | `registerForTraitChanges` (DeleteBin, UndoHistory, GradientView); `@available(iOS 17.0, *)` on `#Preview`s |
-| `#available(iOS 26.0, *)` | Liquid Glass: `.prominentGlass()` / `.glass()` button configurations, clear sheet backgrounds, MonthsList's top gradient, the bin button's `contentLayoutGuide`, card corners (`cornerConfiguration`) |
+| `#available(iOS 26.0, *)` | Liquid Glass: `.prominentGlass()` / `.glass()` button configurations, `UIGlassEffect` (VideoPlayerController's split capsules), clear sheet backgrounds, MonthsList's top gradient, the bin button's `contentLayoutGuide`, card corners (`cornerConfiguration`) |
 | `#available(iOS 27.1, *)` | iPhone Duo APIs: `reservedRegions` (`FoldRegion`), `visibilityPriority` (see **iPhone Duo**) |
 
 - **Liquid Glass buttons:** on iOS 26 use `UIButton.Configuration.prominentGlass()` / `.glass()` with `tintColor`. Before iOS 26 fall back to `.filled()` / `.gray()` with `.capsule`.
@@ -271,9 +272,9 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
   - Morphs use a spring (0.4 s, damping 0.75, velocity 0.8). Fades take 0.25–0.3 s.
   - No `UIViewPropertyAnimator` or `CADisplayLink`.
 - **Reusable components** (`Purgio/Components`, `Purgio/Views`):
-  - Buttons: `DynamicGlassButton`, `FloatingBinButton`, `CloseButton` (44×44).
+  - Buttons: `DynamicGlassButton`, `FloatingBinButton`, `CloseButton` (44×44), `ActionGripView` (MonthReview's sideways Store + Delete/Keep column).
   - Bar items: `UIBarButtonItem.helpItem(target:action:)` and `.luckyItem(title:target:action:)`.
-  - Cards and rows: `FilterCard`, `DashboardCard`, `SwipeCardView`, `StatItemView`, `MonthStatItemView`, `ImpactStatsView`, `SettingsInfoCardView`, `SettingsLinkRowView`, `TipTier`, `FakeAlbumCell`.
+  - Cards and rows: `FilterCard`, `DashboardCard`, `SwipeCardView`, `StatItemView`, `MonthStatItemView`, `ImpactStatsView`, `SettingsInfoCardView`, `SettingsLinkRowView`, `TipTier`, `FakeAlbumCell`, `ReviewStatsPillView` (reviewed/total, a black (`.label`) progress bar and the three counts).
   - Progress: `SegmentedBarView`, `CircularProgressView`, `MiniProgressRing`, `AnalysisProgressRing`.
   - Controls and players: `SlideToConfirmButton`, `VideoPlayerController`.
   - Views: `GradientView`, `EmptyStateView`, `PaddingLabel`, `SoapBubble`, plus the skeletons.
@@ -544,6 +545,19 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
   - `VideoPlayerController` (an 80pt play button + scrubber) embeds its layer in the top card. There's **no autoplay**.
   - The controls hide while dragging. While playing they fade to 0.5 alpha after 2 s.
 - **Size badge:** shown for largeFiles, for videos, or when `isSizeBadgeOpen`.
+- **iPhone Duo inner display held sideways** (`+Landscape.swift`; regular width and `view.bounds.width > view.bounds.height`, re-checked on every layout pass; the cover display and the upright inner display keep the standard layout):
+  - **Switching** swaps constraint sets inside `UIView.performWithoutAnimation` and lays out at once, because the switch can land inside the push transition or the skeleton fade. `DuoEdgeConstraints.isEnabled = false` hands the standard edges over.
+  - **Background** is `.mainBackground` (the grips and pills are white cards); otherwise `.systemBackground`.
+  - **Grips:** an `ActionGripView` on each side, Store + Delete on the left and Store + Keep on the right. Gray segments with only the icon colored (yellow, red, green) and no counts. A grip tap calls `completeSwipe`, the same path as a swipe.
+  - **Stats:** `ReviewStatsPillView` sits in the hidden stats label's slot and gets the same numbers from `updateStats()` (`updateLandscapeStats`).
+  - **Deck:**
+    - Each photo card hugs its own aspect ratio inside the card area minus `Layout.landscapeDeckInset` (`applyCardSizing`, `CardHugConstraints`). Every card, the top one included, is clamped to `Layout.landscapeCardRatioRange` (9:16…16:9), so a card never changes shape as it comes to the top; an extreme photo is aspect-fit inside its card over the card's blurred backdrop, never cropped.
+    - The cards behind fan out to alternate sides (`stackTransform`): 3.5° turn, less for wide photos, plus a sideways offset and a small scale step. All cards are opaque.
+    - A video on top fills the card area; the cards behind tuck in without turning.
+    - **Order change:** `completeSwipe` sets `isPromotingDeck`, so `deckCards` leaves out the departing card and the rest straighten, turn and resize into their new places during its 0.4 s fly-off. The card joining the back is sized for its photo first, then fades in from 0 and `Layout.deckEntryScale` (0.92) to full.
+    - The cards behind the top one show the next assets still to review (`deckIndices(count:)`), never processed ones, so they don't hide when sorted assets sit in between. After a swipe, a card reassigned to an asset another card already shows reuses that image (`configureCard(_:at:placeholderImages:)`) until its own load finishes.
+  - **Badges:** photos get a "date · size" chip at the bottom (`DateFormatterManager.dayMonthTime`); videos a date chip at the top plus the size badge. Only the top card shows its chip.
+  - **Bottom row:** Undo and History become titled pills; the global bin button moves into `binSlotGuide` beside them through `setBinButtonPlacement(.slot(rect))` (see **Floating bin button**).
 
 ### Similar photos (`Screens/SimilarPhotos`)
 - **Inputs:** `(assets?, monthTitle?, monthKey?, mediaType)`.
@@ -663,6 +677,7 @@ There is **one global `FloatingBinButton`**, owned by `MainTabBarController` and
   - **Before iOS 26:** pinned to `view` ±16, above `tabBar.topAnchor − 24`.
   - Compact mode activates trailing only; wide mode activates both sides.
   - DeleteBin's edit mode uses half the width minus 1.5 × 16.
+  - **Slot placement:** `setBinButtonPlacement(.slot(windowRect))` pins the button into a rect a screen hands over (MonthReview's sideways bottom row); `.standard` restores the constraints above. A tab switch and every push or pop (`navigationController(willShow:)`) reset it to `.standard`, so the screen sends its slot again once it is on top and whenever the rect moves.
 
 ## Storage analysis and Live Activity (`Managers/StorageAnalysis`)
 

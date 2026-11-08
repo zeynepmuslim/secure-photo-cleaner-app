@@ -89,7 +89,6 @@ extension MonthReviewViewController {
                             self.originalTotalCount = storedTotal > 0 ? storedTotal : partial.count
                             self.saveProgress()
                             self.refreshStack()
-                            self.updateTitleForYearSession()
                             self.hideSkeletonLoading()
 
                             // All remaining assets were already processed
@@ -186,7 +185,6 @@ extension MonthReviewViewController {
 
                     self.saveProgress()
                     self.refreshStack()
-                    self.updateTitleForYearSession()
                     self.hideSkeletonLoading()
 
                     if self.currentIndex >= reviewAssets.count {
@@ -257,12 +255,28 @@ extension MonthReviewViewController {
 
     // MARK: - Stack Management
 
-    func refreshStack() {
-        for (i, card) in cardStack.enumerated() {
-            let offset = (cardStack.count - 1) - i
-            let indexToLoad = currentIndex + offset
-            configureCard(card, at: indexToLoad)
+    /// Indices of the next `count` assets the deck shows, from the current one on. Assets already
+    /// processed (or skipped iCloud ones) are left out, so the cards behind the top one show the
+    /// next assets still to review rather than hiding. `reviewAssets.count` pads the rest, which
+    /// hides those cards.
+    func deckIndices(count: Int) -> [Int] {
+        var indices: [Int] = []
+        var index = currentIndex
+        while indices.count < count && index < reviewAssets.count {
+            if !shouldSkipAsset(reviewAssets[index]) { indices.append(index) }
+            index += 1
         }
+        while indices.count < count { indices.append(reviewAssets.count) }
+        return indices
+    }
+
+    func refreshStack() {
+        let indices = deckIndices(count: cardStack.count)
+        for (i, card) in cardStack.enumerated() {
+            configureCard(card, at: indices[(cardStack.count - 1) - i])
+        }
+        // Undo and the history sheet move the deck back too, so the year session's title follows
+        updateTitleForYearSession()
 
         layoutCards()
         updateStats()
@@ -286,7 +300,9 @@ extension MonthReviewViewController {
         }
     }
 
-    func configureCard(_ card: SwipeCardView, at index: Int) {
+    /// `placeholderImages` (asset id → image already on screen) fills the card until its own
+    /// image loads.
+    func configureCard(_ card: SwipeCardView, at index: Int, placeholderImages: [String: UIImage] = [:]) {
         guard index < reviewAssets.count else {
             card.configure(with: nil)
             card.isHidden = true
@@ -305,7 +321,12 @@ extension MonthReviewViewController {
         card.isHidden = false
         card.assetIdentifier = asset.localIdentifier
         card.mediaType = asset.mediaType == .video ? .video : .photo
+        card.contentAspectRatio = asset.pixelHeight > 0
+            ? CGFloat(asset.pixelWidth) / CGFloat(asset.pixelHeight) : nil
         card.setPlaceholder(.none)
+        if let image = placeholderImages[asset.localIdentifier] {
+            card.configure(with: image)
+        }
 
         if let oldRequestID = imageRequestIDs[card.assetIdentifier ?? ""] {
             imageCache.cancelRequest(oldRequestID)
@@ -356,17 +377,12 @@ extension MonthReviewViewController {
             imageRequestIDs[asset.localIdentifier] = requestID
         }
 
-        // file size badge
-        let isLargeFilesMode = filterContext == .largeFiles
-        let isVideo = asset.mediaType == .video
-
-        if isLargeFilesMode || isVideo || isSizeBadgeOpen {
-            let formattedSize = reviewAsset.fileSize.formattedBytes()
-            card.configureSize(formattedSize)
-        } else {
-            card.configureSize(nil)
+        applyBadges(to: card, reviewAsset: reviewAsset)
+        if isLandscapeDeckActive {
+            applyCardSizing()
         }
 
+        let isVideo = asset.mediaType == .video
         if isVideo && isCloudOnly && !settingsStore.allowInternetAccess {
             card.setICloudBadgeVisible(true)
         }
@@ -408,15 +424,10 @@ extension MonthReviewViewController {
     }
 
     func prefetchUpcoming() {
-        let prefetchCount = min(3, reviewAssets.count - currentIndex - 1)
-        guard prefetchCount > 0 else { return }
-
-        var assetsToPrefetch: [PHAsset] = []
-        for offset in 1 ... prefetchCount {
-            let nextIndex = currentIndex + offset
-            guard nextIndex < reviewAssets.count else { break }
-            assetsToPrefetch.append(reviewAssets[nextIndex].asset)
-        }
+        let assetsToPrefetch = deckIndices(count: 4).dropFirst()
+            .filter { $0 < reviewAssets.count }
+            .map { reviewAssets[$0].asset }
+        guard !assetsToPrefetch.isEmpty else { return }
 
         let screenSize = view.bounds.size
         imageCache.startCaching(assets: assetsToPrefetch, quality: .preview, screenSize: screenSize)

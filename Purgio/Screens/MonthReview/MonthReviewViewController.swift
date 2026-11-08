@@ -119,6 +119,21 @@ final class MonthReviewViewController: UIViewController {
     enum Layout {
         /// Between the card and the bottom controls row (also the skeleton's bottom).
         static let cardToControlsGap: CGFloat = 20
+        /// Between the undo, history and bin spacer in the standard bottom row.
+        static let controlsSpacing: CGFloat = GeneralConstants.EdgePadding.medium
+        /// Narrowest the split video capsules get before falling back to two equal halves
+        /// (play + scrubber + time | mute + duration).
+        static let videoLeadingCapsuleMinWidth: CGFloat = 160
+        static let videoTrailingCapsuleMinWidth: CGFloat = 100
+        /// Same gap in the iPhone Duo sideways layout (see +Landscape).
+        static let landscapeCardToRowGap: CGFloat = 12
+        /// Room the sideways card area keeps around a photo card so the cards behind it can fan out.
+        static let landscapeDeckInset = NSDirectionalEdgeInsets(top: 10, leading: 34, bottom: 10, trailing: 34)
+        /// Scale a card starts at as it fades in at the back of the deck.
+        static let deckEntryScale: CGFloat = 0.92
+        /// Width / height range every sideways photo card is shown in (9:16 to 16:9); a photo
+        /// outside it is fitted inside the card over its blurred backdrop.
+        static let landscapeCardRatioRange: ClosedRange<CGFloat> = (9.0 / 16.0)...(16.0 / 9.0)
     }
 
     // iPhone Duo fold layout (see +Fold): constraint sets swapped by pose
@@ -133,6 +148,40 @@ final class MonthReviewViewController: UIViewController {
     var duoEdges: [DuoEdgeConstraints] = []
     /// Edges of the loading skeleton; cleared when it's removed.
     var skeletonDuoEdges: [DuoEdgeConstraints] = []
+    var cardBottomToControlsConstraint: NSLayoutConstraint?
+    var overlayPlayButtonConstraints: [NSLayoutConstraint] = []
+    var videoControlsOverlayConstraints: [NSLayoutConstraint] = []
+    var videoControlsSplitConstraints: [NSLayoutConstraint] = []
+
+    // iPhone Duo inner display held sideways (see +Landscape)
+    var isLandscapeDeckActive = false
+    var hasSetupLandscapeViews = false
+    let leftGrip: ActionGripView = {
+        let grip = ActionGripView()
+        grip.translatesAutoresizingMaskIntoConstraints = false
+        return grip
+    }()
+    let rightGrip: ActionGripView = {
+        let grip = ActionGripView()
+        grip.translatesAutoresizingMaskIntoConstraints = false
+        return grip
+    }()
+    let statsPill: ReviewStatsPillView = {
+        let pill = ReviewStatsPillView()
+        pill.translatesAutoresizingMaskIntoConstraints = false
+        return pill
+    }()
+    let binSlotGuide = UILayoutGuide()
+    var landscapeConstraints: [NSLayoutConstraint] = []
+    var rowSplitConstraint: NSLayoutConstraint?
+    var binSlotLeadingConstraint: NSLayoutConstraint?
+    var rowEqualWidthConstraint: NSLayoutConstraint?
+    var cardFillConstraints: [ObjectIdentifier: [NSLayoutConstraint]] = [:]
+    var cardHugConstraints: [ObjectIdentifier: CardHugConstraints] = [:]
+    var lastSentBinSlot: CGRect?
+    /// True while the top card flies off: the cards behind already move into their new places.
+    var isPromotingDeck = false
+    var didRequestBarRelayoutForCamera = false
 
     let monthTitle: String
     let monthKey: String
@@ -161,7 +210,7 @@ final class MonthReviewViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = screenBackgroundColor
         navigationItem.largeTitleDisplayMode = .never
 
         switch filterContext {
@@ -231,14 +280,24 @@ final class MonthReviewViewController: UIViewController {
             advanceToFirstUnprocessedIndex()
             refreshStack()
         }
+
+        // The tab bar controller resets the bin button's placement on every push and pop
+        if isLandscapeDeckActive {
+            lastSentBinSlot = nil
+            view.setNeedsLayout()
+        }
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        updateLandscapeDeckLayout()
         updateBinSpacerWidth(animated: false)
         let railEdge = DuoLayout.railEdge(tabBarController, in: view)
         (duoEdges + skeletonDuoEdges).forEach { $0.update(railEdge: railEdge) }
         updateFoldLayout()
+        if isLandscapeDeckActive {
+            applyCardSizing()
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -283,6 +342,9 @@ final class MonthReviewViewController: UIViewController {
         }
 
         cleanupVideo()
+
+        lastSentBinSlot = nil
+        binController?.setBinButtonPlacement(.standard)
 
         if isMovingFromParent {
             binController?.hideBinButton()

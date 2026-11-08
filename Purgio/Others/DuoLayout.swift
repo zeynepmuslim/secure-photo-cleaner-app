@@ -68,6 +68,22 @@ final class DuoEdgeConstraints {
     private let railTrailingFarLeading: CGFloat?
     private let safeAreaBottom: NSLayoutConstraint?
     private let railBottom: NSLayoutConstraint?
+    private var lastRailEdge: DuoLayout.RailEdge?
+
+    /// False hands this view's edges to another layout (MonthReview sideways on iPhone Duo):
+    /// every constraint is deactivated and `update(railEdge:)` only keeps the constants current.
+    /// True reactivates the set the last rail state calls for.
+    var isEnabled = true {
+        didSet {
+            guard isEnabled != oldValue else { return }
+            if isEnabled {
+                NSLayoutConstraint.activate([leading, trailing])
+                update(railEdge: lastRailEdge, forceBottom: true)
+            } else {
+                NSLayoutConstraint.deactivate([leading, trailing] + [safeAreaBottom, railBottom].compactMap { $0 })
+            }
+        }
+    }
 
     /// All distances are positive; the constraints apply the edge's sign.
     /// - Parameters:
@@ -106,6 +122,11 @@ final class DuoEdgeConstraints {
     }
 
     func update(railEdge: DuoLayout.RailEdge?) {
+        update(railEdge: railEdge, forceBottom: false)
+    }
+
+    private func update(railEdge: DuoLayout.RailEdge?, forceBottom: Bool) {
+        lastRailEdge = railEdge
         let leadingConstant: CGFloat
         let trailingConstant: CGFloat
         switch railEdge {
@@ -123,8 +144,8 @@ final class DuoEdgeConstraints {
         if trailing.constant != trailingConstant { trailing.constant = trailingConstant }
 
         let isVerticalRail = railEdge != nil
-        guard let safeAreaBottom = safeAreaBottom, let railBottom = railBottom,
-              railBottom.isActive != isVerticalRail else { return }
+        guard isEnabled, let safeAreaBottom = safeAreaBottom, let railBottom = railBottom,
+              forceBottom || railBottom.isActive != isVerticalRail else { return }
         // Deactivate before activating to avoid a temporary conflict
         if isVerticalRail {
             safeAreaBottom.isActive = false

@@ -130,6 +130,14 @@ extension MonthReviewViewController {
 
         guard let topCard = cardStack.last else { return }
 
+        // The cards behind move into their new places (straighten, turn, resize) while the top
+        // card flies off, instead of after it's gone
+        isPromotingDeck = true
+        UIView.animate(withDuration: 0.4, delay: 0, options: [.curveEaseOut, .beginFromCurrentState]) {
+            self.animateDeckToNewTopCard()
+            self.layoutCards()
+        }
+
         switch direction {
         case .left:
             let offScreenX: CGFloat = -(view.bounds.width + 100)
@@ -161,6 +169,7 @@ extension MonthReviewViewController {
     }
 
     func advanceToNext(markForDeletion: Bool, willBeStored: Bool) {
+        isPromotingDeck = false
         guard currentIndex < reviewAssets.count else { return }
         let reviewAsset = reviewAssets[currentIndex]
         let asset = reviewAsset.asset
@@ -208,12 +217,10 @@ extension MonthReviewViewController {
 
         statsStore.recordReview(for: mediaType)
         currentIndex += 1
-        let indexBeforeSkip = currentIndex
 
         // Assets already processed in another filter session (similar, screenshots, etc.)
         // are skipped here too, so the index may jump by more than one.
         advanceToFirstUnprocessedIndex()
-        let didSkip = currentIndex > indexBeforeSkip
         updateTitleForYearSession()
 
         saveProgress()
@@ -241,24 +248,42 @@ extension MonthReviewViewController {
         cardStack.insert(recycledCard, at: 0)
         cardContainerView.sendSubviewToBack(recycledCard)
 
-        let newBottomIndex = currentIndex + 2
-        configureCard(recycledCard, at: newBottomIndex)
+        let n = cardStack.count
+        let indices = deckIndices(count: n)
+        configureCard(recycledCard, at: indices[n - 1])
 
-        // Stale cards still point to skipped indices, reconfigure for the new position.
-        if didSkip {
-            let n = cardStack.count
-            if n > 2 { configureCard(cardStack[n - 1], at: currentIndex) }
-            if n > 1 { configureCard(cardStack[n - 2], at: currentIndex + 1) }
+        // The cards still in the deck were lined up for the old position. Reconfigure any that no
+        // longer shows the asset for its place (e.g. one was processed elsewhere in between),
+        // handing over an image already on screen so it doesn't show empty while its own loads.
+        var shownImages: [String: UIImage] = [:]
+        for card in cardStack where !card.isHidden {
+            if let id = card.assetIdentifier, let image = card.imageView.image { shownImages[id] = image }
+        }
+        for depth in 0 ..< n - 1 {
+            let card = cardStack[n - 1 - depth]
+            let index = indices[depth]
+            let expectedId = index < reviewAssets.count ? reviewAssets[index].asset.localIdentifier : nil
+            if expectedId == nil || card.isHidden || card.assetIdentifier != expectedId {
+                configureCard(card, at: index, placeholderImages: shownImages)
+            }
         }
 
-        let bottomReverseIndex = CGFloat(cardStack.count - 1)
-        let bottomScale = 1.0 - (bottomReverseIndex * 0.05)
-        let bottomTranslationY = bottomReverseIndex * 10
-        recycledCard.transform = CGAffineTransform(scaleX: bottomScale, y: bottomScale)
-            .translatedBy(x: 0, y: bottomTranslationY)
-        recycledCard.alpha = 1.0
+        // The card joining the back of the deck fades in, growing slightly into its place
+        let bottomReverseIndex = cardStack.count - 1
+        recycledCard.transform = stackTransform(reverseIndex: bottomReverseIndex)
+            .scaledBy(x: Layout.deckEntryScale, y: Layout.deckEntryScale)
+        recycledCard.alpha = 0
+        recycledCard.showsInfoChip = false
+        // Size it for its new photo up front, so it doesn't also morph from the old top card's size
+        if isLandscapeDeckActive {
+            UIView.performWithoutAnimation {
+                applyCardSizing()
+                cardContainerView.layoutIfNeeded()
+            }
+        }
         
         UIView.animate(withDuration: 0.3, animations: {
+            self.animateDeckToNewTopCard()
             self.layoutCards()
             self.leftGradient.alpha = 0
             self.rightGradient.alpha = 0

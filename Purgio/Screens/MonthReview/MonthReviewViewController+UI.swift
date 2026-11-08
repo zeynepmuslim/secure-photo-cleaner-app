@@ -17,7 +17,7 @@ extension MonthReviewViewController {
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
         if traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
-            historyBadge.layer.borderColor = UIColor.systemBackground.cgColor
+            historyBadge.layer.borderColor = screenBackgroundColor.cgColor
         }
     }
 }
@@ -67,6 +67,7 @@ extension MonthReviewViewController {
                 self?.skeletonStatsView?.alpha = 0
                 self?.cardContainerView.alpha = 1
                 self?.statsLabel.alpha = 1
+                self?.statsPill.alpha = 1
                 self?.bottomControlsStack.alpha = 1
                 self?.historyBadge.alpha = (self?.historyManager.undoCount ?? 0) > 0 ? 1.0 : 0.0
             }
@@ -100,7 +101,7 @@ extension MonthReviewViewController {
         bottomControlsStack.axis = .horizontal
         bottomControlsStack.distribution = .fill
         bottomControlsStack.alignment = .center
-        bottomControlsStack.spacing = 16
+        bottomControlsStack.spacing = Layout.controlsSpacing
 
         setupButtons()
 
@@ -109,11 +110,13 @@ extension MonthReviewViewController {
 
         // Stats on top, card, controls at the bottom. The table-pose set (iPhone Duo)
         // puts the card on the raised half and stats + controls on the flat base.
+        let cardBottomToControls = cardContainerView.bottomAnchor.constraint(
+            equalTo: bottomControlsStack.topAnchor, constant: -Layout.cardToControlsGap)
+        cardBottomToControlsConstraint = cardBottomToControls
         flatLayoutConstraints = [
             statsLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 4),
             cardContainerView.topAnchor.constraint(equalTo: statsLabel.bottomAnchor, constant: 16),
-            cardContainerView.bottomAnchor.constraint(
-                equalTo: bottomControlsStack.topAnchor, constant: -Layout.cardToControlsGap)
+            cardBottomToControls
         ]
         let cardBottomToFold = cardContainerView.bottomAnchor.constraint(equalTo: view.topAnchor)
         let statsTopToFold = statsLabel.topAnchor.constraint(equalTo: view.topAnchor)
@@ -188,45 +191,36 @@ extension MonthReviewViewController {
         historyBadge.alpha = 0
     }
 
-    func setupButtons() {
-        undoButton.translatesAutoresizingMaskIntoConstraints = false
+    /// Icon-only round buttons, the standard look (the sideways layout adds titles, see +Landscape).
+    func applyStandardUndoHistoryStyle(to button: UIButton, systemImage: String) {
         if #available(iOS 26.0, *) {
             var config = UIButton.Configuration.glass()
             config.image = UIImage(
-                systemName: "arrow.uturn.backward",
+                systemName: systemImage,
                 withConfiguration: UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold))
             config.contentInsets = NSDirectionalEdgeInsets(top: 14, leading: 14, bottom: 14, trailing: 14)
-            undoButton.configuration = config
-            undoButton.tintColor = .label
+            button.configuration = config
         } else {
-            undoButton.setImage(UIImage(systemName: "arrow.uturn.backward"), for: .normal)
-            undoButton.tintColor = .label
-            undoButton.backgroundColor = .secondarySystemFill
-            undoButton.layer.cornerRadius = GeneralConstants.ButtonSize.large / 2
-            undoButton.layer.cornerCurve = .continuous
-            undoButton.clipsToBounds = true
+            button.configuration = nil
+            button.setTitle(nil, for: .normal)
+            button.setImage(UIImage(systemName: systemImage), for: .normal)
+            button.backgroundColor = .secondarySystemFill
+            button.layer.cornerRadius = GeneralConstants.ButtonSize.large / 2
+            button.layer.cornerCurve = .continuous
+            button.clipsToBounds = true
         }
+        button.tintColor = historyManager.undoCount > 0 ? .label : .systemGray
+    }
+
+    func setupButtons() {
+        undoButton.translatesAutoresizingMaskIntoConstraints = false
+        applyStandardUndoHistoryStyle(to: undoButton, systemImage: "arrow.uturn.backward")
         undoButton.addTarget(self, action: #selector(handleUndo), for: .touchUpInside)
         undoButton.isEnabled = false
         undoButton.alpha = 1.0
         
         historyButton.translatesAutoresizingMaskIntoConstraints = false
-        if #available(iOS 26.0, *) {
-            var config = UIButton.Configuration.glass()
-            config.image = UIImage(
-                systemName: "clock.arrow.circlepath",
-                withConfiguration: UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold))
-            config.contentInsets = NSDirectionalEdgeInsets(top: 14, leading: 14, bottom: 14, trailing: 14)
-            historyButton.configuration = config
-            historyButton.tintColor = .label
-        } else {
-            historyButton.setImage(UIImage(systemName: "clock.arrow.circlepath"), for: .normal)
-            historyButton.tintColor = .label
-            historyButton.backgroundColor = .secondarySystemFill
-            historyButton.layer.cornerRadius = GeneralConstants.ButtonSize.large / 2
-            historyButton.layer.cornerCurve = .continuous
-            historyButton.clipsToBounds = true
-        }
+        applyStandardUndoHistoryStyle(to: historyButton, systemImage: "clock.arrow.circlepath")
         historyButton.addTarget(self, action: #selector(showUndoHistory), for: .touchUpInside)
         historyButton.isEnabled = false
         historyButton.alpha = 1.0
@@ -240,7 +234,7 @@ extension MonthReviewViewController {
         historyBadge.layer.cornerCurve = .continuous
         historyBadge.layer.masksToBounds = true
         historyBadge.layer.borderWidth = 2
-        historyBadge.layer.borderColor = UIColor.systemBackground.cgColor
+        historyBadge.layer.borderColor = screenBackgroundColor.cgColor
         historyBadge.isHidden = true
 
         binSpacerView.translatesAutoresizingMaskIntoConstraints = false
@@ -287,13 +281,17 @@ extension MonthReviewViewController {
         let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
         cardContainerView.addGestureRecognizer(panGesture)
 
+        // Fill the card area; sideways on iPhone Duo a photo hugs its aspect ratio instead (+Landscape)
         for card in cardStack {
-            NSLayoutConstraint.activate([
+            let fill = [
                 card.topAnchor.constraint(equalTo: cardContainerView.topAnchor),
                 card.leadingAnchor.constraint(equalTo: cardContainerView.leadingAnchor),
                 card.trailingAnchor.constraint(equalTo: cardContainerView.trailingAnchor),
                 card.bottomAnchor.constraint(equalTo: cardContainerView.bottomAnchor)
-            ])
+            ]
+            NSLayoutConstraint.activate(fill)
+            cardFillConstraints[ObjectIdentifier(card)] = fill
+            cardHugConstraints[ObjectIdentifier(card)] = CardHugConstraints(card: card, in: cardContainerView)
         }
 
         setupEdgeGradients()
@@ -353,20 +351,58 @@ extension MonthReviewViewController {
     }
 
     func layoutCards() {
-        for (index, card) in cardStack.enumerated() {
+        let cards = deckCards
+        for (index, card) in cards.enumerated() {
             cardContainerView.bringSubviewToFront(card)
 
-            let reverseIndex = CGFloat(cardStack.count - 1 - index)
-
-            let scale = 1.0 - (reverseIndex * 0.05)
-            let translationY = reverseIndex * 10
-
-            card.transform = CGAffineTransform(scaleX: scale, y: scale)
-                .translatedBy(x: 0, y: translationY)
-            card.alpha = 1.0
+            let reverseIndex = cards.count - 1 - index
+            card.transform = stackTransform(reverseIndex: reverseIndex)
+            card.alpha = stackAlpha(reverseIndex: reverseIndex)
+            card.showsInfoChip = reverseIndex == 0
+        }
+        // The card flying off stays above the deck moving in behind it
+        if isPromotingDeck, let flyingCard = cardStack.last {
+            cardContainerView.bringSubviewToFront(flyingCard)
         }
 
-        cardContainerView.bringSubviewToFront(videoController.playPauseButton)
+        // In the split layout the play button lives inside the controls
+        if videoController.playPauseButton.superview === cardContainerView {
+            cardContainerView.bringSubviewToFront(videoController.playPauseButton)
+        }
         cardContainerView.bringSubviewToFront(videoController.controlsContainer)
+    }
+
+    /// Where a card sits in the stack: 0 is the top card.
+    func stackTransform(reverseIndex: Int) -> CGAffineTransform {
+        let level = CGFloat(reverseIndex)
+        if isLandscapeDeckActive {
+            guard reverseIndex > 0 else { return .identity }
+            // Behind a photo the next cards fan out to alternate sides, like a hand of prints.
+            // A video fills the card area, so there they stay tucked in behind it.
+            guard isLandscapeDeckFanned else {
+                let scale = 1.0 - level * 0.04
+                return CGAffineTransform(scaleX: scale, y: scale)
+            }
+            let side: CGFloat = reverseIndex.isMultiple(of: 2) ? 1 : -1
+            // A wide card's ends swing far up and down when turned, so wide photos turn less
+            // and peek out sideways instead (3.5° up to 3:2, about 1.6° for a panorama)
+            let cards = deckCards
+            let stackIndex = cards.count - 1 - reverseIndex
+            let ownRatio = cards.indices.contains(stackIndex) ? cards[stackIndex].contentAspectRatio : nil
+            let ratio = min(ownRatio ?? 1, Layout.landscapeCardRatioRange.upperBound)
+            let degrees = side * 3.5 * min(1, 1.5 / max(ratio, 0.1))
+            let offset = side * (8 + level * 8)
+            let scale = 1.0 - level * 0.035
+            return CGAffineTransform(translationX: offset, y: 0)
+                .rotated(by: degrees * .pi / 180)
+                .scaledBy(x: scale, y: scale)
+        }
+        let scale = 1.0 - (level * 0.05)
+        return CGAffineTransform(scaleX: scale, y: scale).translatedBy(x: 0, y: level * 10)
+    }
+
+    func stackAlpha(reverseIndex: Int) -> CGFloat {
+        // Opaque, so the fanned prints don't show through each other
+        return 1.0
     }
 }

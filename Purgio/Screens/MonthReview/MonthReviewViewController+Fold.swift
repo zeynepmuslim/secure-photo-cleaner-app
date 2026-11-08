@@ -23,6 +23,12 @@ extension MonthReviewViewController {
     func updateFoldLayout() {
         let fold = FoldRegion.activeFold(in: view)
         let pose = FoldRegion.pose(for: fold)
+        // The sideways layout splits its own row and video controls at the fold (+Landscape)
+        if isLandscapeDeckActive {
+            applyFoldPose(pose == .table ? .flat : pose, fold: fold)
+            updateLandscapeFoldSplit()
+            return
+        }
         applyFoldPose(pose, fold: fold)
         updatePlayPauseFoldOffset(fold: pose == .book ? fold : nil)
         updateControlsFoldSplit()

@@ -21,6 +21,15 @@ private enum Strings {
 
 // MARK: - FloatingBinButtonController Protocol
 
+/// Where the global bin button sits.
+enum BinButtonPlacement: Equatable {
+    /// Floating at the trailing bottom (wide on Delete Bin).
+    case standard
+    /// A slot a screen lays out in its own bottom row, in window coordinates
+    /// (MonthReview on the iPhone Duo's inner display held sideways).
+    case slot(CGRect)
+}
+
 protocol FloatingBinButtonController: AnyObject {
     func configureBinButton(
         mode: FloatingBinButton.DisplayMode,
@@ -34,6 +43,7 @@ protocol FloatingBinButtonController: AnyObject {
         tapHandler: (() -> Void)?)
     func showBinButton()
     func hideBinButton()
+    func setBinButtonPlacement(_ placement: BinButtonPlacement)
 }
 
 class MainTabBarController: UITabBarController, UINavigationControllerDelegate {
@@ -46,6 +56,15 @@ class MainTabBarController: UITabBarController, UINavigationControllerDelegate {
     private var binButtonAboveTabBarConstraint: NSLayoutConstraint?
     private var binButtonAlignedWithTabBarConstraint: NSLayoutConstraint?
     private var isDeleteBinEditing = false
+    private var binButtonPlacement: BinButtonPlacement = .standard
+    private var binButtonStandardBottomConstraint: NSLayoutConstraint?
+    private var binSlotLeadingConstraint: NSLayoutConstraint?
+    private var binSlotWidthConstraint: NSLayoutConstraint?
+    private var binSlotBottomConstraint: NSLayoutConstraint?
+    private var isBinButtonInSlot: Bool {
+        if case .slot = binButtonPlacement { return true }
+        return false
+    }
 
     // Context for month-filtered navigation
     private var currentMonthContext: (key: String, title: String)?
@@ -111,11 +130,16 @@ class MainTabBarController: UITabBarController, UINavigationControllerDelegate {
                 constant: -GeneralConstants.Spacer.buttonBottom)
         }
 
+        binButtonStandardBottomConstraint = binButtonBottom
         NSLayoutConstraint.activate([
             binButtonTrailingConstraint!,
             binButtonBottom,
             binButton.heightAnchor.constraint(equalToConstant: GeneralConstants.ButtonSize.large)
         ])
+
+        binSlotLeadingConstraint = binButton.leadingAnchor.constraint(equalTo: view.leadingAnchor)
+        binSlotWidthConstraint = binButton.widthAnchor.constraint(equalToConstant: 0)
+        binSlotBottomConstraint = binButton.bottomAnchor.constraint(equalTo: view.topAnchor)
 
         binButtonFixedWidthConstraint = binButton.widthAnchor.constraint(equalToConstant: 180)
         binButtonFixedWidthConstraint?.priority = .defaultHigh
@@ -205,6 +229,7 @@ class MainTabBarController: UITabBarController, UINavigationControllerDelegate {
 
 extension MainTabBarController: UITabBarControllerDelegate {
     func tabBarController(_ tabBarController: UITabBarController, didSelect viewController: UIViewController) {
+        setBinButtonPlacement(.standard)
         customTapHandler = nil
         currentMonthContext = nil
         binButton.setMode(.count(deleteBinStore.count))
@@ -216,6 +241,8 @@ extension MainTabBarController: UITabBarControllerDelegate {
     ) {
         isTransitioning = animated
         updateVisibility(immediate: true)
+        // A screen that uses a slot sets it again once it's on top
+        setBinButtonPlacement(.standard)
 
         if viewController is DeleteBinViewController {
             // Save the current mode before morphing to wide
@@ -294,6 +321,9 @@ extension MainTabBarController: UITabBarControllerDelegate {
         }
         updateWideBinButtonForFold()
 
+        // In a screen's slot the button follows that screen's row
+        guard !isBinButtonInSlot else { return }
+
         // mode/sidebar.preferredPlacement don't give tab bar behavior. need calculation
         if let aboveTabBar = binButtonAboveTabBarConstraint,
             let alignedWithTabBar = binButtonAlignedWithTabBarConstraint
@@ -324,7 +354,7 @@ extension MainTabBarController: UITabBarControllerDelegate {
     /// iPhone Duo book pose: the full-width "Delete All" button would sit in the fold,
     /// so it keeps to the trailing side of the fold (edit mode is already two halves).
     private func updateWideBinButtonForFold() {
-        guard case .wide = binButton.currentMode, !isDeleteBinEditing,
+        guard case .wide = binButton.currentMode, !isDeleteBinEditing, !isBinButtonInSlot,
               let fixedWidth = binButtonFixedWidthConstraint else { return }
 
         let fold = FoldRegion.activeFold(in: view)
@@ -342,9 +372,12 @@ extension MainTabBarController: UITabBarControllerDelegate {
 
     private func morphButtonToCompact() {
         isDeleteBinEditing = false
-        binButtonLeadingConstraint?.isActive = false
-        binButtonTrailingConstraint?.isActive = true
-        binButtonFixedWidthConstraint?.isActive = false
+        // In a screen's slot the slot keeps its frame; only the content changes
+        if !isBinButtonInSlot {
+            binButtonLeadingConstraint?.isActive = false
+            binButtonTrailingConstraint?.isActive = true
+            binButtonFixedWidthConstraint?.isActive = false
+        }
 
         if let saved = savedMode {
             binButton.setMode(saved)
@@ -410,6 +443,55 @@ extension MainTabBarController: FloatingBinButtonController {
 
     func showBinButton() {
         binButton.alpha = 1
+    }
+
+    func setBinButtonPlacement(_ placement: BinButtonPlacement) {
+        guard placement != binButtonPlacement else { return }
+        let wasInSlot = isBinButtonInSlot
+        binButtonPlacement = placement
+
+        switch placement {
+        case .slot(let windowRect):
+            let rect = view.convert(windowRect, from: nil)
+            if !wasInSlot {
+                // Deactivate every standard constraint before the slot's
+                NSLayoutConstraint.deactivate([
+                    binButtonLeadingConstraint, binButtonTrailingConstraint, binButtonFixedWidthConstraint,
+                    binButtonStandardBottomConstraint, binButtonAboveTabBarConstraint,
+                    binButtonAlignedWithTabBarConstraint
+                ].compactMap { $0 })
+            }
+            // The rect is in physical coordinates; the constraint measures from the leading edge
+            let isLeftToRight = view.effectiveUserInterfaceLayoutDirection == .leftToRight
+            binSlotLeadingConstraint?.constant = isLeftToRight ? rect.minX : view.bounds.width - rect.maxX
+            binSlotWidthConstraint?.constant = rect.width
+            binSlotBottomConstraint?.constant = rect.maxY
+            if !wasInSlot {
+                NSLayoutConstraint.activate([
+                    binSlotLeadingConstraint, binSlotWidthConstraint, binSlotBottomConstraint
+                ].compactMap { $0 })
+            }
+
+        case .standard:
+            NSLayoutConstraint.deactivate([
+                binSlotLeadingConstraint, binSlotWidthConstraint, binSlotBottomConstraint
+            ].compactMap { $0 })
+            binButtonTrailingConstraint?.isActive = true
+            if case .wide = binButton.currentMode {
+                binButtonLeadingConstraint?.isActive = true
+            }
+            if binButtonAboveTabBarConstraint != nil {
+                // iOS 26: viewDidLayoutSubviews picks the bottom for the tab bar's shape
+                binButtonAboveTabBarConstraint?.isActive = true
+                view.setNeedsLayout()
+            } else {
+                binButtonStandardBottomConstraint?.isActive = true
+            }
+        }
+
+        if wasInSlot != isBinButtonInSlot, view.window != nil {
+            UIView.animate(withDuration: 0.25) { self.view.layoutIfNeeded() }
+        }
     }
 
     func hideBinButton() {

@@ -49,6 +49,13 @@ final class DateFormatterManager {
         return formatter
     }()
 
+    /// 12 Oct, 18:30 (localized order and clock)
+    private lazy var dayMonthTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.setLocalizedDateFormatFromTemplate("dMMMjmm")
+        return formatter
+    }()
+
     // MARK: - Month Key Operations
 
     func date(fromMonthKey monthKey: String) -> Date? {
@@ -95,6 +102,11 @@ final class DateFormatterManager {
     /// Jan 31, 2026
     func mediumDate(from date: Date) -> String {
         return dateMediumFormatter.string(from: date)
+    }
+
+    /// 12 Oct, 18:30
+    func dayMonthTime(from date: Date) -> String {
+        return dayMonthTimeFormatter.string(from: date)
     }
 
     // MARK: - Video Duration

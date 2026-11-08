@@ -62,6 +62,16 @@ enum GeneralConstants {
         static let halfWidthCard: CGFloat = 167
     }
 
+    /// The Delete/Keep + Store grips beside MonthReview's card on the iPhone Duo's inner
+    /// display held sideways.
+    enum ActionGrip {
+        /// Grip column width; the corner radius is half of it.
+        static let width: CGFloat = 104
+        /// Padding inside the grip and the gap between its segments.
+        static let inset: CGFloat = 8
+        static let storeSegmentHeight: CGFloat = 120
+    }
+
     enum BulkYear {
         static let sparseYearThreshold: Int = 50
     }

@@ -359,6 +359,8 @@ extension MonthReviewViewController {
 
     // MARK: - Bin Button Management
     func updateBinSpacerWidth(animated: Bool) {
+        // Sideways on iPhone Duo the bin has its own slot in the row (+Landscape)
+        guard !isLandscapeDeckActive else { return }
         guard let binButton = findFloatingBinButton() else { return }
         let isVisible = !binButton.isHidden && binButton.alpha > 0.01
         let measuredWidth = max(binButton.bounds.width, binButton.intrinsicContentSize.width)
@@ -700,6 +702,9 @@ extension MonthReviewViewController {
         attributedText.append(NSAttributedString(string: " \(displayStored.compactFormatted)", attributes: textAttributes))
 
         statsLabel.attributedText = attributedText
+        updateLandscapeStats(.init(
+            reviewed: reviewed, total: displayTotal,
+            deleted: displayDeleted, kept: displayKept, stored: displayStored))
 
         if let ring = navProgressRing, originalTotalCount > 0 {
             let filterReviewed = deletedCount + keptCount + storedCount

@@ -66,12 +66,8 @@ final class ThemeManager {
 
         // MARK: - Typography
         
-        /// New York font for titles (serif design)
+        /// SF Pro (system font) for titles
         static func titleFont(size: CGFloat, weight: UIFont.Weight = .semibold) -> UIFont {
-            if let descriptor = UIFont.systemFont(ofSize: size, weight: weight).fontDescriptor.withDesign(.serif) {
-                return UIFont(descriptor: descriptor, size: size)
-            }
-            // Fallback to system font if serif design is not available
             return .systemFont(ofSize: size, weight: weight)
         }
     }

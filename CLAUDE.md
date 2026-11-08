@@ -258,10 +258,10 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
   - Store is yellow (top).
   - Icons: trash, checkmark, archivebox.
 - **Fonts:** `ThemeManager.Fonts` (`Purgio/Others/ThemeManager.swift`).
-  - **Titles** use New York serif through `titleFont(size:weight:)` (`fontDescriptor.withDesign(.serif)`, with a system fallback): `display` 32 bold, `boldTitle` 24 bold, `semiboldBody` 16 semibold.
+  - **Titles** use SF Pro (the system font) through `titleFont(size:weight:)`; don't use other font designs: `display` 32 bold, `boldTitle` 24 bold, `semiboldBody` 16 semibold.
   - **Captions:** `regularCaption` / `semiboldCaption` (13), `thinBody` (17 thin). Body text is `.systemFont(ofSize:weight:)`.
   - **Counters** use `monospacedDigitSystemFont`.
-  - `ThemeManager.configureNavigationBarAppearance()` runs first in `AppDelegate`. It sets serif titles: large 34 bold, inline 17 semibold.
+  - `ThemeManager.configureNavigationBarAppearance()` runs first in `AppDelegate`. It sets title fonts: large 34 bold, inline 17 semibold.
   - `ThemeManager` has no theme switching, and `ThemeManager.shared` is unused.
   - **There's no Dynamic Type support yet**: no `preferredFont`, `UIFontMetrics` or `adjustsFontForContentSizeCategory` anywhere. Don't make it worse; new text should still fit when it wraps.
 - **Haptics:** only through `HapticFeedbackManager.shared`.

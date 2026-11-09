@@ -243,7 +243,11 @@ final class PhotoLibraryService: NSObject, PHPhotoLibraryChangeObserver {
                 ]
                 fetchOptions.predicate = NSPredicate(format: "mediaType == %d", mediaType.rawValue)
 
-                if let dateRange = DateFormatterManager.shared.monthDateRange(forMonthKey: monthKey) {
+                // A year session key ("year-2026") fetches the whole year, so screens opened before
+                // MonthFilterCards' year preload finishes still get the year's assets, not an empty list
+                let dateManager = DateFormatterManager.shared
+                if let dateRange = dateManager.monthDateRange(forMonthKey: monthKey)
+                    ?? dateManager.yearDateRange(forYearKey: monthKey) {
                     let datePredicate = NSPredicate(
                         format: "creationDate >= %@ AND creationDate < %@", dateRange.start as NSDate,
                         dateRange.end as NSDate)
@@ -264,7 +268,6 @@ final class PhotoLibraryService: NSObject, PHPhotoLibraryChangeObserver {
                     let assets = PHAsset.fetchAssets(with: fetchOptions)
                     var matchedAssets: [PHAsset] = []
                     let calendar = Calendar.current
-                    let dateManager = DateFormatterManager.shared
 
                     assets.enumerateObjects { asset, _, _ in
                         guard let creationDate = asset.creationDate else { return }

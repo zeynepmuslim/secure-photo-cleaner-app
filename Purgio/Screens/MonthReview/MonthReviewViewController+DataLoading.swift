@@ -21,9 +21,6 @@ extension MonthReviewViewController {
 
         loadingTask = Task {
             let reviewAssets: [ReviewAsset]
-            let deleteBin = DeleteBinStore.shared
-            let keptStore = KeptAssetsStore.shared
-            let willBeStored = WillBeStoredStore.shared
             let skipICloud = SettingsStore.shared.skipICloudPhotos && !SettingsStore.shared.allowInternetAccess
             let savedProgress = ReviewProgressStore.shared.getProgress(
                 forMonthKey: currentProgressKey, mediaType: currentMediaType)
@@ -67,21 +64,13 @@ extension MonthReviewViewController {
                         break
                     case .initialBatchReady(let partial):
                         guard !Task.isCancelled else { return }
-                        guard savedProgress.currentIndex < partial.count else { break }
 
-                        var earlyStart = savedProgress.currentIndex
-                        for i in earlyStart ..< partial.count {
-                            let id = partial[i].localIdentifier
-                            let processed = deleteBin.hasAssetId(id) || keptStore.hasAssetId(id) || willBeStored.hasAssetId(id)
-                            let skip = processed || (skipICloud && partial[i].isCloudOnly)
-                            if !skip { earlyStart = i; break }
-                            if i == partial.count - 1 { earlyStart = partial.count }
-                        }
-
-                        guard earlyStart < partial.count else { break }
-
-                        await MainActor.run { [weak self] in
-                            guard let self, self.reviewAssets.isEmpty else { return }
+                        let didShow = await MainActor.run { [weak self] () -> Bool in
+                            guard let self, self.reviewAssets.isEmpty else { return false }
+                            // Start at the first unprocessed asset, not the saved index (see `firstUnprocessedIndex`).
+                            // When the whole early batch is done, wait for the full list instead.
+                            let earlyStart = Self.firstUnprocessedIndex(in: partial, skipICloud: skipICloud)
+                            guard earlyStart < partial.count else { return false }
                             self.reviewAssets = partial
                             self.currentIndex = earlyStart
                             self.recalculateCountsFromStores()
@@ -91,19 +80,14 @@ extension MonthReviewViewController {
                             self.refreshStack()
                             self.hideSkeletonLoading()
 
-                            // All remaining assets were already processed
-                            if self.currentIndex >= self.reviewAssets.count {
-                                self.showCompletionSummary()
-                                return
-                            }
-
                             self.showInitialICloudWarning()
                             Task {
                                 try? await Task.sleep(nanoseconds: 500_000_000)
                                 self.prefetchUpcoming()
                             }
+                            return true
                         }
-                        shownInitialBatch = true
+                        if didShow { shownInitialBatch = true }
 
                     case .completed(let assets):
                         processedAssets = assets
@@ -140,27 +124,6 @@ extension MonthReviewViewController {
 
             if Task.isCancelled { return }
 
-            let maxIndex = max(0, reviewAssets.count - 1)
-            var startIndex = min(savedProgress.currentIndex, maxIndex)
-
-            for i in startIndex ..< reviewAssets.count {
-                let reviewAsset = reviewAssets[i]
-                let id = reviewAsset.localIdentifier
-                let isProcessed = deleteBin.hasAssetId(id) || keptStore.hasAssetId(id) || willBeStored.hasAssetId(id)
-                let isCloud = skipICloud && reviewAsset.isCloudOnly
-
-                if !(isProcessed || isCloud) {
-                    startIndex = i
-                    break
-                }
-
-                if i == reviewAssets.count - 1 {
-                    startIndex = reviewAssets.count
-                }
-            }
-
-            if Task.isCancelled { return }
-
             await MainActor.run { [weak self] in
                 guard let self = self else { return }
                 self.loadingIndicator.stopAnimating()
@@ -172,7 +135,8 @@ extension MonthReviewViewController {
                 } else {
                     self.markNonEmptyFilterNotFinished()
 
-                    self.currentIndex = startIndex
+                    // Start at the first unprocessed asset, not the saved index (see `firstUnprocessedIndex`)
+                    self.currentIndex = Self.firstUnprocessedIndex(in: reviewAssets, skipICloud: skipICloud)
                     self.recalculateCountsFromStores()
 
                     if currentFilterContext != .none {
@@ -201,6 +165,25 @@ extension MonthReviewViewController {
                 }
             }
         }
+    }
+
+    /// Index of the first asset still to review: not in the bin, kept or stored, and not an iCloud-only
+    /// asset being skipped. `assets.count` when every asset is done.
+    ///
+    /// The deck always starts from index 0 rather than the saved `currentIndex`, because the asset
+    /// array can change between sessions: an older photo is imported (it sorts in before the saved
+    /// index), assets before it are really deleted (everything shifts left), or iCloud-only assets
+    /// that were skipped become reachable. The stores already decide what is processed, so a scan
+    /// from the start never leaves an unreviewed asset behind the deck.
+    static func firstUnprocessedIndex(in assets: [ReviewAsset], skipICloud: Bool) -> Int {
+        let deleteBin = DeleteBinStore.shared
+        let keptStore = KeptAssetsStore.shared
+        let willBeStored = WillBeStoredStore.shared
+        return assets.firstIndex { reviewAsset in
+            let id = reviewAsset.localIdentifier
+            let isProcessed = deleteBin.hasAssetId(id) || keptStore.hasAssetId(id) || willBeStored.hasAssetId(id)
+            return !(isProcessed || (skipICloud && reviewAsset.isCloudOnly))
+        } ?? assets.count
     }
 
     /// Check if an asset has already been processed (kept, deleted, or stored)

@@ -805,25 +805,51 @@ final class MonthFilterCardsViewController: UIViewController {
                 #if DEBUG
                 print("[MonthFilterCards] year assets preloaded: \(assets.count) assets for \(self.monthKey)")
                 #endif
-                // Save total count so updateStats() can display the correct number
-                let existing = ReviewProgressStore.shared.getProgress(forMonthKey: self.monthKey, mediaType: self.mediaType)
-                if existing.originalTotalCount == 0 && !assets.isEmpty {
-                    ReviewProgressStore.shared.saveProgress(
-                        forMonthKey: self.monthKey, mediaType: self.mediaType,
-                        currentIndex: existing.currentIndex,
-                        reviewedCount: existing.reviewedCount,
-                        deletedCount: existing.deletedCount,
-                        keptCount: existing.keptCount,
-                        storedCount: existing.storedCount,
-                        originalTotalCount: assets.count
-                    )
-                    #if DEBUG
-                    print("[MonthFilterCards] saved originalTotalCount=\(assets.count) for \(self.monthKey)")
-                    #endif
-                }
+                self.resyncYearTotal(liveCount: assets.count)
                 self.updateStats()
             }
         }
+    }
+
+    /// Year keys get the same total-count resync as months (`checkForNewContentAndResetFinished`, which
+    /// skips them): a missing total is filled in, a grown year reopens its finished filters, and a
+    /// shrunk year clamps its counts. Runs on main once the year's assets are preloaded.
+    private func resyncYearTotal(liveCount: Int) {
+        guard liveCount > 0 else { return }
+        let stored = ReviewProgressStore.shared.getProgress(forMonthKey: monthKey, mediaType: mediaType)
+        guard liveCount != stored.originalTotalCount else { return }
+
+        if stored.originalTotalCount == 0 || liveCount > stored.originalTotalCount {
+            ReviewProgressStore.shared.saveProgress(
+                forMonthKey: monthKey, mediaType: mediaType,
+                currentIndex: stored.currentIndex,
+                reviewedCount: stored.reviewedCount,
+                deletedCount: stored.deletedCount,
+                keptCount: stored.keptCount,
+                storedCount: stored.storedCount,
+                originalTotalCount: liveCount
+            )
+            if stored.originalTotalCount > 0 {
+                MonthFilterStatusStore.shared.clearAllFinishedFilters(monthKey: monthKey)
+            }
+        } else {
+            let newReviewed = min(stored.reviewedCount, liveCount)
+            let newDeleted = min(stored.deletedCount, newReviewed)
+            let newKept = min(stored.keptCount, max(0, newReviewed - newDeleted))
+            let newStored = min(stored.storedCount, max(0, newReviewed - newDeleted - newKept))
+            ReviewProgressStore.shared.saveProgress(
+                forMonthKey: monthKey, mediaType: mediaType,
+                currentIndex: min(stored.currentIndex, liveCount),
+                reviewedCount: newReviewed,
+                deletedCount: newDeleted,
+                keptCount: newKept,
+                storedCount: newStored,
+                originalTotalCount: liveCount
+            )
+        }
+        #if DEBUG
+        print("[MonthFilterCards] resynced \(monthKey) total \(stored.originalTotalCount) → \(liveCount)")
+        #endif
     }
 
     // MARK: - Actions

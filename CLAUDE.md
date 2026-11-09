@@ -393,7 +393,7 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
 
 - **Month keys** are `"yyyy-MM"` (`DateFormatterManager.monthKey(from:)`).
   - **Year keys** are `"year-YYYY"`. A year with fewer than `BulkYear.sparseYearThreshold` (50) items is reviewed as one session.
-  - Year keys don't parse as dates: `fetchPhotos(forMonthKey:)` matches nothing and `countBinAssets` returns 0. Guard with `hasPrefix("year-")` and use the preloaded year assets.
+  - Year keys don't parse as month dates. `fetchPhotos(forMonthKey:)` falls back to `DateFormatterManager.yearDateRange(forYearKey:)` and fetches the whole year, so a deck opened before MonthFilterCards' year preload finishes isn't empty. `countBinAssets` still returns 0 for them. Prefer the preloaded year assets, and guard other month-only code with `hasPrefix("year-")`.
 - **Progress keys** (`ReviewProgressStore`) are `"photo_<key>"` or `"video_<key>"`.
   - `<key>` is a month key, a year key, or a filter sub-key `"<monthKey>_<filter>"`.
   - `<filter>` is a `MonthFilterStatusStore.FilterType` raw value: `screenshots`, `largeFiles`, `eyesClosed`, `similar`, `screenRecordings`, `slowMotion`, `timeLapse`.
@@ -410,7 +410,7 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
   - **Set** when a filter returns nothing, when a filter review completes, and when a fully reviewed month drops to 0 items.
   - **Cleared** when a non-empty filter loads, and by `clearAllFinishedFilters(month)` when a month's item count grows.
   - A finished card can't be opened.
-- **Total-count resync:** MonthsList and MonthFilterCards compare the live count with `originalTotalCount`.
+- **Total-count resync:** MonthsList and MonthFilterCards compare the live count with `originalTotalCount`. Year keys are resynced only by MonthFilterCards' `resyncYearTotal`, once its year preload finishes; a missing total is filled in.
   - **Grew:** save the new total and clear the finished flags.
   - **Shrank:** clamp reviewed, deleted, kept, stored and `currentIndex`.
 - **Filters per media type** (`MonthFilterStatusStore.filters(for:)`):
@@ -506,11 +506,12 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
   - **First `viewDidAppear`:** starts the undo session (`SessionKey(monthKey, mediaType)`), builds 3 recycled `SwipeCardView`s and the pan gesture, and calls `loadPhotos()`.
   - **Returning from a child:** recomputes the bin increment, prunes undo actions for deleted assets, recalculates counts from the stores, then re-advances.
   - **`viewWillDisappear`:** saves progress, cancels loading and image requests, cleans up video. When popped, it also hides the bin button.
+  - `saveProgress()` does nothing while `reviewAssets` is empty (still loading, or an empty deck), so leaving early never overwrites the stored record with zeros.
 - **Loading:**
   1. Source assets: the pre-computed ones, else the pre-sorted ones, else `fetchPhotos(month)` (oldest first).
   2. Filter by subtype.
   3. Wrap each in a `ReviewAsset` through `PhotoProcessor`.
-  4. Start index: from `currentIndex`, skip processed assets. With `skipICloudPhotos` on and internet off, also skip iCloud-only assets.
+  4. Start index: the first unprocessed asset from index 0 (`firstUnprocessedIndex`), in both the early batch and the full list. With `skipICloudPhotos` on and internet off, iCloud-only assets are skipped too. The saved `currentIndex` is never the starting point: the asset array can change between sessions (imports sort in before it, real deletions shift it, skipped iCloud assets become reachable).
   5. Then show the empty state, the completion summary, or the deck. Prefetch the next 3 at preview quality.
 - **Swipe thresholds** (`+Swipe.swift`):
   - **While dragging:** the card rotates by `x / width × 0.2`. Edge gradients start after 15pt, with alpha = distance / 200.
@@ -525,10 +526,11 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
   - **Right (keep):** `KeptAssetsStore`, `keptCount++`.
   - **Then:** `recordReview`, advance past processed assets, `saveProgress()`, recycle the top card to the bottom, keep the cache window at the current asset + 3. At the end, `showCompletionSummary()`.
 - **Undo:**
-  - **Undo button:** pops the last action, resets `currentIndex` to it and reverts its store and stats.
+  - Every undo path finds the asset by `assetLocalIdentifier` (`deckIndex(of:)`), never by `UndoAction.index`, and recalculates the counts from the stores. When this deck doesn't hold the asset, its store entry is still reverted and the deck stays where it is.
+  - **Undo button:** pops the last action, moves the deck back to its asset and reverts its store and stats.
   - **History button:** `UndoHistoryViewController` in a sheet (medium and large), through `UndoHistoryDelegate`:
     - `didPerformAction(newType:on:)` changes an action's type. It moves the asset between stores and album, but the deck position and the review count stay.
-    - `didUndoActions` / `didUndoAll` remove the actions, revert everything, and reset `currentIndex` to the earliest undone index.
+    - `didUndoActions` / `didUndoAll` remove the actions, revert everything (`revertUndoActions`), and move the deck back to the earliest undone asset it holds.
 - **Completion:** marks the progress key and the filter complete, then shows an alert with "Back to months" or "View Delete Bin". The second pushes the unfiltered bin and removes the deck from the stack.
 - **Empty state:**
   - **Filter active:** marks the filter finished. With the dashboard or Lucky source, "Try another month" replaces the deck with a random other month. Otherwise "Clear filter" pops.
@@ -791,10 +793,8 @@ Both skills are in `.claude/skills/`, copied from Photolift and unchanged.
 ## Known issues / gotchas
 
 These are real behaviors today. Don't build on them, and fix them only when asked. Each is worth its own change.
-- **Undo can crash.**
-  - The undo session key is `(monthKey, mediaType)`, so every filter session of a month shares one stack.
-  - `UndoAction.index` points into the `reviewAssets` of the session that recorded it, but `handleUndo` / `didUndo*` / `didPerformAction` index `reviewAssets[action.index]` with **no bounds check**.
-  - The stack also survives relaunches.
+- **One undo stack per month and media type.** The session key is `(monthKey, mediaType)`, so every filter session of a month shares one stack, and the stack survives relaunches.
+  - `UndoAction.index` points into the `reviewAssets` of the session that recorded it, so it is stale in other sessions and after the library changes. Never index with it: undo resolves the asset by `assetLocalIdentifier` (`deckIndex(of:)` in `MonthReviewViewController+UndoHistory.swift`) and leaves the deck where it is when the asset isn't in it.
 - **Swipe undo doesn't remove an asset from the PhotoKit album.** History-sheet undo and Similar undo do.
 - **`StatsStore` counts swipes, not deletions.** `recordDeletion` runs on a left swipe and is reversed by undo. Real deletion in DeleteBin doesn't touch it, and doesn't clean the kept and stored stores either.
 - **Dashboard and Lucky routes skip ProcessingLoading.** `.largeFiles` and `.eyesClosed` from them show the month unsorted and unfiltered. Only MonthFilterCards goes through `ProcessingLoadingViewController`.

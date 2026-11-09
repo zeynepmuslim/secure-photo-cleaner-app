@@ -142,4 +142,17 @@ final class DateFormatterManager {
         }
         return (monthStart, monthEnd)
     }
+
+    /// Get the start and end dates for a year session key ("year-2026"), in the current calendar like
+    /// the month buckets the year is built from.
+    func yearDateRange(forYearKey yearKey: String) -> (start: Date, end: Date)? {
+        guard yearKey.hasPrefix("year-"), let year = Int(yearKey.dropFirst("year-".count)) else { return nil }
+        let calendar = Calendar.current
+        guard let yearStart = calendar.date(from: DateComponents(year: year, month: 1, day: 1)),
+            let yearEnd = calendar.date(byAdding: .year, value: 1, to: yearStart)
+        else {
+            return nil
+        }
+        return (yearStart, yearEnd)
+    }
 }

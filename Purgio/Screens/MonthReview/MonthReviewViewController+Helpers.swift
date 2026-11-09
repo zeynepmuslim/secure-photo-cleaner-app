@@ -297,24 +297,24 @@ extension MonthReviewViewController {
         guard let action = historyManager.undoLastAction() else { return }
         haptics.success()
 
-        currentIndex = action.index
-
-        let asset = reviewAssets[currentIndex].asset
-
+        let identifier = action.assetLocalIdentifier
         switch action.actionType {
         case .store:
-            willBeStoredStore.removeAssetId(asset.localIdentifier)
-            storedCount -= 1
+            willBeStoredStore.removeAssetId(identifier)
         case .delete:
-            deleteBinStore.removeAssetId(asset.localIdentifier)
-            deletedCount -= 1
+            deleteBinStore.removeAssetId(identifier)
             statsStore.undoDeletion(for: mediaType, bytes: action.assetSize)
             sessionIncrementCount = max(0, sessionIncrementCount - 1)
             updateGlobalBinButtonIncrement()
         case .keep:
-            KeptAssetsStore.shared.removeAssetId(asset.localIdentifier)
-            keptCount -= 1
+            KeptAssetsStore.shared.removeAssetId(identifier)
         }
+
+        // Back to the undone asset when this deck holds it (see `deckIndex(of:)`); otherwise stay put
+        if let index = deckIndex(of: action) {
+            currentIndex = index
+        }
+        recalculateCountsFromStores()
 
         statsStore.undoReview(for: mediaType)
         saveProgress()
@@ -511,6 +511,11 @@ extension MonthReviewViewController {
     }
 
     func saveProgress() {
+        // Nothing is loaded yet (still loading, or the deck came up empty). The counts are still the
+        // initial zeros, so saving would overwrite the stored record (currentIndex, counts and total)
+        // with zeros. A month that really became empty is resynced by MonthsList / MonthFilterCards.
+        guard !reviewAssets.isEmpty else { return }
+
         let progressKey = makeProgressKey()
         let previousProgress = progressStore.getProgress(forMonthKey: progressKey, mediaType: mediaType)
 

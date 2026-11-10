@@ -145,7 +145,7 @@ Declare each name as a `Notification.Name` extension next to its owner, with the
 - **Lists:** classic data source / delegate with string reuse IDs.
   - `UITableView`: MonthsList and UndoHistory (`.insetGrouped`), SimilarPhotos (plain).
   - `UICollectionView` with a flow layout: DeleteBin grid, SimilarGroupCell, StoreTutorial.
-  - Settings is a `UIScrollView` + `UIStackView`.
+  - Settings is a `UIScrollView` + `UIStackView` (two of them, one per pane, split at the Duo's fold).
   - Nothing uses diffable data sources yet. New lists may use them (they need no newer OS).
 
 ## iPhone Duo (UNBREAKABLE RULES)
@@ -177,6 +177,7 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
     - MonthReview (`+Fold.swift`): a vertical fold splits the undo/history row (undo ends before the fold, history starts after it). In the table layout (`+TablePose.swift`; the table pose, and the upright inner display fully open) the stats and the card sit above the base: partly folded they end at the horizontal fold and the base below it holds the saved trackpad/keys choice; fully open the deck takes about 70% and the keys 30%; in the book pose the video play button moves to the larger side of the fold. Held sideways (`+Landscape.swift`), the bottom row splits at the fold (Undo + History before it, the bin button's slot after it) and the video controls split into two capsules there.
     - DeleteBin: a vertical fold splits the grid into two equal halves on either side of the fold line (`FoldSplitFlowLayout` widens the gap there). The half with less room sets the cell size, so the other side gets a wider margin.
     - The wide "Delete All" bin button keeps to the trailing side of the fold in the book pose.
+    - Settings: sideways two columns, the impact tiles, Storage and Support on one side and the settings groups and About on the other; upright a raised half (impact tiles, then Storage | Support in one row) over a base with the settings groups and About. Each pane scrolls on its own (see **Settings**).
     - Split controls the same way Home splits content: use `splittingFold` so they don't jump when the device folds, center the gap on the fold line while fully open, and clear the whole fold region (`activeFold`'s width) while folded.
 - **Detecting the tab rail:** no API reports where the tab bar sits (`mode` and `sidebar.preferredPlacement` don't), so use geometry, evaluated in `viewDidLayoutSubviews`. `DuoLayout` wraps it:
   - `isVerticalRail(tabBarController)`: the tab bar is taller than wide.
@@ -191,7 +192,7 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
     - For a compositional layout's `.continuous` sections, leave `contentInsetsReference` at its default; with `.none`, the last item rests under the camera.
     - A vertical scroll view that holds a sideways row also spans the full width. Pin its content's sides to `view.safeAreaLayoutGuide`, and set the `contentLayoutGuide` width to the `frameLayoutGuide`'s.
   - **Exception — full-screen decoration spans the full width.** Artwork, gradients and backgrounds with nothing to read or tap pin to `view`, e.g. the iOS 26 top gradient in MonthsList. Text and controls drawn over them still follow the safe-area rule.
-  - Home, MonthFilterCards, MonthReview, DeleteBin and SimilarPhotos follow this rule. Other screens still pin to `view.leadingAnchor` (see **Known issues**); bring every screen you touch up to it.
+  - Home, MonthFilterCards, MonthReview, DeleteBin, SimilarPhotos and Settings follow this rule. Other screens still pin to `view.leadingAnchor` (see **Known issues**); bring every screen you touch up to it.
 - **Padding is a constraint constant from the safe area,** using the role's token (see **Layout**). Don't rely on system layout margins for padding: UIKit raises them to the system minimum, and 16pt quietly becomes 20pt on the Duo. Gaps between siblings are constants too.
 - **Screen edges that must follow the vertical rail use `DuoEdgeConstraints`** (`Purgio/Others/DuoLayout.swift`). It builds the leading, trailing and (optionally) bottom constraints and switches them between the screen's standard padding and Home's rail padding:
   ```swift
@@ -212,7 +213,7 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
 - **Home is the reference.** Don't change `HomeViewController`'s padding or margins in Duo work (its only Duo layout change is the split at the fold); make the other screens match its edges, the bottom edge most of all.
   - `updateOuterPaddingForTabBarShape()`: with the rail showing, 6pt next to the rail, 20pt (`EdgePadding.content`) on the far side, and the bottom 20pt above `view.bottomAnchor`.
   - Bottom rows, the bin button and Home's content sit on the same baseline.
-- **Card corners follow the device corner on the rail.** `UIView.updateCardCorners(followingDeviceCorner:)` (`UIView+CardCorners.swift`, iOS 26+) gives every corner the standard 16, except a bottom corner that sits in the window's bottom corner, which becomes container-concentric. Call it after layout, with `followingDeviceCorner` set to whether the rail shows. Home (dashboard and Photos/Videos tiles) and MonthFilterCards use it.
+- **Card corners follow the device corner on the rail.** `UIView.updateCardCorners(followingDeviceCorner:)` (`UIView+CardCorners.swift`, iOS 26+) gives every corner the standard 16, except a bottom corner that sits in the window's bottom corner, which becomes container-concentric. Call it after layout, with `followingDeviceCorner` set to whether the rail shows. Home (dashboard and Photos/Videos tiles), MonthFilterCards and Settings (the support card, held sideways) use it. Buttons in such a card's bottom corner follow it too: `SettingsSupportCardView.updateLinkCorners()` gives a link button's outer bottom corner the card's `effectiveRadius(corner:)` minus the padding (at least 12); `containerConcentric` would resolve against the window, not the card.
 - **`Docs/iPhone-Duo-Transformation.md`** is the step-by-step guide. Follow it for any layout or bar change.
 - **Bin button on iOS 26:** pinned to `contentLayoutGuide` (see **Floating bin button**).
 
@@ -231,12 +232,12 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
 | `#available(iOS 16.0, *)` | `UISheetPresentationController.Detent.custom` (Home ×3, StorageAnalysisBottomSheet, YearDetailSheet, MonthsList, iCloudWarningSheet) |
 | `#available(iOS 16.2, *)` | Live Activities: only in `StorageAnalysisManager+LiveActivity.swift`. The activity is stored as `Any?` so the class compiles for iOS 15 |
 | `#available(iOS 17.0, *)` | `registerForTraitChanges` (DeleteBin, UndoHistory, GradientView); `@available(iOS 17.0, *)` on `#Preview`s |
-| `#available(iOS 26.0, *)` | Liquid Glass: `.prominentGlass()` / `.glass()` button configurations, `UIGlassEffect` (VideoPlayerController's split capsules), clear sheet backgrounds, MonthsList's top gradient, the bin button's `contentLayoutGuide`, card corners (`cornerConfiguration`) |
+| `#available(iOS 26.0, *)` | Liquid Glass: `.prominentGlass()` / `.glass()` button configurations, `UIGlassEffect` (VideoPlayerController's split capsules), clear sheet backgrounds, MonthsList's top gradient, the bin button's `contentLayoutGuide`, card corners (`cornerConfiguration`, `effectiveRadius(corner:)`), Settings panes' `topEdgeEffect.style` |
 | `#available(iOS 27.1, *)` | iPhone Duo APIs: `reservedRegions` (`FoldRegion`), `visibilityPriority` (see **iPhone Duo**) |
 
 - **Liquid Glass buttons:** on iOS 26 use `UIButton.Configuration.prominentGlass()` / `.glass()` with `tintColor`. Before iOS 26 fall back to `.filled()` / `.gray()` with `.capsule`.
   - `DynamicGlassButton` wraps this: `configure(title:…style: .prominent|.regular, backgroundColor:…)`, and `animateConfigure(...)` cross-dissolves. Disabled is alpha 0.5 via `configurationUpdateHandler`. It is the general-purpose button; use it for new buttons.
-- The deprecated `traitCollectionDidChange` + `hasDifferentColorAppearance` is still used to refresh `CGColor`s in AnalysisProgressRing, MiniProgressRing, SlideToConfirmButton, SoapBubble, MonthReview+UI and Settings, and as the iOS 15/16 path in DecisionRingView and MonthFilterCards (Continue pill).
+- The deprecated `traitCollectionDidChange` + `hasDifferentColorAppearance` is still used to refresh `CGColor`s in AnalysisProgressRing, MiniProgressRing, SlideToConfirmButton, SoapBubble, MonthReview+UI, Settings and ProgressiveBlurView (its fade colors), and as the iOS 15/16 path in DecisionRingView and MonthFilterCards (Continue pill).
   - On iOS 17+ prefer `registerForTraitChanges([UITraitUserInterfaceStyle.self])`, keeping the old path for iOS 15/16.
 
 ## Design system
@@ -278,7 +279,7 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
   - Cards and rows: `FilterCard`, `DashboardCard`, `SwipeCardView`, `StatItemView`, `MonthStatItemView`, `ImpactStatsView`, `SettingsInfoCardView`, `SettingsLinkRowView`, `TipTier`, `FakeAlbumCell`, `ReviewStatsPillView` (reviewed/total, a black (`.label`) progress bar and the three counts).
   - Progress: `SegmentedBarView`, `CircularProgressView`, `MiniProgressRing`, `AnalysisProgressRing`, `DecisionRingView` (a ring split by choice: delete red, keep green, store yellow, left `.systemGray5`, from 12 o'clock with gaps, zero arcs skipped; stroke 0.09 × diameter; the reviewed percent in the center, a green checkmark at 100%, "–" while the total is 0; `configure(deleted:kept:stored:total:reviewed:animated:)`).
   - Controls and players: `SlideToConfirmButton`, `VideoPlayerController`.
-  - Views: `GradientView`, `EmptyStateView`, `PaddingLabel`, `SoapBubble`, `ProgressOverviewView` (MonthFilterCards' inner-display card: a `DecisionRingView` sized to 42% of the card's height (at most 220pt), with the leftover height split evenly above the ring, between it and the text, and below the chips, "21 of 29 photos", "8 left to review" or "All caught up", and trash / checkmark / archivebox count chips that stack when a row doesn't fit; `update(with: ProgressOverviewState)`), plus the skeletons.
+  - Views: `GradientView`, `EmptyStateView`, `PaddingLabel`, `SoapBubble`, `ProgressOverviewView` (MonthFilterCards' inner-display card: a `DecisionRingView` sized to 42% of the card's height (at most 220pt), with the leftover height split evenly above the ring, between it and the text, and below the chips, "21 of 29 photos", "8 left to review" or "All caught up", and trash / checkmark / archivebox count chips that stack when a row doesn't fit; `update(with: ProgressOverviewState)`), `ImpactTilesView` (Settings' split layouts: space saved / stored items / reviewed as three equal tiles, icon then number then a one-line title that shrinks to fit (a second line would push the cards under it off the fold and the baseline); `configure(spaceSaved:storedCount:reviewedCount:)`), `SettingsSupportCardView` (Settings' split layouts: the support text, the ink tip button (`.label` fill, red heart), and Rate | Feedback always side by side, a title wrapping to a second line when it doesn't fit half the card; `onTip`, `onRate`, `onFeedback`), `SettingsGroupView` + `SettingsGroupRowView` (Settings' split layouts: a grouped-list card of rows laid out like the cards: a colored icon glyph (no tile) and the title on one line, an optional subtitle under both and a `.toggle` / `.navigation(_:)` / `.value(_:_:)` / `.menu` / `.text` accessory, where the `Destination` sets the indicator: `.push` chevron right, `.sheet` chevron up, `.external` (leaves the app: the Settings app, GitHub) arrow up-right, and a menu shows the up-down chevron; `setRow(_:hidden:animated:)` keeps the first visible row's separator hidden; tappable and text rows are one VoiceOver element, toggle and menu rows label their control with the row's title), `ProgressiveBlurView` (over a scroll view's top edge: content scrolling under it blurs and fades into `fadeColor`; invisible at rest, `setContentOverlap(_:)` fades the blur in as content scrolls under it; touches pass through), plus the skeletons.
   - Reuse these before writing new ones.
 
 ## Concurrency
@@ -635,7 +636,7 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
   - **Changing an action's type** keeps the deck position and the review count.
 
 ### Settings (`Screens/Settings`)
-A scroll view, top to bottom:
+One scroll view (iPhone 17, the Duo's cover display, Split View), top to bottom. Its content's sides follow the safe area and the rail through `DuoEdgeConstraints` (20pt, `EdgePadding.content`); the scroll view itself spans the full width.
 - **Your Impact:** `ImpactStatsView` (StatsStore + stored count).
 - **Storage Analysis:** `StorageAnalysisView`.
 - **Photo Management:**
@@ -650,7 +651,16 @@ A scroll view, top to bottom:
 - **Support:** the tip jar, Rate (`…/id6762494793?action=write-review`), and Feedback (`MFMailComposeViewController`, else `mailto:`).
 - **About:** version and author.
 - **Nav bar:** a heart button opens the tip jar.
-- `scrollToInternetToggle()` pulses the internet toggle. Its caller, MonthReview's `openSettingsTab()`, is currently unreachable.
+- **iPhone Duo inner display** (`updateFoldSplit()`, re-checked on every layout pass, only where `FoldRegion.splittingFold` crosses the view; a horizontal fold only in regular width):
+  - **Held sideways: two panes**, each its own vertical scroll view (`contentInsetAdjustmentBehavior = .never`, starting at the safe area's top), in a container that runs to the view's bottom edge, so nothing clips above it; a pane ending there gets a bottom content inset (`updatePaneInsets`) so its last card rests on Home's baseline (20pt on the rail, else 16pt above the safe area). The first pane fits its height exactly and doesn't bounce: its stack is at least the pane's height (`firstPaneFillHeight`) and `ImpactTilesView` (lowest vertical hugging) takes the slack; Rate | Feedback fit one line in Turkish thanks to 8pt side insets. The panes run from the device's top edge with the top safe area as their top inset, so they rest below the bar and scroll on up to the edge instead of being cut off under it; the bar doesn't track either pane (tracking one collapsed the title and moved both panes). The bar can take its height after the first layout, and with nothing pinned to the safe area's top that change alone doesn't lay out again, so `viewSafeAreaInsetsDidChange` calls `setNeedsLayout`. On iOS 26 the panes' `topEdgeEffect.style` is `.soft`, so rows fade out progressively under the title instead of under a solid band. `rebuildContent(for:)` runs only when the `SplitLayout` changes and moves the same view instances between the single column, the panes and the upright layout.
+  - **The gap at the fold** (both orientations) is the section spacing (24) centered on the fold line while fully open, and clears the whole fold region while partly folded, so folding moves only the gap.
+  - **Held sideways** (vertical fold, board S3t): left `ImpactTilesView`, `StorageAnalysisView`, then `SettingsSupportCardView` with no Support label (the card has its own title), the cards 10pt apart; right Photo Management, Features, Transparency & Safety and About as grouped rows (`SettingsGroupView`).
+  - **Upright** (horizontal fold, board ST4), fully open and partly folded: the raised half holds `ImpactTilesView`, then Storage (47% of the row) | Support side by side, with no section labels (the cards carry their own titles), ending together (Storage sits in `storageCardSlot`, a card-colored wrapper that grows with the row, because stretching `StorageAnalysisView` would stretch one of its rows; the slot starts with `storageTitleRow`, an icon and "Your Storage" (`settings.storageCardTitle`) built like the support card's title row and level with it); the base holds the settings groups and About as grouped rows. `SplitLayout` picks how it scrolls (`.uprightScroll` / `.uprightPanes`), and `rebuildContent(for:)` runs when it changes:
+    - **Fully open: one scroll view** (the single column's, which the bar tracks): `raisedHalfStack` sits at its top with a minimum height (`raisedHalfMinHeight`) reaching the gap before scrolling, the Storage | Support row taking the extra height, and the gap is the custom spacing after it; content taller than the space above the fold just pushes the base down.
+    - **Partly folded (table pose): the raised half stands still, only the base scrolls.** The raised half is the first pane, ending at the gap (`firstPaneEdgeToHorizontalFold`) and filling it (`firstPaneFillHeight`); the second pane starts `baseTopClearance` (10) below it, with the rest of the gap as its top inset. A `ProgressiveBlurView` fills that inset: rows scrolling up blur and fade into the background, and the blur fades in only as far as they've scrolled under it (`setContentOverlap(_:)`), because the material's tint would show as a gray band at rest.
+  - The single column's `ImpactStatsView`, `supportCard` and help rows, and its toggle/info cards, don't show in the split layouts.
+  - **Grouped rows (board S3t)** replace the settings cards in both split layouts: Photo Management (Internet Access, Skip iCloud Photos with short subtitles), Features (Reminders, Schedule menu, App Language showing the current language, Store Feature), Transparency & Safety (Privacy First, View Source Code), About (Version from `CFBundleShortVersionString`). Rows and cards share one path per setting (`setInternetAccess`, `setSkipICloud`, `setReminders`) and the `update…State` methods sync both. Section labels sit 8pt above their card, groups 20pt apart.
+- `scrollToInternetToggle()` scrolls whichever scroll view holds the toggle (the second pane while split) and pulses it. Its caller, MonthReview's `openSettingsTab()`, is currently unreachable.
 
 ### Tip jar (`TipJarViewController`, `TipJarManager`)
 - **Products** (StoreKit 2, consumable, `Purgio/Services/TipProducts.storekit`), sorted by price:
@@ -834,9 +844,8 @@ These are real behaviors today. Don't build on them, and fix them only when aske
   - Live Activity `statusMessage`s
   - `TipJarManager.StoreError`
   - the "Will Be Stored" album name
-- **Settings shows version "1.0" hard-coded** instead of `CFBundleShortVersionString` (the real version is 1.1).
 - **DeleteBin** prints `[BIN DEBUG]` / `[BIN SYNC]` lines in `numberOfItems` / `cellForItem` without `#if DEBUG`.
-- **Screens outside the Duo work pin their horizontal edges to `view` instead of the safe area** (sheets, Settings, MonthsList's permission and empty states, ProcessingLoading, Onboarding; see **iPhone Duo**).
+- **Screens outside the Duo work pin their horizontal edges to `view` instead of the safe area** (sheets, MonthsList's permission and empty states, ProcessingLoading, Onboarding; see **iPhone Duo**).
 - **`PHPhotoLibraryPreventAutomaticLimitedAccessAlert` isn't set,** so iOS may show its own "select more photos" alert.
 - **Storage analysis:**
   - The resume indices can point at different assets if the library changed in between.

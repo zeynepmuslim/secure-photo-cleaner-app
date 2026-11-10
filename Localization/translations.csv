@@ -277,6 +277,8 @@ settings.languageButton;Change Language;Dili Değiştir;;;;
 settings.internetOnMessage;Internet access enabled;İnternet erişimi etkinleştirildi;;;;
 settings.internetSubtitle;When enabled, iCloud photos can be downloaded for full-quality review.;Etkinleştirildiğinde, iCloud fotoğrafları tam kalitede inceleme için indirilebilir.;;;;
 settings.internetTitle;Internet Access;İnternet Erişimi;;;;
+settings.internetSubtitleShort;iCloud photos download in full quality.;iCloud fotoğrafları tam kalitede indirilir.;;;;
+settings.skipICloudSubtitleShort;iCloud-only photos are skipped.;Yalnızca iCloud'daki fotoğraflar atlanır.;;;;
 settings.madeBy;Made by Zeynep Müslim;Zeynep Müslim tarafından yapıldı;;;;
 settings.monthly;Monthly;Aylık;;;;
 settings.navTitle;Settings;Ayarlar;;;;
@@ -292,6 +294,7 @@ settings.skipICloudOnMessage;iCloud-only photos will be skipped;Yalnızca iCloud
 settings.skipICloudSubtitle;When enabled, photos stored only in iCloud will be skipped during review.;Etkinleştirildiğinde, yalnızca iCloud'da saklanan fotoğraflar inceleme sırasında atlanacaktır.;;;;
 settings.skipICloudTitle;Skip iCloud Photos;iCloud Fotoğraflarını Atla;;;;
 settings.storageAnalysis;Storage Analysis;Depolama Analizi;;;;
+settings.storageCardTitle;Your Storage;Depolama Durumunuz;;;;
 settings.storeText;"Swiping up saves a photo to the ""Will Be Stored"" album. You can review them later.";"Yukarı kaydırmak fotoğrafı ""Depolanacak"" albümüne kaydeder. Daha sonra inceleyebilirsiniz.";;;;
 settings.storeTitle;Store Feature;Depolama Özelliği;;;;
 settings.support;Support;Destek;;;;

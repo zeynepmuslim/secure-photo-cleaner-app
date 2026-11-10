@@ -5077,6 +5077,23 @@
         }
       }
     },
+    "settings.internetSubtitleShort": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud photos download in full quality."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud fotoğrafları tam kalitede indirilir."
+          }
+        }
+      }
+    },
     "settings.internetTitle": {
       "extractionState": "manual",
       "localizations": {
@@ -5434,6 +5451,23 @@
         }
       }
     },
+    "settings.skipICloudSubtitleShort": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud-only photos are skipped."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yalnızca iCloud'daki fotoğraflar atlanır."
+          }
+        }
+      }
+    },
     "settings.skipICloudTitle": {
       "extractionState": "manual",
       "localizations": {
@@ -5464,6 +5498,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Depolama Analizi"
+          }
+        }
+      }
+    },
+    "settings.storageCardTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Storage"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Depolama Durumunuz"
           }
         }
       }

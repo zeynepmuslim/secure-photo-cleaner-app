@@ -15,6 +15,8 @@ private enum Strings {
 
     static let yourImpact = NSLocalizedString("settings.yourImpact", comment: "Your impact section header")
     static let storageAnalysis = NSLocalizedString("settings.storageAnalysis", comment: "Storage analysis section header")
+    static let storageCardTitle = NSLocalizedString(
+        "settings.storageCardTitle", comment: "Storage card title in the upright split layout")
     static let photoManagement = NSLocalizedString("settings.photoManagement", comment: "Photo management section header")
     static let features = NSLocalizedString("settings.features", comment: "Features section header")
     static let transparencySafety = NSLocalizedString("settings.transparencySafety", comment: "Transparency & safety section header")
@@ -26,6 +28,10 @@ private enum Strings {
     static let internetSubtitle = NSLocalizedString("settings.internetSubtitle", comment: "Internet access toggle subtitle")
     static let skipICloudTitle = NSLocalizedString("settings.skipICloudTitle", comment: "Skip iCloud photos toggle title")
     static let skipICloudSubtitle = NSLocalizedString("settings.skipICloudSubtitle", comment: "Skip iCloud photos toggle subtitle")
+    static let internetSubtitleShort = NSLocalizedString(
+        "settings.internetSubtitleShort", comment: "Internet access row subtitle in the split layout")
+    static let skipICloudSubtitleShort = NSLocalizedString(
+        "settings.skipICloudSubtitleShort", comment: "Skip iCloud photos row subtitle in the split layout")
     static let remindersTitle = NSLocalizedString("settings.remindersTitle", comment: "Reminders section title")
 
     static let privacyTitle = NSLocalizedString("settings.privacyTitle", comment: "Privacy first info title")
@@ -69,6 +75,140 @@ private enum Strings {
 final class SettingsViewController: UIViewController {
     private let scrollView = UIScrollView()
     private let contentStack = UIStackView()
+    private var duoEdges: [DuoEdgeConstraints] = []
+
+    // iPhone Duo inner display: two panes split at the fold, each scrolling on its own.
+    // Sideways (vertical fold) the first pane is the left column; upright (horizontal fold)
+    // it's the raised half and the second pane the base.
+    private let sectionSpacing: CGFloat = 24
+    /// Split layouts: between groups, and from a section label to its card
+    private let splitGroupSpacing: CGFloat = 20
+    private let splitLabelSpacing: CGFloat = 8
+    /// The one scroll view's content starts this far below the bar
+    private let contentStackTopPadding: CGFloat = 24
+    /// Storage's share of the raised half's Storage | Support row (upright inner display)
+    private let storageRowWidthRatio: CGFloat = 0.47
+    private let splitContainerView: UIView = {
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.isHidden = true
+        return view
+    }()
+    private let firstPaneScrollView = SettingsViewController.makePaneScrollView()
+    private let secondPaneScrollView = SettingsViewController.makePaneScrollView()
+    private let firstPaneStack = SettingsViewController.makePaneStack()
+    private let secondPaneStack = SettingsViewController.makePaneStack()
+    private let impactTilesView = ImpactTilesView()
+    private let supportCardView = SettingsSupportCardView()
+    private var hasBuiltContent = false
+    /// How Settings is laid out right now, re-read on every layout pass (updateFoldSplit)
+    private enum SplitLayout {
+        /// One column: iPhones, the cover display, Split View
+        case single
+        /// Held sideways: two columns, each scrolling on its own
+        case sideBySide
+        /// Upright, fully open: one scroll view, the raised half reaching the gap, then the base
+        case uprightScroll
+        /// Upright, partly folded (table pose): the raised half stands still, only the base scrolls
+        case uprightPanes
+    }
+    private var splitLayout: SplitLayout = .single
+    private var firstPaneEdgeToVerticalFold: NSLayoutConstraint?
+    private var paneGapAcrossVerticalFold: NSLayoutConstraint?
+    /// Upright and fully open: the raised half (tiles, then Storage | Support) at the top of
+    /// the one scroll view, at least as tall as the space above the fold so the base starts
+    /// below it before scrolling
+    private let raisedHalfStack = SettingsViewController.makePaneStack()
+    private var raisedHalfMinHeight: NSLayoutConstraint?
+    /// Upright and partly folded: the raised half is the first pane, ending at the gap and
+    /// standing still; only the base (the second pane) scrolls
+    private var firstPaneEdgeToHorizontalFold: NSLayoutConstraint?
+    private var sideBySidePaneConstraints: [NSLayoutConstraint] = []
+    private var stackedPaneConstraints: [NSLayoutConstraint] = []
+    /// Upright and partly folded: the base's top inset; the gap at the fold is part of the
+    /// base's scroll view, so its rows blur away under it
+    private var stackedGap: CGFloat = 0
+    /// Upright and partly folded: the base's scroll view starts this far below the raised half, so rows
+    /// scrolling up are cut off before they reach its cards
+    private let baseTopClearance = GeneralConstants.EdgePadding.small
+    private let baseTopBlurView: ProgressiveBlurView = {
+        let view = ProgressiveBlurView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.isHidden = true
+        return view
+    }()
+    private var baseTopBlurHeight: NSLayoutConstraint?
+    /// Upright, folding or unfolding: the old layout's snapshot, cross-dissolved away once the
+    /// new one is laid out (viewDidLayoutSubviews)
+    private var layoutSwitchSnapshot: UIView?
+    private let layoutSwitchDuration: TimeInterval = 0.3
+    /// Upright, folding or unfolding: the layout to switch to once the current one has
+    /// scrolled back to its top, so the cross-dissolve runs between two resting layouts
+    private var pendingSplitLayout: SplitLayout?
+    private let scrollToTopDuration: TimeInterval = 0.25
+    private var firstPaneFillHeight: NSLayoutConstraint?
+
+    // Upright raised half: Storage | Support in one row, the two cards ending together
+    private let storageSupportRow: UIStackView = {
+        let stack = UIStackView()
+        stack.axis = .horizontal
+        stack.alignment = .fill
+        stack.spacing = GeneralConstants.EdgePadding.small
+        return stack
+    }()
+    private let storageRowColumn = SettingsViewController.makePaneStack()
+    private let supportRowColumn = SettingsViewController.makePaneStack()
+    /// Grows with the row so Storage ends level with Support. StorageAnalysisView keeps its
+    /// own height inside it: stretching it would stretch one of its rows.
+    private let storageCardSlot: UIView = {
+        let view = UIView()
+        view.backgroundColor = .cardBackground
+        // Matches StorageAnalysisView's own corners so the two read as one card
+        view.layer.cornerRadius = 14
+        view.layer.cornerCurve = .continuous
+        return view
+    }()
+
+    // Split layouts: the settings groups as grouped-list rows (board S3t)
+    private let photoGroup = SettingsGroupView()
+    private let internetRow = SettingsGroupRowView()
+    private let skipICloudRow = SettingsGroupRowView()
+    private let featuresGroup = SettingsGroupView()
+    private let remindersRow = SettingsGroupRowView()
+    private let scheduleMenuRow = SettingsGroupRowView()
+    private let languageRow = SettingsGroupRowView()
+    private let storeRow = SettingsGroupRowView()
+    private let transparencyGroup = SettingsGroupView()
+    private let privacyRow = SettingsGroupRowView()
+    private let sourceCodeRow = SettingsGroupRowView()
+    private let aboutGroup = SettingsGroupView()
+    private let versionRow = SettingsGroupRowView()
+
+    /// The Storage card's title (upright split layout), built like the support card's title row
+    private let storageTitleRow: UIStackView = {
+        let iconView = UIImageView()
+        let symbolConfig = UIImage.SymbolConfiguration(pointSize: 20, weight: .medium)
+        iconView.image = UIImage(systemName: "internaldrive.fill", withConfiguration: symbolConfig)
+        iconView.tintColor = .systemBlue
+        iconView.contentMode = .scaleAspectFit
+        NSLayoutConstraint.activate([
+            iconView.widthAnchor.constraint(equalToConstant: 24),
+            iconView.heightAnchor.constraint(equalToConstant: 24)
+        ])
+
+        let titleLabel = UILabel()
+        titleLabel.text = Strings.storageCardTitle
+        titleLabel.font = .systemFont(ofSize: 15, weight: .semibold)
+        titleLabel.textColor = .label
+        titleLabel.numberOfLines = 0
+
+        let stack = UIStackView(arrangedSubviews: [iconView, titleLabel])
+        stack.axis = .horizontal
+        stack.spacing = 12
+        stack.alignment = .center
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        return stack
+    }()
 
     private let statsSectionLabel = UILabel()
     private let impactStatsView = ImpactStatsView()
@@ -154,10 +294,335 @@ final class SettingsViewController: UIViewController {
         navigationController?.navigationBar.prefersLargeTitles = false
         navigationItem.largeTitleDisplayMode = .never
         impactStatsView.update(stats: statsStore, storedCount: storedStore.count)
+        impactTilesView.configure(
+            spaceSaved: statsStore.formattedSpaceSaved(), storedCount: storedStore.count,
+            reviewedCount: statsStore.totalReviewed)
         storageAnalysisView.update(with: storageManager.currentState)
         updateInternetToggleState()
         updateSkipICloudToggleState()
         updateRemindersToggleState()
+    }
+
+    /// The bar can take its height after the first layout (iPhone Duo held sideways); nothing
+    /// is pinned to the safe area's top, so lay out again for the panes' top insets
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        view.setNeedsLayout()
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        updateFoldSplit()
+        let railEdge = DuoLayout.railEdge(tabBarController, in: view)
+        duoEdges.forEach { $0.update(railEdge: railEdge) }
+        updatePaneInsets(railEdge: railEdge)
+        updateCardCorners(isVerticalRail: railEdge != nil)
+        finishLayoutSwitch()
+    }
+
+    /// The moved views land in their new places at once (inside the fold's animation they'd
+    /// slide in from their old superviews), then the old layout's snapshot fades away
+    private func finishLayoutSwitch() {
+        guard let snapshot = layoutSwitchSnapshot else { return }
+        layoutSwitchSnapshot = nil
+        UIView.performWithoutAnimation {
+            view.layoutIfNeeded()
+            // The new layout starts at its top, like the old one it fades from
+            scrollViews(for: splitLayout).forEach { $0.contentOffset.y = -$0.adjustedContentInset.top }
+        }
+        snapshot.isUserInteractionEnabled = false
+        snapshot.frame = view.bounds
+        view.addSubview(snapshot)
+        UIView.animate(withDuration: layoutSwitchDuration, delay: 0, options: [.curveEaseInOut, .beginFromCurrentState]) {
+            snapshot.alpha = 0
+        } completion: { _ in
+            snapshot.removeFromSuperview()
+        }
+    }
+
+    /// As on Home: on the vertical rail, the card in the device's bottom corner follows its
+    /// curve. Held sideways that's the support card, which ends on the baseline at the
+    /// leading edge; upright it ends at the fold and keeps the standard corners.
+    private func updateCardCorners(isVerticalRail: Bool) {
+        let followsCorner = isVerticalRail && splitLayout == .sideBySide
+        // The card's frame is only final once the pane's stack is laid out
+        if followsCorner { firstPaneScrollView.layoutIfNeeded() }
+        supportCardView.updateCardCorners(followingDeviceCorner: followsCorner)
+    }
+
+    /// The panes run from the device's top edge: a pane starting there gets the top safe area
+    /// (the bar) as its top inset, so it rests below the bar and scrolls on up to the edge.
+    /// They reach the view's bottom edge; a pane ending there gets a bottom inset so its
+    /// last card rests on Home's baseline (on the rail 20pt above the view's bottom, otherwise
+    /// 16pt above the safe area). Upright and partly folded the raised half ends at the gap
+    /// instead, starting as far below the bar as the single column does, and the base's top
+    /// inset is the gap.
+    private func updatePaneInsets(railEdge: DuoLayout.RailEdge?) {
+        guard splitLayout == .sideBySide || splitLayout == .uprightPanes else { return }
+        let baselineInset = railEdge != nil
+            ? DuoLayout.RailPadding.bottom
+            : view.safeAreaInsets.bottom + GeneralConstants.EdgePadding.medium
+        let stackTopPadding = GeneralConstants.EdgePadding.medium
+        let barInset = view.safeAreaInsets.top
+        let isStacked = splitLayout == .uprightPanes
+        let firstPaneInsets = isStacked
+            ? UIEdgeInsets(top: barInset + contentStackTopPadding - stackTopPadding, left: 0, bottom: 0, right: 0)
+            : UIEdgeInsets(top: barInset, left: 0, bottom: baselineInset, right: 0)
+        let secondPaneInsets = UIEdgeInsets(
+            top: isStacked ? max(0, stackedGap - baseTopClearance - stackTopPadding) : barInset,
+            left: 0, bottom: baselineInset, right: 0)
+        setInsets(firstPaneInsets, of: firstPaneScrollView)
+        setInsets(secondPaneInsets, of: secondPaneScrollView)
+        updateBaseTopBlur()
+        setConstant(-(stackTopPadding + firstPaneInsets.top + firstPaneInsets.bottom), of: firstPaneFillHeight)
+    }
+
+    private func setInsets(_ insets: UIEdgeInsets, of scrollView: UIScrollView) {
+        guard scrollView.contentInset != insets else { return }
+        // A pane resting at its top keeps resting there when the top inset changes
+        let wasAtTop = scrollView.contentOffset.y <= -scrollView.contentInset.top + 0.5
+        scrollView.contentInset = insets
+        scrollView.verticalScrollIndicatorInsets = UIEdgeInsets(
+            top: insets.top, left: 0, bottom: insets.bottom, right: 0)
+        if wasAtTop {
+            scrollView.contentOffset.y = -insets.top
+        }
+    }
+
+    // MARK: - Fold Split
+
+    /// Splits Settings at the fold, read on every layout pass: two columns, each scrolling on
+    /// its own, at a vertical fold (the inner display held sideways); at a horizontal one (the
+    /// inner display upright) the raised half above the fold and the base below it, all in one
+    /// scroll view while fully open, and with only the base scrolling while partly folded.
+    /// The fold counts while fully open too, so unfolding sideways moves nothing but the gap.
+    /// Everything else keeps the single column.
+    private func updateFoldSplit() {
+        var fold = FoldRegion.splittingFold(in: view)
+        // A horizontal fold only splits the inner display (regular width); compact keeps one column
+        if let candidate = fold, candidate.width >= candidate.height,
+           traitCollection.horizontalSizeClass != .regular {
+            fold = nil
+        }
+        let isFolded = FoldRegion.activeFold(in: view) != nil
+        let layout: SplitLayout
+        if let fold = fold {
+            // Side by side across a vertical fold, stacked across a horizontal one
+            layout = fold.height > fold.width ? .sideBySide : (isFolded ? .uprightPanes : .uprightScroll)
+        } else {
+            layout = .single
+        }
+        if !hasBuiltContent || layout != splitLayout {
+            // Folding or unfolding upright swaps the scrolling: scroll back to the top first,
+            // then cross-dissolve to the new layout. Rotating has the system's own transition.
+            let uprightLayouts: [SplitLayout] = [.uprightScroll, .uprightPanes]
+            let isUprightSwitch = hasBuiltContent && view.window != nil
+                && uprightLayouts.contains(splitLayout) && uprightLayouts.contains(layout)
+            if isUprightSwitch && !isAtTop(splitLayout) {
+                // Meanwhile the current layout keeps following the fold
+                if pendingSplitLayout != layout {
+                    pendingSplitLayout = layout
+                    scrollToTopThenSwitch()
+                }
+            } else {
+                pendingSplitLayout = nil
+                if isUprightSwitch, layoutSwitchSnapshot == nil {
+                    layoutSwitchSnapshot = view.snapshotView(afterScreenUpdates: false)
+                }
+                UIView.performWithoutAnimation { rebuildContent(for: layout) }
+            }
+        } else {
+            // The pose went back before the scroll finished
+            pendingSplitLayout = nil
+        }
+
+        guard let fold = fold else {
+            // The hidden panes keep a sane split so their constraints never conflict
+            setConstant(view.bounds.midX, of: firstPaneEdgeToVerticalFold)
+            setConstant(view.bounds.midY, of: firstPaneEdgeToHorizontalFold)
+            setConstant(0, of: raisedHalfMinHeight)
+            return
+        }
+        let isSideBySide = splitLayout == .sideBySide
+        let foldStart = isSideBySide ? fold.minX : fold.minY
+        let foldLength = isSideBySide ? fold.width : fold.height
+        // Fully open, the halves keep the section spacing, centered on the fold line.
+        // Folded, they clear the whole region.
+        let gap = isFolded ? max(sectionSpacing, foldLength) : sectionSpacing
+        let firstPaneEdge = foldStart + foldLength / 2 - gap / 2
+        switch splitLayout {
+        case .sideBySide:
+            setConstant(firstPaneEdge, of: firstPaneEdgeToVerticalFold)
+            setConstant(gap, of: paneGapAcrossVerticalFold)
+            setConstant(0, of: raisedHalfMinHeight)
+        case .uprightScroll:
+            // Before scrolling the content starts below the bar (the adjusted inset) plus the
+            // stack's top padding; the raised half reaches from there to the gap
+            let contentTop = scrollView.adjustedContentInset.top + contentStackTopPadding
+            setConstant(max(0, firstPaneEdge - contentTop), of: raisedHalfMinHeight)
+            if contentStack.customSpacing(after: raisedHalfStack) != gap {
+                contentStack.setCustomSpacing(gap, after: raisedHalfStack)
+            }
+        case .uprightPanes:
+            // The raised half ends at the gap; the base starts a clearance below it, its top inset
+            // (updatePaneInsets) keeping the first row a gap away, and the blur fills the gap
+            setConstant(firstPaneEdge, of: firstPaneEdgeToHorizontalFold)
+            setConstant(0, of: raisedHalfMinHeight)
+            stackedGap = gap
+            setConstant(max(0, gap - baseTopClearance), of: baseTopBlurHeight)
+        case .single:
+            break
+        }
+    }
+
+    /// The scroll views a layout shows
+    private func scrollViews(for layout: SplitLayout) -> [UIScrollView] {
+        switch layout {
+        case .single, .uprightScroll: return [scrollView]
+        case .sideBySide, .uprightPanes: return [firstPaneScrollView, secondPaneScrollView]
+        }
+    }
+
+    private func isAtTop(_ layout: SplitLayout) -> Bool {
+        scrollViews(for: layout).allSatisfy { $0.contentOffset.y <= -$0.adjustedContentInset.top + 0.5 }
+    }
+
+    /// Scrolls the current layout back to its top, then lays out again: the next pass finds it
+    /// resting and switches to the pending layout with the cross-dissolve
+    private func scrollToTopThenSwitch() {
+        scrollViews(for: splitLayout).forEach { $0.setContentOffset($0.contentOffset, animated: false) }
+        UIView.animate(withDuration: scrollToTopDuration, delay: 0, options: [.curveEaseInOut, .beginFromCurrentState]) {
+            self.scrollViews(for: self.splitLayout).forEach { $0.contentOffset.y = -$0.adjustedContentInset.top }
+        } completion: { [weak self] _ in
+            guard let self = self, self.pendingSplitLayout != nil else { return }
+            self.pendingSplitLayout = nil
+            self.view.setNeedsLayout()
+            self.view.layoutIfNeeded()
+        }
+    }
+
+    private func setConstant(_ constant: CGFloat, of constraint: NSLayoutConstraint?) {
+        guard let constraint = constraint, constraint.constant != constant else { return }
+        constraint.constant = constant
+    }
+
+    /// Moves the same views between the single column, the raised half and the two fold panes.
+    private func rebuildContent(for layout: SplitLayout) {
+        hasBuiltContent = true
+        splitLayout = layout
+        let stacks = [contentStack, raisedHalfStack, firstPaneStack, secondPaneStack, storageRowColumn, supportRowColumn]
+        for stack in stacks {
+            // Spacing set for one layout must not carry over to the next
+            stack.arrangedSubviews.forEach {
+                stack.setCustomSpacing(UIStackView.spacingUseDefault, after: $0)
+                $0.removeFromSuperview()
+            }
+        }
+        contentStack.spacing = sectionSpacing
+        // Inside the slot it's a plain subview, not an arranged one
+        storageAnalysisView.removeFromSuperview()
+
+        // Sideways and upright partly folded use the two panes, side by side or stacked;
+        // the single column and upright fully open the one scroll view
+        let usesPanes = layout == .sideBySide || layout == .uprightPanes
+        let isStacked = layout == .uprightPanes
+        scrollView.isHidden = usesPanes
+        splitContainerView.isHidden = !usesPanes
+        baseTopBlurView.isHidden = !isStacked
+        NSLayoutConstraint.deactivate(isStacked ? sideBySidePaneConstraints : stackedPaneConstraints)
+        NSLayoutConstraint.activate(isStacked ? stackedPaneConstraints : sideBySidePaneConstraints)
+
+        // Photo Management, Features, Transparency & Safety: the same in every layout
+        let settingsGroups: [UIView] = [
+            photoSectionLabel, internetToggleContainer, skipICloudToggleContainer,
+            storeSectionLabel, remindersToggleContainer, languageCard, storeCard,
+            transparencySectionLabel, privacyCard, transparencyCard
+        ]
+        let aboutViews: [UIView] = [aboutSectionLabel, versionLabel, madeByLabel]
+        // The split layouts' grouped rows (board S3t)
+        let splitSettingsGroups: [UIView] = [
+            photoSectionLabel, photoGroup, storeSectionLabel, featuresGroup,
+            transparencySectionLabel, transparencyGroup, aboutSectionLabel, aboutGroup, madeByLabel
+        ]
+
+        let fill = { (stack: UIStackView, views: [UIView]) in
+            views.forEach { stack.addArrangedSubview($0) }
+            stack.setCustomSpacing(12, after: self.aboutSectionLabel)
+            stack.setCustomSpacing(4, after: self.versionLabel)
+        }
+        // The board's denser rhythm: a label sits close to its card, groups keep a wider gap
+        let applySplitSpacing = { (stack: UIStackView) in
+            stack.spacing = self.splitGroupSpacing
+            [self.photoSectionLabel, self.storeSectionLabel, self.transparencySectionLabel,
+             self.aboutSectionLabel, self.supportSectionLabel, self.storageSectionLabel, self.aboutGroup]
+                .forEach { stack.setCustomSpacing(self.splitLabelSpacing, after: $0) }
+            stack.setCustomSpacing(GeneralConstants.EdgePadding.small, after: self.impactTilesView)
+            // Sideways the support card follows Storage directly, as the cards do upright
+            stack.setCustomSpacing(GeneralConstants.EdgePadding.small, after: self.storageAnalysisView)
+        }
+
+        switch layout {
+        case .uprightScroll, .uprightPanes:
+            // The raised half: the tiles, then Storage | Support side by side, without their labels
+            // Under the card's title row, like the support card's; the content fills the
+            // height the row gives the card
+            storageCardSlot.addSubview(storageAnalysisView)
+            NSLayoutConstraint.activate([
+                storageAnalysisView.topAnchor.constraint(equalTo: storageTitleRow.bottomAnchor),
+                storageAnalysisView.leadingAnchor.constraint(equalTo: storageCardSlot.leadingAnchor),
+                storageAnalysisView.trailingAnchor.constraint(equalTo: storageCardSlot.trailingAnchor),
+                storageAnalysisView.bottomAnchor.constraint(lessThanOrEqualTo: storageCardSlot.bottomAnchor)
+            ])
+            // No section labels: the cards carry their own titles, and the raised half needs
+            // the height to fit above the fold
+            fill(storageRowColumn, [storageCardSlot])
+            fill(supportRowColumn, [supportCardView])
+            if isStacked {
+                // The raised half in the first pane, the base's grouped rows in the second
+                fill(firstPaneStack, [impactTilesView, storageSupportRow])
+                fill(secondPaneStack, splitSettingsGroups)
+                [storageRowColumn, supportRowColumn, firstPaneStack, secondPaneStack].forEach(applySplitSpacing)
+            } else {
+                // One scroll view: the raised half, then the base's grouped rows
+                fill(raisedHalfStack, [impactTilesView, storageSupportRow])
+                fill(contentStack, [raisedHalfStack] + splitSettingsGroups)
+                [storageRowColumn, supportRowColumn, raisedHalfStack, contentStack].forEach(applySplitSpacing)
+            }
+        case .sideBySide:
+            // No Support label: the card carries its own title, as upright
+            fill(firstPaneStack, [impactTilesView, storageAnalysisView, supportCardView])
+            fill(secondPaneStack, splitSettingsGroups)
+            [firstPaneStack, secondPaneStack].forEach(applySplitSpacing)
+        case .single:
+            fill(contentStack,
+                 [statsSectionLabel, impactStatsView, storageSectionLabel, storageAnalysisView]
+                 + settingsGroups
+                 + [supportSectionLabel, supportCard, helpLinksContainer]
+                 + aboutViews)
+        }
+    }
+
+    private static func makePaneScrollView() -> UIScrollView {
+        let scrollView = UIScrollView()
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.backgroundColor = .clear
+        scrollView.alwaysBounceVertical = true
+        // The column already starts below the bar and ends on the baseline; a system inset
+        // would leave the last card short of it
+        scrollView.contentInsetAdjustmentBehavior = .never
+        if #available(iOS 26.0, *) {
+            // Rows scrolling under the title fade out progressively, not under a solid band
+            scrollView.topEdgeEffect.style = .soft
+        }
+        return scrollView
+    }
+
+    private static func makePaneStack() -> UIStackView {
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.spacing = 24
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        return stack
     }
 
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
@@ -211,20 +676,44 @@ final class SettingsViewController: UIViewController {
 
         contentStack.translatesAutoresizingMaskIntoConstraints = false
         contentStack.axis = .vertical
-        contentStack.spacing = 24
+        contentStack.spacing = sectionSpacing
         scrollView.addSubview(contentStack)
+
+        view.addSubview(splitContainerView)
+        splitContainerView.addSubview(firstPaneScrollView)
+        splitContainerView.addSubview(secondPaneScrollView)
+        firstPaneScrollView.addSubview(firstPaneStack)
+        // It fits its height exactly, so it only scrolls when the content can't fit
+        firstPaneScrollView.alwaysBounceVertical = false
+        secondPaneScrollView.addSubview(secondPaneStack)
+        // Upright the base's scroll position drives the blur over its top edge
+        secondPaneScrollView.delegate = self
+        splitContainerView.addSubview(baseTopBlurView)
+        storageSupportRow.addArrangedSubview(storageRowColumn)
+        storageSupportRow.addArrangedSubview(supportRowColumn)
+        storageCardSlot.translatesAutoresizingMaskIntoConstraints = false
+        storageCardSlot.addSubview(storageTitleRow)
+        NSLayoutConstraint.activate([
+            storageTitleRow.topAnchor.constraint(equalTo: storageCardSlot.topAnchor, constant: 16),
+            storageTitleRow.leadingAnchor.constraint(equalTo: storageCardSlot.leadingAnchor, constant: 18),
+            storageTitleRow.trailingAnchor.constraint(lessThanOrEqualTo: storageCardSlot.trailingAnchor, constant: -18)
+        ])
+
+        supportCardView.configure(
+            title: Strings.supportTitle, message: Strings.supportText, tipTitle: Strings.supportButton,
+            rateTitle: Strings.rateAppTitle, feedbackTitle: Strings.giveFeedbackTitle)
+        supportCardView.onTip = { [weak self] in self?.tipJarBarButtonTapped() }
+        supportCardView.onRate = { [weak self] in self?.rateAppTapped() }
+        supportCardView.onFeedback = { [weak self] in self?.feedbackTapped() }
 
         statsSectionLabel.text = Strings.yourImpact
         statsSectionLabel.font = ThemeManager.Fonts.titleFont(size: 12, weight: .semibold)
         statsSectionLabel.textColor = .systemGray
-        contentStack.addArrangedSubview(statsSectionLabel)
 
-        contentStack.addArrangedSubview(impactStatsView)
 
         storageSectionLabel.text = Strings.storageAnalysis
         storageSectionLabel.font = ThemeManager.Fonts.titleFont(size: 12, weight: .semibold)
         storageSectionLabel.textColor = .systemGray
-        contentStack.addArrangedSubview(storageSectionLabel)
 
         storageAnalysisView.translatesAutoresizingMaskIntoConstraints = false
         storageAnalysisView.onRefreshTapped = { [weak self] in
@@ -232,12 +721,10 @@ final class SettingsViewController: UIViewController {
             self?.storageManager.startAnalysis()
         }
         storageAnalysisView.update(with: storageManager.currentState)
-        contentStack.addArrangedSubview(storageAnalysisView)
 
         photoSectionLabel.text = Strings.photoManagement
         photoSectionLabel.font = ThemeManager.Fonts.titleFont(size: 12, weight: .semibold)
         photoSectionLabel.textColor = .systemGray
-        contentStack.addArrangedSubview(photoSectionLabel)
 
         internetToggleContainer.backgroundColor = .cardBackground
         internetToggleContainer.layer.cornerRadius = 14
@@ -266,7 +753,6 @@ final class SettingsViewController: UIViewController {
 
         internetToggleContainer.addSubview(internetLabelsStack)
         internetToggleContainer.addSubview(internetSwitch)
-        contentStack.addArrangedSubview(internetToggleContainer)
 
         skipICloudToggleContainer.backgroundColor = .cardBackground
         skipICloudToggleContainer.layer.cornerRadius = 14
@@ -295,7 +781,6 @@ final class SettingsViewController: UIViewController {
 
         skipICloudToggleContainer.addSubview(skipICloudLabelsStack)
         skipICloudToggleContainer.addSubview(skipICloudSwitch)
-        contentStack.addArrangedSubview(skipICloudToggleContainer)
 
         remindersToggleContainer.backgroundColor = .cardBackground
         remindersToggleContainer.layer.cornerRadius = 14
@@ -373,11 +858,9 @@ final class SettingsViewController: UIViewController {
             themeColor: .systemGreen,
             buttonTitle: Strings.viewSourceCode, buttonImageName: "GitHub_Invertocat"
         ))
-        transparencyCard.onButtonTapped = {
-            if let url = URL(string: "https://github.com/zeynepmuslim/secure-photo-cleaner-app") {
-                UIApplication.shared.open(url)
-                HapticFeedbackManager.shared.impact(intensity: .light)
-            }
+        transparencyCard.onButtonTapped = { [weak self] in
+            self?.openSourceCode()
+            HapticFeedbackManager.shared.impact(intensity: .light)
         }
 
         supportCard.configure(with: SettingsInfoCardConfig(
@@ -396,12 +879,12 @@ final class SettingsViewController: UIViewController {
             themeColor: .systemBlue,
             buttonTitle: Strings.languageButton, buttonIconName: "gear"
         ))
-        languageCard.onButtonTapped = {
+        languageCard.onButtonTapped = { [weak self] in
             HapticFeedbackManager.shared.impact(intensity: .light)
-            if let url = URL(string: UIApplication.openSettingsURLString) {
-                UIApplication.shared.open(url)
-            }
+            self?.openAppSettings()
         }
+
+        setupGroupRows()
 
         helpLinksContainer.backgroundColor = .cardBackground
         helpLinksContainer.layer.cornerRadius = 14
@@ -440,62 +923,216 @@ final class SettingsViewController: UIViewController {
         storeSectionLabel.text = Strings.features
         storeSectionLabel.font = ThemeManager.Fonts.titleFont(size: 12, weight: .semibold)
         storeSectionLabel.textColor = .systemGray
-        contentStack.addArrangedSubview(storeSectionLabel)
 
-        contentStack.addArrangedSubview(remindersToggleContainer)
 
-        contentStack.addArrangedSubview(languageCard)
 
-        contentStack.addArrangedSubview(storeCard)
 
         transparencySectionLabel.text = Strings.transparencySafety
         transparencySectionLabel.font = ThemeManager.Fonts.titleFont(size: 12, weight: .semibold)
         transparencySectionLabel.textColor = .systemGray
-        contentStack.addArrangedSubview(transparencySectionLabel)
 
-        contentStack.addArrangedSubview(privacyCard)
 
-        contentStack.addArrangedSubview(transparencyCard)
 
         supportSectionLabel.text = Strings.support
         supportSectionLabel.font = ThemeManager.Fonts.titleFont(size: 12, weight: .semibold)
         supportSectionLabel.textColor = .systemGray
-        contentStack.addArrangedSubview(supportSectionLabel)
 
-        contentStack.addArrangedSubview(supportCard)
 
-        contentStack.addArrangedSubview(helpLinksContainer)
 
         aboutSectionLabel.text = Strings.about
         aboutSectionLabel.font = ThemeManager.Fonts.titleFont(size: 12, weight: .semibold)
         aboutSectionLabel.textColor = .systemGray
-        contentStack.addArrangedSubview(aboutSectionLabel)
-        contentStack.setCustomSpacing(12, after: aboutSectionLabel)
 
-        versionLabel.text = "\(Strings.version) 1.0"
+        versionLabel.text = "\(Strings.version) \(appVersion)"
         versionLabel.font = .systemFont(ofSize: 15, weight: .bold)
         versionLabel.textColor = .systemGray2
-        contentStack.addArrangedSubview(versionLabel)
-        contentStack.setCustomSpacing(4, after: versionLabel)
 
         madeByLabel.text = Strings.madeBy
         madeByLabel.font = .systemFont(ofSize: 13)
         madeByLabel.textColor = .systemGray2
-        contentStack.addArrangedSubview(madeByLabel)
+    }
+
+    /// The split layouts' grouped rows (board S3t). They drive the same settings as the
+    /// single column's cards; the update methods keep both in sync.
+    private func setupGroupRows() {
+        internetRow.configure(
+            iconName: "wifi", iconColor: .systemBlue, title: Strings.internetTitle,
+            subtitle: Strings.internetSubtitleShort, accessory: .toggle)
+        internetRow.onToggle = { [weak self] isOn in self?.setInternetAccess(isOn) }
+        skipICloudRow.configure(
+            iconName: "icloud.slash", iconColor: .systemGray, title: Strings.skipICloudTitle,
+            subtitle: Strings.skipICloudSubtitleShort, accessory: .toggle)
+        skipICloudRow.onToggle = { [weak self] isOn in self?.setSkipICloud(isOn) }
+        photoGroup.configure(rows: [internetRow, skipICloudRow])
+
+        remindersRow.configure(
+            iconName: "bell.fill", iconColor: .systemRed, title: Strings.remindersTitle, accessory: .toggle)
+        remindersRow.onToggle = { [weak self] isOn in self?.setReminders(isOn) }
+        scheduleMenuRow.configure(
+            iconName: "calendar", iconColor: .systemOrange, title: Strings.schedule, accessory: .text(""))
+        languageRow.configure(
+            iconName: "globe", iconColor: .systemBlue, title: Strings.languageTitle,
+            subtitle: Strings.languageSubtitle, accessory: .value(currentLanguageName, .external))
+        languageRow.onTap = { [weak self] in self?.openAppSettings() }
+        storeRow.configure(
+            iconName: "archivebox.fill", iconColor: ThemeManager.Colors.statusYellow, title: Strings.storeTitle,
+            subtitle: Strings.storeText, accessory: .navigation(.sheet))
+        storeRow.onTap = { [weak self] in
+            self?.present(StoreTutorialSheetViewController(), animated: true)
+        }
+        featuresGroup.configure(rows: [remindersRow, scheduleMenuRow, languageRow, storeRow])
+
+        privacyRow.configure(
+            iconName: "lock.shield", iconColor: .systemBlue, title: Strings.privacyTitle,
+            subtitle: Strings.privacyText, accessory: .navigation(.sheet))
+        privacyRow.onTap = { [weak self] in
+            self?.present(AskPermissionBoardingViewController(status: .noAction), animated: true)
+        }
+        sourceCodeRow.configure(
+            iconName: "checkmark.shield.fill", iconColor: .systemGreen, title: Strings.transparencyTitle,
+            subtitle: Strings.transparencyText, accessory: .navigation(.external))
+        sourceCodeRow.accessibilityHint = Strings.viewSourceCode
+        sourceCodeRow.onTap = { [weak self] in self?.openSourceCode() }
+        transparencyGroup.configure(rows: [privacyRow, sourceCodeRow])
+
+        versionRow.configure(
+            iconName: "info.circle", iconColor: .systemGray, title: Strings.version, accessory: .text(appVersion))
+        aboutGroup.configure(rows: [versionRow])
+    }
+
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+    }
+
+    /// The language the app runs in, named in that language's own locale ("English", "Türkçe")
+    private var currentLanguageName: String {
+        guard let code = Bundle.main.preferredLocalizations.first else { return "" }
+        let locale = Locale(identifier: code)
+        return locale.localizedString(forLanguageCode: code)?.capitalized(with: locale) ?? code
+    }
+
+    private func openAppSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    private func openSourceCode() {
+        guard let url = URL(string: "https://github.com/zeynepmuslim/secure-photo-cleaner-app") else { return }
+        UIApplication.shared.open(url)
     }
 
     private func setupConstraint() {
+        // The vertical scroll view spans the full width; its content's sides follow the safe
+        // area and, on iPhone Duo, Home's vertical-rail padding.
+        let contentEdges = DuoEdgeConstraints(
+            item: contentStack, in: view,
+            standardLeading: GeneralConstants.EdgePadding.content,
+            standardTrailing: GeneralConstants.EdgePadding.content)
+        // The fold panes run to the view's bottom edge; their content insets stop the last card
+        // on Home's bottom baseline (updatePaneInsets)
+        let splitEdges = DuoEdgeConstraints(
+            item: splitContainerView, in: view,
+            standardLeading: GeneralConstants.EdgePadding.content,
+            standardTrailing: GeneralConstants.EdgePadding.content)
+        duoEdges = [contentEdges, splitEdges]
+        NSLayoutConstraint.activate(contentEdges.initialConstraints + splitEdges.initialConstraints)
+
+        // The fold edges move to the fold's position on every layout pass (updateFoldSplit)
+        let first = firstPaneScrollView
+        let second = secondPaneScrollView
+        let container = splitContainerView
+        let edgeToVerticalFold = first.trailingAnchor.constraint(equalTo: view.leadingAnchor)
+        let gapAcrossVerticalFold = second.leadingAnchor.constraint(
+            equalTo: first.trailingAnchor, constant: sectionSpacing)
+        firstPaneEdgeToVerticalFold = edgeToVerticalFold
+        paneGapAcrossVerticalFold = gapAcrossVerticalFold
+
+        // Sideways: two columns, each the container's full height
+        let sideBySideConstraints = [
+            first.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            first.topAnchor.constraint(equalTo: container.topAnchor),
+            first.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            edgeToVerticalFold,
+            gapAcrossVerticalFold,
+            second.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            second.topAnchor.constraint(equalTo: container.topAnchor),
+            second.bottomAnchor.constraint(equalTo: container.bottomAnchor)
+        ]
+        // Upright: the raised half above the gap, the base from the gap to the bottom. The gap
+        // is the base's top inset, under the blur, so its rows blur away as they scroll up.
+        let edgeToHorizontalFold = first.bottomAnchor.constraint(equalTo: view.topAnchor)
+        firstPaneEdgeToHorizontalFold = edgeToHorizontalFold
+        let blurHeight = baseTopBlurView.heightAnchor.constraint(equalToConstant: 0)
+        baseTopBlurHeight = blurHeight
+        let stackedConstraints = [
+            first.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            first.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            first.topAnchor.constraint(equalTo: container.topAnchor),
+            edgeToHorizontalFold,
+            second.topAnchor.constraint(equalTo: first.bottomAnchor, constant: baseTopClearance),
+            second.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            second.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            second.bottomAnchor.constraint(equalTo: container.bottomAnchor)
+        ]
+        sideBySidePaneConstraints = sideBySideConstraints
+        stackedPaneConstraints = stackedConstraints
+        // Upright the raised half reaches the gap (its minimum height fully open, its pane
+        // partly folded); the Storage | Support row takes the extra height (lower hugging than
+        // the tiles), so the two cards end together at the gap
+        let raisedHalfHeight = raisedHalfStack.heightAnchor.constraint(greaterThanOrEqualToConstant: 0)
+        raisedHalfMinHeight = raisedHalfHeight
+        storageSupportRow.setContentHuggingPriority(.defaultLow - 2, for: .vertical)
+
+        // The first pane fits its height exactly: the stack is at least the pane's height minus
+        // its insets, and the lowest-hugging view (the impact tiles sideways, the Storage |
+        // Support row upright) takes up the difference
+        let firstPaneFill = firstPaneStack.heightAnchor.constraint(
+            greaterThanOrEqualTo: firstPaneScrollView.frameLayoutGuide.heightAnchor,
+            constant: -GeneralConstants.EdgePadding.medium)
+        firstPaneFillHeight = firstPaneFill
+        impactTilesView.setContentHuggingPriority(.defaultLow - 1, for: .vertical)
+
+        var columnConstraints: [NSLayoutConstraint] = [
+            // From the device's top edge, so rows scroll on up to it instead of being cut off
+            // below the bar; the panes' top insets (updatePaneInsets) start them below the bar
+            container.topAnchor.constraint(equalTo: view.topAnchor),
+            container.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            firstPaneFill,
+            raisedHalfHeight,
+            // Upright and partly folded, over the base's top edge (the gap)
+            baseTopBlurView.topAnchor.constraint(equalTo: second.topAnchor),
+            baseTopBlurView.leadingAnchor.constraint(equalTo: second.leadingAnchor),
+            baseTopBlurView.trailingAnchor.constraint(equalTo: second.trailingAnchor),
+            blurHeight,
+            storageRowColumn.widthAnchor.constraint(
+                equalTo: storageSupportRow.widthAnchor, multiplier: storageRowWidthRatio)
+        ]
+        for (columnScrollView, stack) in [(firstPaneScrollView, firstPaneStack),
+                                          (secondPaneScrollView, secondPaneStack)] {
+            columnConstraints += [
+                columnScrollView.contentLayoutGuide.widthAnchor.constraint(
+                    equalTo: columnScrollView.frameLayoutGuide.widthAnchor),
+
+                stack.topAnchor.constraint(
+                    equalTo: columnScrollView.contentLayoutGuide.topAnchor, constant: GeneralConstants.EdgePadding.medium),
+                // The last card rests on the baseline when scrolled to the end
+                stack.bottomAnchor.constraint(equalTo: columnScrollView.contentLayoutGuide.bottomAnchor),
+                stack.leadingAnchor.constraint(equalTo: columnScrollView.frameLayoutGuide.leadingAnchor),
+                stack.trailingAnchor.constraint(equalTo: columnScrollView.frameLayoutGuide.trailingAnchor)
+            ]
+        }
+        NSLayoutConstraint.activate(columnConstraints + sideBySideConstraints)
+
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            scrollView.contentLayoutGuide.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
 
-            contentStack.topAnchor.constraint(equalTo: scrollView.topAnchor, constant: 24),
-            contentStack.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor, constant: 20),
-            contentStack.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor, constant: -20),
-            contentStack.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor, constant: -24),
-            contentStack.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -40),
+            contentStack.topAnchor.constraint(
+                equalTo: scrollView.contentLayoutGuide.topAnchor, constant: contentStackTopPadding),
+            contentStack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -24),
 
             internetToggleContainer.heightAnchor.constraint(greaterThanOrEqualToConstant: 70),
 
@@ -564,46 +1201,62 @@ final class SettingsViewController: UIViewController {
     }
 
     func scrollToInternetToggle() {
-        let targetY = internetToggleContainer.convert(.zero, to: scrollView).y
+        // Split at the fold the grouped rows show the toggle: in the second pane sideways (the
+        // trailing column) and upright partly folded (the base), else in the one scroll view
+        let usesPanes = splitLayout == .sideBySide || splitLayout == .uprightPanes
+        let scrollView = usesPanes ? secondPaneScrollView : self.scrollView
+        let target: UIView = splitLayout != .single ? photoGroup : internetToggleContainer
+        let targetY = target.convert(CGPoint.zero, to: scrollView).y
         let topInset = scrollView.adjustedContentInset.top
         let maxOffsetY = scrollView.contentSize.height - scrollView.bounds.height + scrollView.contentInset.bottom
-        let offsetY = min(max(targetY - topInset - 16, 0), max(maxOffsetY, 0))
+        let offsetY = min(max(targetY - topInset - 16, -topInset), max(maxOffsetY, -topInset))
         scrollView.setContentOffset(CGPoint(x: 0, y: offsetY), animated: true)
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-            self.highlightInternetToggle()
+            self.highlight(target)
         }
     }
 
-    private func highlightInternetToggle() {
+    private func highlight(_ target: UIView) {
         HapticFeedbackManager.shared.impact(intensity: .medium)
 
-        let originalColor = internetToggleContainer.backgroundColor
-        let originalBorderWidth = internetToggleContainer.layer.borderWidth
-        let originalBorderColor = internetToggleContainer.layer.borderColor
+        let originalColor = target.backgroundColor
+        let originalBorderWidth = target.layer.borderWidth
+        let originalBorderColor = target.layer.borderColor
 
         UIView.animate(withDuration: 0.3, animations: {
-            self.internetToggleContainer.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.15)
-            self.internetToggleContainer.layer.borderWidth = 2
-            self.internetToggleContainer.layer.borderColor = UIColor.systemBlue.cgColor
+            target.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.15)
+            target.layer.borderWidth = 2
+            target.layer.borderColor = UIColor.systemBlue.cgColor
         }) { _ in
             UIView.animate(withDuration: 0.8, delay: 0.6) {
-                self.internetToggleContainer.backgroundColor = originalColor
-                self.internetToggleContainer.layer.borderWidth = originalBorderWidth
-                self.internetToggleContainer.layer.borderColor = originalBorderColor
+                target.backgroundColor = originalColor
+                target.layer.borderWidth = originalBorderWidth
+                target.layer.borderColor = originalBorderColor
             }
         }
     }
 
     @objc private func internetSwitchChanged() {
-        settingsStore.allowInternetAccess = internetSwitch.isOn
-        HapticFeedbackManager.shared.impact(intensity: .medium)
-        updateSkipICloudVisibility()
+        setInternetAccess(internetSwitch.isOn)
     }
 
     @objc private func skipICloudSwitchChanged() {
-        settingsStore.skipICloudPhotos = skipICloudSwitch.isOn
+        setSkipICloud(skipICloudSwitch.isOn)
+    }
+
+    // The card switches (single column) and the group rows (split layouts) share these paths
+
+    private func setInternetAccess(_ isOn: Bool) {
+        settingsStore.allowInternetAccess = isOn
         HapticFeedbackManager.shared.impact(intensity: .medium)
+        updateInternetToggleState()
+    }
+
+    private func setSkipICloud(_ isOn: Bool) {
+        settingsStore.skipICloudPhotos = isOn
+        HapticFeedbackManager.shared.impact(intensity: .medium)
+        updateSkipICloudToggleState()
     }
 
     @objc private func tipJarBarButtonTapped() {
@@ -616,8 +1269,10 @@ final class SettingsViewController: UIViewController {
     }
 
     @objc private func remindersSwitchChanged() {
-        let isOn = remindersSwitch.isOn
+        setReminders(remindersSwitch.isOn)
+    }
 
+    private func setReminders(_ isOn: Bool) {
         if isOn {
             ReminderNotificationService.shared.requestAuthorization { [weak self] granted in
                 guard let self = self else { return }
@@ -626,17 +1281,16 @@ final class SettingsViewController: UIViewController {
                     ReminderNotificationService.shared.scheduleReminders()
                 } else {
                     self.settingsStore.remindersEnabled = false
-                    self.remindersSwitch.isOn = false
                     self.showRemindersDeniedAlert()
                 }
 
-                self.updateSchedulePickerVisibility()
+                self.updateRemindersToggleState()
             }
         } else {
             settingsStore.remindersEnabled = false
             ReminderNotificationService.shared.syncScheduleIfNeeded()
 
-            updateSchedulePickerVisibility()
+            updateRemindersToggleState()
         }
 
         HapticFeedbackManager.shared.impact(intensity: .medium)
@@ -649,6 +1303,7 @@ final class SettingsViewController: UIViewController {
     private func updateInternetToggleState() {
         let isOn = settingsStore.allowInternetAccess
         if internetSwitch.isOn != isOn { internetSwitch.isOn = isOn }
+        internetRow.setToggleOn(isOn)
 
         internetSwitch.onTintColor = .systemGreen
 
@@ -658,6 +1313,7 @@ final class SettingsViewController: UIViewController {
     private func updateSkipICloudToggleState() {
         let isOn = settingsStore.skipICloudPhotos
         if skipICloudSwitch.isOn != isOn { skipICloudSwitch.isOn = isOn }
+        skipICloudRow.setToggleOn(isOn)
 
         skipICloudSwitch.onTintColor = .systemGreen
 
@@ -667,6 +1323,7 @@ final class SettingsViewController: UIViewController {
     private func updateSkipICloudVisibility() {
         let shouldShow = !settingsStore.allowInternetAccess
         let shouldHide = !shouldShow
+        photoGroup.setRow(skipICloudRow, hidden: shouldHide, animated: hasBuiltContent)
         guard skipICloudToggleContainer.isHidden != shouldHide else { return }
         UIView.animate(withDuration: 0.3) {
             self.skipICloudToggleContainer.isHidden = shouldHide
@@ -678,6 +1335,7 @@ final class SettingsViewController: UIViewController {
     private func updateRemindersToggleState() {
         let isOn = settingsStore.remindersEnabled
         if remindersSwitch.isOn != isOn { remindersSwitch.isOn = isOn }
+        remindersRow.setToggleOn(isOn, animated: hasBuiltContent)
 
         remindersSwitch.onTintColor = .systemGreen
 
@@ -731,13 +1389,17 @@ final class SettingsViewController: UIViewController {
             self?.applySchedulePreset(.monthlyFirstEvening)
         }
 
-        scheduleButton.menu = UIMenu(children: [dailyAction, weeklyAction, monthlyAction])
+        let menu = UIMenu(children: [dailyAction, weeklyAction, monthlyAction])
+        scheduleButton.menu = menu
 
+        let title: String
         switch currentFrequency {
-        case .daily: scheduleButton.setTitle(Strings.daily, for: .normal)
-        case .weekly: scheduleButton.setTitle(Strings.weekly, for: .normal)
-        case .monthly: scheduleButton.setTitle(Strings.monthly, for: .normal)
+        case .daily: title = Strings.daily
+        case .weekly: title = Strings.weekly
+        case .monthly: title = Strings.monthly
         }
+        scheduleButton.setTitle(title, for: .normal)
+        scheduleMenuRow.setMenu(title: title, menu: menu)
     }
 
     private func applySchedulePreset(_ preset: SettingsStore.ReminderSchedulePreset) {
@@ -754,6 +1416,7 @@ final class SettingsViewController: UIViewController {
     private func updateSchedulePickerVisibility() {
         let shouldShow = settingsStore.remindersEnabled
         let shouldHide = !shouldShow
+        featuresGroup.setRow(scheduleMenuRow, hidden: shouldHide, animated: hasBuiltContent)
         guard scheduleRow.isHidden != shouldHide else { return }
         UIView.animate(withDuration: 0.3) {
             self.scheduleRow.isHidden = shouldHide
@@ -815,6 +1478,24 @@ final class SettingsViewController: UIViewController {
     }
 
 }
+
+// MARK: - UIScrollViewDelegate
+
+extension SettingsViewController: UIScrollViewDelegate {
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        guard scrollView === secondPaneScrollView else { return }
+        updateBaseTopBlur()
+    }
+
+    /// Upright and partly folded: the blur over the gap shows only as far as the base's rows have scrolled under it
+    private func updateBaseTopBlur() {
+        guard splitLayout == .uprightPanes else { return }
+        let scrolled = secondPaneScrollView.contentOffset.y + secondPaneScrollView.adjustedContentInset.top
+        baseTopBlurView.setContentOverlap(scrolled)
+    }
+}
+
+// MARK: - MFMailComposeViewControllerDelegate
 
 extension SettingsViewController: MFMailComposeViewControllerDelegate {
     func mailComposeController(

@@ -9,7 +9,7 @@ import UIKit
 
 /// A rounded white tray with a full-width Store key on top and two equal keys below it, Delete
 /// (leading) and Keep (trailing). Same segment look as ActionGripView. MonthReview shows it on the
-/// base in the iPhone Duo table pose; the keys run the same code as an up, left or right swipe.
+/// base in the iPhone Duo table layout; the keys run the same code as an up, left or right swipe.
 final class TablePoseKeysView: UIView {
 
     var onStore: (() -> Void)?
@@ -90,10 +90,10 @@ final class TablePoseKeysView: UIView {
 
     private func setupConstraint() {
         let inset = GeneralConstants.ActionGrip.inset
-        // The Store key gives way first when the base is short
-        let storeHeight = storeButton.heightAnchor.constraint(
-            equalToConstant: GeneralConstants.ActionGrip.storeSegmentHeight)
-        storeHeight.priority = .defaultHigh
+        // Store and the Delete | Keep row share the tray evenly; Store stops growing at its segment
+        // height, so a tall tray gives the extra room to Delete and Keep
+        let equalRows = storeButton.heightAnchor.constraint(equalTo: primaryRow.heightAnchor)
+        equalRows.priority = .defaultHigh
 
         NSLayoutConstraint.activate([
             stackView.topAnchor.constraint(equalTo: topAnchor, constant: inset),
@@ -101,7 +101,9 @@ final class TablePoseKeysView: UIView {
             stackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -inset),
             stackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -inset),
 
-            storeHeight,
+            equalRows,
+            storeButton.heightAnchor.constraint(
+                lessThanOrEqualToConstant: GeneralConstants.ActionGrip.storeSegmentHeight),
             storeButton.heightAnchor.constraint(greaterThanOrEqualToConstant: Layout.minimumKeyHeight),
             primaryRow.heightAnchor.constraint(greaterThanOrEqualToConstant: Layout.minimumKeyHeight)
         ])

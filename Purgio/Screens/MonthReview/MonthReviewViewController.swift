@@ -44,7 +44,7 @@ enum FilterContext {
     case timeLapse
 }
 
-/// Which control fills the base in the iPhone Duo table pose (see +TablePose).
+/// Which control fills the base in the iPhone Duo table layout (see +TablePose).
 /// Persisted in `SettingsStore.tablePoseControlsLayout`.
 enum TablePoseControlsLayout: String {
     /// A swipe area that drives the raised card like a direct swipe.
@@ -145,16 +145,25 @@ final class MonthReviewViewController: UIViewController {
         static let landscapeCardRatioRange: ClosedRange<CGFloat> = (9.0 / 16.0)...(16.0 / 9.0)
         /// Clearance between the iPhone Duo fold and the content on either side of it (see +Fold, +TablePose).
         static let foldGap: CGFloat = 12
+        /// Upright inner display fully open (table layout): the base's height over the deck's, so the
+        /// deck gets about 70% and the keys 30% of the room between the stats and the bottom row.
+        static let openTableBaseToDeckRatio: CGFloat = 0.3 / 0.7
     }
 
     // iPhone Duo fold layout (see +Fold): constraint sets swapped by pose
     var flatLayoutConstraints: [NSLayoutConstraint] = []
     var tablePoseLayoutConstraints: [NSLayoutConstraint] = []
+    /// Inside the table layout: the split at the fold (partly folded) or the 70/30 split (fully open).
+    var tableFoldedConstraints: [NSLayoutConstraint] = []
+    var tableOpenConstraints: [NSLayoutConstraint] = []
     var cardBottomToFoldConstraint: NSLayoutConstraint?
     var playPauseCenterXConstraint: NSLayoutConstraint?
     var undoHistoryEqualWidthConstraint: NSLayoutConstraint?
     var undoTrailingToFoldConstraint: NSLayoutConstraint?
-    var currentFoldPose: FoldRegion.Pose = .flat
+    /// The table layout is showing: the table pose, or the upright inner display fully open (+TablePose).
+    var isTableLayoutActive = false
+    /// The table layout is showing while partly folded (the table pose), not fully open.
+    var isTableLayoutFolded = false
     var duoEdges: [DuoEdgeConstraints] = []
     /// Edges of the loading skeleton; cleared when it's removed.
     var skeletonDuoEdges: [DuoEdgeConstraints] = []
@@ -196,7 +205,7 @@ final class MonthReviewViewController: UIViewController {
     var isPromotingDeck = false
     var didRequestBarRelayoutForCamera = false
 
-    // iPhone Duo table pose (see +TablePose): the controls on the base below the fold
+    // iPhone Duo table layout (see +TablePose): the controls on the base below the fold
     let tableBaseGuide = UILayoutGuide()
     let tableBaseContainerView: UIView = {
         let view = UIView()

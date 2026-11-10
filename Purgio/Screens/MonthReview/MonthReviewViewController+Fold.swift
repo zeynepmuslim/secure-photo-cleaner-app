@@ -11,8 +11,12 @@ import UIKit
 // - Vertical fold (book pose, and fully open so the row doesn't jump): undo ends before
 //   the fold and history starts after it. The card stays (it is content); the centered
 //   video play button moves to the larger side of the fold while folded.
-// - Table pose: stats + card on the raised half, the base controls below the fold (+TablePose).
+// - Table layout (table pose, and the upright inner display fully open, board O2): stats + card
+//   above the horizontal fold, the base controls below it (+TablePose, tableLayoutFold()).
 //   The deck fans out there like sideways (+Landscape), so the next cards show behind the top one.
+//   Partly folded the split is at the fold; fully open the deck gets about 70% and the keys 30%.
+//   Folding and unfolding animate between the two and switch the base between the keys (fully
+//   open) and the saved control (partly folded). It switches on or off as a whole.
 // Same controls, actions and gestures in every pose.
 extension MonthReviewViewController {
 
@@ -22,17 +26,18 @@ extension MonthReviewViewController {
 
     func updateFoldLayout() {
         // The main UI is built after the first appearance (the push lays out before it). Until then
-        // there's nothing to place, and recording the pose early would skip the first real switch.
+        // there's nothing to place, and recording the layout early would skip the first real switch.
         guard cardContainerView.superview != nil else { return }
         let fold = FoldRegion.activeFold(in: view)
         let pose = FoldRegion.pose(for: fold)
         // The sideways layout splits its own row and video controls at the fold (+Landscape)
         if isLandscapeDeckActive {
-            applyFoldPose(pose == .table ? .flat : pose, fold: fold)
+            applyTableLayout(fold: nil, isFolded: false)
             updateLandscapeFoldSplit()
             return
         }
-        applyFoldPose(pose, fold: fold)
+        applyTableLayout(fold: tableLayoutFold(), isFolded: pose == .table)
+        // The real pose: a horizontal fold (table layout) never moves the play button or splits the row
         updatePlayPauseFoldOffset(fold: pose == .book ? fold : nil)
         updateControlsFoldSplit()
     }
@@ -76,8 +81,25 @@ extension MonthReviewViewController {
         }
     }
 
-    private func applyFoldPose(_ pose: FoldRegion.Pose, fold: CGRect?) {
-        if pose == .table, let fold = fold {
+    /// Sideways ↔ upright (+Landscape): switches the table layout in the same pass and without
+    /// animation, so the deck doesn't animate out of the old layout after the new one is laid out.
+    func syncTableLayoutWithoutAnimation() {
+        guard cardContainerView.superview != nil else { return }
+        let isFolded = FoldRegion.pose(for: FoldRegion.activeFold(in: view)) == .table
+        applyTableLayout(
+            fold: isLandscapeDeckActive ? nil : tableLayoutFold(), isFolded: isFolded && !isLandscapeDeckActive,
+            animated: false)
+    }
+
+    /// Places the table layout at `fold` on every pass (constants only). Turning it on or off swaps
+    /// the constraint sets, shows or hides the base and re-fans the deck. Folding or unfolding while
+    /// it's on swaps the split (at the fold, or 70/30 fully open), resizes the deck and switches the
+    /// base's control and the Layout bar item (+TablePose).
+    private func applyTableLayout(fold: CGRect?, isFolded: Bool, animated: Bool = true) {
+        let wasFolded = isTableLayoutFolded
+        // Before the views are set up, so the base starts with the right control
+        isTableLayoutFolded = fold != nil && isFolded
+        if let fold = fold {
             // Before the constants below, so the base's constraints exist the first time
             setupTablePoseViewsIfNeeded()
             let cardBottom = fold.minY - Layout.foldGap
@@ -87,24 +109,53 @@ extension MonthReviewViewController {
             updateTableBase(fold: fold)
         }
 
-        let wasTable = currentFoldPose == .table
-        let isTable = pose == .table
-        currentFoldPose = pose
-        guard wasTable != isTable else { return }
+        let isTable = fold != nil
+        guard isTableLayoutActive != isTable else {
+            if isTable, wasFolded != isTableLayoutFolded {
+                updateTableSplitConstraints()
+                updateTableControlsForFold(animated: animated && view.window != nil)
+                relayoutDeckForTableLayoutChange(animated: animated)
+            }
+            return
+        }
+        isTableLayoutActive = isTable
 
         if isTable {
             NSLayoutConstraint.deactivate(flatLayoutConstraints)
             NSLayoutConstraint.activate(tablePoseLayoutConstraints)
+            updateTableSplitConstraints()
         } else {
+            updateTableSplitConstraints()
             NSLayoutConstraint.deactivate(tablePoseLayoutConstraints)
             NSLayoutConstraint.activate(flatLayoutConstraints)
         }
         setTablePoseControlsVisible(isTable)
-        setTableLayoutBarItemVisible(isTable)
+        updateTableControlsForFold(animated: false)
         applyScreenBackground()
+        relayoutDeckForTableLayoutChange(animated: animated)
+    }
 
-        // The raised half shows the deck as a fan (+Landscape); flat it's the standard stack again
+    /// Activates the table layout's split for the fold state: at the fold while partly folded, the
+    /// 70/30 split while fully open, neither outside the table layout.
+    private func updateTableSplitConstraints() {
+        let active = isTableLayoutActive
+            ? (isTableLayoutFolded ? tableFoldedConstraints : tableOpenConstraints)
+            : []
+        let inactive = (tableFoldedConstraints + tableOpenConstraints).filter { constraint in
+            constraint.isActive && !active.contains { $0 === constraint }
+        }
+        NSLayoutConstraint.deactivate(inactive)
+        NSLayoutConstraint.activate(active.filter { !$0.isActive })
+    }
+
+    /// Lays the card area out again and re-sizes and re-fans the cards inside it (+Landscape).
+    private func relayoutDeckForTableLayoutChange(animated: Bool) {
         guard view.window != nil else {
+            refreshCardsForLayoutChange()
+            return
+        }
+        guard animated else {
+            view.layoutIfNeeded()
             refreshCardsForLayoutChange()
             return
         }

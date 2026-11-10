@@ -103,7 +103,7 @@ final class SettingsStore {
 
     // MARK: - iPhone Duo Table Pose
 
-    /// The control MonthReview shows on the base in the iPhone Duo table pose. Defaults to the trackpad.
+    /// The control MonthReview shows on the base in the iPhone Duo table layout. Defaults to the trackpad.
     var tablePoseControlsLayout: TablePoseControlsLayout {
         get {
             guard defaults.object(forKey: tablePoseControlsLayoutKey) != nil,

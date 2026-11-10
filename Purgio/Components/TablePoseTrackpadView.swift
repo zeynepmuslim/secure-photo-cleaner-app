@@ -10,7 +10,7 @@ import UIKit
 /// A rounded white tray with a dashed swipe pad and the three directions around it: Store
 /// (archivebox, yellow) on top, Delete (trash, red) on the left, Keep (checkmark, green) on the
 /// right, a hint at the bottom. The sides are physical, like the drag (forced left-to-right).
-/// MonthReview shows it on the base in the iPhone Duo table pose: `panGesture` drives the raised card exactly like a direct swipe. A mini box at the
+/// MonthReview shows it on the base in the iPhone Duo table layout: `panGesture` drives the raised card exactly like a direct swipe. A mini box at the
 /// top card's aspect ratio sits in the pad (`setPreview`) and follows its drag (`setPreviewTransform`).
 final class TablePoseTrackpadView: UIView {
 

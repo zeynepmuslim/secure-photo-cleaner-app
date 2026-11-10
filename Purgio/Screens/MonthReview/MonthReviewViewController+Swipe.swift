@@ -76,7 +76,7 @@ extension MonthReviewViewController {
             }
 
         case .ended, .cancelled:
-            // The table pose ended under a trackpad drag (+TablePose): put the card back
+            // The table layout ended under a trackpad drag (+TablePose): put the card back
             if isCancelledTrackpadDrag(gesture) {
                 springBackTopCard(topCard)
                 return

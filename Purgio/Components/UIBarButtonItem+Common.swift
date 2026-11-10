@@ -38,7 +38,7 @@ extension UIBarButtonItem {
         return item
     }
 
-    /// MonthReview's iPhone Duo table-pose Layout item: its menu picks the swipe area or the keys.
+    /// MonthReview's iPhone Duo table-layout Layout item: its menu picks the swipe area or the keys.
     /// The image shows the current choice.
     static func tableLayoutItem(title: String, layout: TablePoseControlsLayout, menu: UIMenu) -> UIBarButtonItem {
         let item = UIBarButtonItem(title: title, image: tableLayoutImage(for: layout), primaryAction: nil, menu: menu)

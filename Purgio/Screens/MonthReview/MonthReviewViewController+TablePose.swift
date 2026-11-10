@@ -23,16 +23,18 @@ private enum Strings {
         "monthReview.tableLayout", comment: "iPhone Duo table pose: bar button that picks the controls layout")
 }
 
-// iPhone Duo table pose (upright inner display, partly folded, horizontal fold), boards T1 / T4:
-// - Raised half: the stats label at the top, then the card deck down to the fold. The card keeps
-//   its own pan gesture.
-// - Base: the selected control (tableBaseGuide, from the fold + 12 down to the bottom row − 12),
-//   with the card's side edges (safe area, EdgePadding.content, rail).
+// iPhone Duo table layout, boards T1 / T4: the table pose (upright inner display, partly folded,
+// horizontal fold) and, board O2, the upright inner display fully open (tableLayoutFold()):
+// - Top: the stats pill, then the card deck, down to the fold while partly folded (the raised
+//   half) or to the base while fully open. The card keeps its own pan gesture.
+// - Base: the control (tableBaseGuide, down to the bottom row − 12), with the card's side edges
+//   (safe area, EdgePadding.content, rail). Partly folded it starts at the fold + 12; fully open
+//   it takes about 30% of the room and the deck 70% (tableOpenConstraints).
 // - The bottom row (Undo, History, bin) stays as it is.
-// Flat, book, sideways (+Landscape) and the cover display never activate this.
+// The book pose, sideways (+Landscape), the cover display and Split View never activate this.
 extension MonthReviewViewController {
 
-    /// Builds the base guide and its container once, the first time the table pose shows.
+    /// Builds the base guide and its container once, the first time the table layout shows.
     /// Its constraints join `tablePoseLayoutConstraints`, so +Fold swaps them with the rest.
     func setupTablePoseViewsIfNeeded() {
         guard !hasSetupTablePoseViews, cardContainerView.superview != nil else { return }
@@ -63,14 +65,20 @@ extension MonthReviewViewController {
 
         tableBaseContainerView.addSubview(tablePoseTrackpadView)
         tableBaseContainerView.addSubview(tablePoseKeysView)
-        showTablePoseControls(settingsStore.tablePoseControlsLayout)
+        showTablePoseControls(currentTableControlsLayout)
 
-        // Moved below the fold on every layout pass (+Fold)
+        // Partly folded: moved below the fold on every layout pass (+Fold)
         let baseTop = tableBaseGuide.topAnchor.constraint(equalTo: view.topAnchor)
         tableBaseTopConstraint = baseTop
+        tableFoldedConstraints.append(baseTop)
+        // Fully open: the deck ends above the base, which takes about 30% of the room
+        tableOpenConstraints = [
+            cardContainerView.bottomAnchor.constraint(equalTo: tableBaseGuide.topAnchor, constant: -Layout.foldGap),
+            tableBaseGuide.heightAnchor.constraint(
+                equalTo: cardContainerView.heightAnchor, multiplier: Layout.openTableBaseToDeckRatio)
+        ]
 
         tablePoseLayoutConstraints += [
-            baseTop,
             tableBaseGuide.bottomAnchor.constraint(
                 equalTo: bottomControlsStack.topAnchor, constant: -Layout.foldGap),
             // The card's edges follow the safe area and the rail (DuoEdgeConstraints)
@@ -93,16 +101,65 @@ extension MonthReviewViewController {
         }
     }
 
+    /// The fold the table layout splits at (board O2), or nil when the standard layout applies.
+    /// - Partly folded with a horizontal fold: the active fold (the table pose).
+    /// - Fully open, upright inner display: the inactive horizontal fold, when it splits the view
+    ///   into two usable halves, so the layout stays on while the device folds and unfolds.
+    /// Never sideways (+Landscape wins), on the cover display, in Split View or at a vertical fold.
+    /// Read on every layout pass; FoldRegion returns nil before iOS 27.1.
+    func tableLayoutFold() -> CGRect? {
+        if let fold = FoldRegion.activeFold(in: view), FoldRegion.pose(for: fold) == .table {
+            return fold
+        }
+        if let fold = FoldRegion.splittingFold(in: view), fold.width > fold.height,
+           !isLandscapeDeckActive, traitCollection.horizontalSizeClass == .regular {
+            return fold
+        }
+        return nil
+    }
+
+    /// The control on the base: the saved choice while partly folded. Fully open the card itself can
+    /// be swiped, so the base always shows the keys.
+    var currentTableControlsLayout: TablePoseControlsLayout {
+        isTableLayoutFolded ? settingsStore.tablePoseControlsLayout : .keys
+    }
+
+    /// Folding or unfolding under the table layout, and turning it on or off: shows the base's
+    /// control for the fold state and the Layout bar item only while partly folded (fully open has
+    /// a single choice). Cross-dissolves only when the control changes. Leaving the trackpad mid-drag
+    /// cancels it, so handlePan springs the card back.
+    func updateTableControlsForFold(animated: Bool) {
+        setTableLayoutBarItemVisible(isTableLayoutActive && isTableLayoutFolded)
+        guard hasSetupTablePoseViews else { return }
+        let layout = currentTableControlsLayout
+        if layout != .trackpad { tablePoseTrackpadView.cancelActiveDrag() }
+        // The keys both folded and open: the same view only resizes with the deck (+Fold)
+        let shownControl: UIView = layout == .trackpad ? tablePoseTrackpadView : tablePoseKeysView
+        guard shownControl.isHidden else { return }
+        guard animated else {
+            showTablePoseControls(layout)
+            return
+        }
+        UIView.transition(
+            with: tableBaseContainerView, duration: 0.25,
+            options: [.transitionCrossDissolve, .allowUserInteraction]
+        ) {
+            self.showTablePoseControls(layout)
+        }
+    }
+
     /// Shows the trackpad or the keys on the base.
     func showTablePoseControls(_ layout: TablePoseControlsLayout) {
         tablePoseTrackpadView.isHidden = layout != .trackpad
         tablePoseKeysView.isHidden = layout != .keys
+        if layout == .trackpad { updateTablePosePreview() }
     }
 
     // MARK: - Layout Menu
 
-    /// Adds or removes the Layout bar item. Called only when the table pose starts or ends,
-    /// never on every layout pass. Other items (the filter progress ring) stay where they are.
+    /// Adds or removes the Layout bar item. Called only when the table layout starts or ends or the
+    /// device folds or unfolds under it, never on every layout pass. Other items (the filter
+    /// progress ring) stay where they are.
     func setTableLayoutBarItemVisible(_ isVisible: Bool) {
         var items = navigationItem.rightBarButtonItems ?? []
         if isVisible {
@@ -145,7 +202,7 @@ extension MonthReviewViewController {
             with: tableBaseContainerView, duration: 0.25,
             options: [.transitionCrossDissolve, .allowUserInteraction]
         ) {
-            self.showTablePoseControls(layout)
+            self.showTablePoseControls(self.currentTableControlsLayout)
         }
         tableLayoutBarItem?.image = UIBarButtonItem.tableLayoutImage(for: layout)
         tableLayoutBarItem?.menu = makeTableLayoutMenu()
@@ -167,7 +224,8 @@ extension MonthReviewViewController {
         }
     }
 
-    /// Places the base just below the fold. Called on every layout pass in table pose.
+    /// Places the base just below the fold. Called on every layout pass in the table layout; only
+    /// partly folded uses it (tableFoldedConstraints).
     func updateTableBase(fold: CGRect) {
         let top = fold.maxY + Layout.foldGap
         guard let constraint = tableBaseTopConstraint, constraint.constant != top else { return }
@@ -175,7 +233,7 @@ extension MonthReviewViewController {
     }
 
     func setTablePoseControlsVisible(_ isVisible: Bool) {
-        // Leaving the table pose mid-drag: cancel, so handlePan springs the card back
+        // Leaving the table layout mid-drag: cancel, so handlePan springs the card back
         if !isVisible { tablePoseTrackpadView.cancelActiveDrag() }
         tableBaseContainerView.isHidden = !isVisible
         if isVisible { updateTablePosePreview() }

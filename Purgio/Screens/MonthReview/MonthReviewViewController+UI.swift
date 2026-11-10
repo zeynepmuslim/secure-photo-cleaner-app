@@ -109,8 +109,8 @@ extension MonthReviewViewController {
         view.addSubview(bottomControlsStack)
         bottomControlsStack.alpha = 0
 
-        // Stats on top, card, controls at the bottom. The table-pose set (iPhone Duo) keeps the
-        // stats and the card on the raised half, down to the fold; +TablePose adds the base.
+        // Stats on top, card, controls at the bottom. The table-layout set (iPhone Duo) keeps the
+        // stats and the card above the fold; +TablePose adds the base.
         let cardBottomToControls = cardContainerView.bottomAnchor.constraint(
             equalTo: bottomControlsStack.topAnchor, constant: -Layout.cardToControlsGap)
         cardBottomToControlsConstraint = cardBottomToControls
@@ -123,9 +123,10 @@ extension MonthReviewViewController {
         cardBottomToFoldConstraint = cardBottomToFold
         tablePoseLayoutConstraints = [
             statsLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 4),
-            cardContainerView.topAnchor.constraint(equalTo: statsLabel.bottomAnchor, constant: 16),
-            cardBottomToFold
+            cardContainerView.topAnchor.constraint(equalTo: statsLabel.bottomAnchor, constant: 16)
         ]
+        // Partly folded the card ends at the fold; +TablePose adds the base's half of each set
+        tableFoldedConstraints = [cardBottomToFold]
         NSLayoutConstraint.activate(flatLayoutConstraints)
 
         // Side and bottom edges follow Home's vertical-rail padding on iPhone Duo

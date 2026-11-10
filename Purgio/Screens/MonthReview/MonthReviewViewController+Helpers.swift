@@ -99,7 +99,7 @@ extension MonthReviewViewController {
 
         cleanupVideo()
         cardContainerView.alpha = 0
-        // The table-pose base controls follow the deck (+TablePose)
+        // The table-layout base controls follow the deck (+TablePose)
         tableBaseContainerView.alpha = 0
         videoController.playPauseButton.alpha = 0
         videoController.controlsContainer.alpha = 0

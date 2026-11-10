@@ -27,13 +27,14 @@ private enum Strings {
 //   A video fills the card area and its controls split into two capsules at the fold.
 // - The bottom row splits at the fold: Undo + History before it, the global bin button's slot
 //   after it.
-// The cover display and the upright inner display keep the standard layout.
+// The cover display keeps the standard layout; the upright inner display uses the table layout
+// (+TablePose) or the standard one.
 extension MonthReviewViewController {
 
-    /// Sideways (grips, pills) and in the table pose (the base's tray) the controls are white cards,
+    /// Sideways (grips, pills) and in the table layout (the base's tray) the controls are white cards,
     /// so the screen gets the grouped background.
     var screenBackgroundColor: UIColor {
-        isLandscapeDeckActive || currentFoldPose == .table ? .mainBackground : .systemBackground
+        isLandscapeDeckActive || isTableLayoutActive ? .mainBackground : .systemBackground
     }
 
     /// The cards that make up the deck's layout. While the top card flies off it's left out, so
@@ -42,10 +43,10 @@ extension MonthReviewViewController {
         isPromotingDeck ? Array(cardStack.dropLast()) : cardStack
     }
 
-    /// Sideways and in the table pose (a wide, short card area on the raised half) the deck is a
+    /// Sideways and in the table layout (a wide, short card area above the fold) the deck is a
     /// fan of cards, each hugging its own photo, instead of the standard full-size stack.
     var usesFannedDeckLayout: Bool {
-        isLandscapeDeckActive || currentFoldPose == .table
+        isLandscapeDeckActive || isTableLayoutActive
     }
 
     /// With a photo on top the cards fan out to the sides, each at its own photo's size.
@@ -73,6 +74,8 @@ extension MonthReviewViewController {
             } else {
                 exitLandscapeDeck()
             }
+            // The upright inner display may use the table layout (+TablePose): hand over in this pass
+            syncTableLayoutWithoutAnimation()
             view.layoutIfNeeded()
         }
     }

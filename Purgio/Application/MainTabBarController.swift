@@ -26,8 +26,9 @@ enum BinButtonPlacement: Equatable {
     /// Floating at the trailing bottom (wide on Delete Bin).
     case standard
     /// A slot a screen lays out in its own bottom row, in window coordinates
-    /// (MonthReview on the iPhone Duo's inner display held sideways).
-    case slot(CGRect)
+    /// (MonthReview held sideways and MonthFilterCards on the iPhone Duo's inner display).
+    /// `showsTitle` puts "Bin" before the count, for a slot wide enough to hold it.
+    case slot(CGRect, showsTitle: Bool = false)
 }
 
 protocol FloatingBinButtonController: AnyObject {
@@ -451,7 +452,8 @@ extension MainTabBarController: FloatingBinButtonController {
         binButtonPlacement = placement
 
         switch placement {
-        case .slot(let windowRect):
+        case .slot(let windowRect, let showsTitle):
+            binButton.setShowsTitle(showsTitle)
             let rect = view.convert(windowRect, from: nil)
             if !wasInSlot {
                 // Deactivate every standard constraint before the slot's
@@ -473,6 +475,7 @@ extension MainTabBarController: FloatingBinButtonController {
             }
 
         case .standard:
+            binButton.setShowsTitle(false)
             NSLayoutConstraint.deactivate([
                 binSlotLeadingConstraint, binSlotWidthConstraint, binSlotBottomConstraint
             ].compactMap { $0 })

@@ -88,6 +88,20 @@ filterCards.store;Store;Depola;;;;
 filterCards.timeLapseSubtitle;Find time-lapse videos to review;İncelemek için hızlandırılmış videoları bulun;;;;
 filterCards.timeLapseTitle;Time-Lapse;Hızlandırılmış;;;;
 filterCards.yearDetails;Year Details;Yıl Detayları;;;;
+filterCards.continue;Continue;Devam et;;;;
+filterCards.continueLeft;;;Continue · %lld left;Continue · %lld left;Devam et · %lld kaldı;Devam et · %lld kaldı
+filterCards.allCaughtUp;All caught up;Hepsi tamamlandı;;;;
+decisionRing.reviewed;reviewed;incelendi;;;;
+decisionRing.notCounted;Not counted yet;Henüz sayılmadı;;;;
+decisionRing.accessibility;%1$lld delete, %2$lld keep, %3$lld store, %4$lld left;%1$lld sil, %2$lld tut, %3$lld depola, %4$lld kaldı;;;;
+progressOverview.allCaughtUp;All caught up;Hepsi tamamlandı;;;;
+progressOverview.photoCount;;;%lld photo;%lld photos;%lld fotoğraf;%lld fotoğraf
+progressOverview.videoCount;;;%lld video;%lld videos;%lld video;%lld video
+progressOverview.reviewedOfTotal;%1$lld of %2$@;%2$@ içinden %1$lld;;;;
+progressOverview.leftToReview;;;%lld left to review;%lld left to review;%lld öge incelenecek;%lld öge incelenecek
+progressOverview.chipAccessibility;%1$lld %2$@;%1$lld %2$@;;;;
+progressOverview.keep;Keep;Tut;;;;
+progressOverview.store;Store;Depola;;;;
 historyDetail.delete;Delete;Sil;;;;
 historyDetail.keep;Keep;Tut;;;;
 historyDetail.store;Store;Depola;;;;
@@ -437,3 +451,5 @@ widget.scanningPhotos;Scanning photos...;Fotoğraflar taranıyor...;;;;
 widget.scanningVideos;Scanning videos...;Videolar taranıyor...;;;;
 widget.storage;Storage;Depolama;;;;
 widget.storageAnalysis;Storage Analysis;Depolama Analizi;;;;
+floatingBin.title;Bin;Çöp Kutusu;;;;
+floatingBin.titleWithCount;Bin · %@;Çöp Kutusu · %@;;;;

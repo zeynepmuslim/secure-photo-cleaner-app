@@ -173,7 +173,7 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
     - `splittingFold(in:)`: the fold even while fully open, but only when it leaves at least a third of the view on each side. Use it for where columns split, so the layout doesn't jump when the device folds (and doesn't split in Split View).
   - **Nothing tappable goes on the fold.** Inner layouts split at the fold's real position:
     - Home: storage plus the Photos/Videos tiles on one side, the dashboard on the other.
-    - MonthFilterCards: stats plus All Photos/Videos on one side, the four filters on the other (one per row when side by side).
+    - MonthFilterCards: the progress overview plus the Continue pill on one side, the four filters plus All Photos on the other. Sideways All Photos and the filters are one per row (All Photos first) with the bin's full-width slot under them, level with the pill; upright All Photos sits over the filters' 2×2 grid on the base, with the pill and the bin's slot along the bottom (see **Month filter cards**).
     - MonthReview (`+Fold.swift`): a vertical fold splits the undo/history row (undo ends before the fold, history starts after it). In the table layout (`+TablePose.swift`; the table pose, and the upright inner display fully open) the stats and the card sit above the base: partly folded they end at the horizontal fold and the base below it holds the saved trackpad/keys choice; fully open the deck takes about 70% and the keys 30%; in the book pose the video play button moves to the larger side of the fold. Held sideways (`+Landscape.swift`), the bottom row splits at the fold (Undo + History before it, the bin button's slot after it) and the video controls split into two capsules there.
     - DeleteBin: a vertical fold splits the grid into two equal halves on either side of the fold line (`FoldSplitFlowLayout` widens the gap there). The half with less room sets the cell size, so the other side gets a wider margin.
     - The wide "Delete All" bin button keeps to the trailing side of the fold in the book pose.
@@ -236,7 +236,7 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
 
 - **Liquid Glass buttons:** on iOS 26 use `UIButton.Configuration.prominentGlass()` / `.glass()` with `tintColor`. Before iOS 26 fall back to `.filled()` / `.gray()` with `.capsule`.
   - `DynamicGlassButton` wraps this: `configure(title:…style: .prominent|.regular, backgroundColor:…)`, and `animateConfigure(...)` cross-dissolves. Disabled is alpha 0.5 via `configurationUpdateHandler`. It is the general-purpose button; use it for new buttons.
-- The deprecated `traitCollectionDidChange` + `hasDifferentColorAppearance` is still used to refresh `CGColor`s in AnalysisProgressRing, MiniProgressRing, SlideToConfirmButton, SoapBubble, MonthReview+UI and Settings.
+- The deprecated `traitCollectionDidChange` + `hasDifferentColorAppearance` is still used to refresh `CGColor`s in AnalysisProgressRing, MiniProgressRing, SlideToConfirmButton, SoapBubble, MonthReview+UI and Settings, and as the iOS 15/16 path in DecisionRingView and MonthFilterCards (Continue pill).
   - On iOS 17+ prefer `registerForTraitChanges([UITraitUserInterfaceStyle.self])`, keeping the old path for iOS 15/16.
 
 ## Design system
@@ -276,9 +276,9 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
   - Controls: `TablePoseTrackpadView` (MonthReview's table-layout swipe pad: `panGesture`, a mini gray box (`.systemGray5`, thin `.systemGray3` border) at the top card's aspect ratio via `setPreview(aspectRatio:identifier:)` / `setPreviewTransform(_:cardWidth:)`, VoiceOver custom actions).
   - Bar items: `UIBarButtonItem.helpItem(target:action:)`, `.luckyItem(title:target:action:)` and `.tableLayoutItem(title:layout:menu:)`.
   - Cards and rows: `FilterCard`, `DashboardCard`, `SwipeCardView`, `StatItemView`, `MonthStatItemView`, `ImpactStatsView`, `SettingsInfoCardView`, `SettingsLinkRowView`, `TipTier`, `FakeAlbumCell`, `ReviewStatsPillView` (reviewed/total, a black (`.label`) progress bar and the three counts).
-  - Progress: `SegmentedBarView`, `CircularProgressView`, `MiniProgressRing`, `AnalysisProgressRing`.
+  - Progress: `SegmentedBarView`, `CircularProgressView`, `MiniProgressRing`, `AnalysisProgressRing`, `DecisionRingView` (a ring split by choice: delete red, keep green, store yellow, left `.systemGray5`, from 12 o'clock with gaps, zero arcs skipped; stroke 0.09 × diameter; the reviewed percent in the center, a green checkmark at 100%, "–" while the total is 0; `configure(deleted:kept:stored:total:reviewed:animated:)`).
   - Controls and players: `SlideToConfirmButton`, `VideoPlayerController`.
-  - Views: `GradientView`, `EmptyStateView`, `PaddingLabel`, `SoapBubble`, plus the skeletons.
+  - Views: `GradientView`, `EmptyStateView`, `PaddingLabel`, `SoapBubble`, `ProgressOverviewView` (MonthFilterCards' inner-display card: a `DecisionRingView` sized to 42% of the card's height (at most 220pt), with the leftover height split evenly above the ring, between it and the text, and below the chips, "21 of 29 photos", "8 left to review" or "All caught up", and trash / checkmark / archivebox count chips that stack when a row doesn't fit; `update(with: ProgressOverviewState)`), plus the skeletons.
   - Reuse these before writing new ones.
 
 ## Concurrency
@@ -480,7 +480,13 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
 
 ### Month filter cards (`Screens/MonthFilterCards`)
 - **The hub for a month or year session.** Its title is the month (or year) alone; the selected Photos/Videos tab names the media type.
-- **Stats card:** a `CircularProgressView` plus Reviewed / Delete / Keep / Store `MonthStatItemView`s, clamped so the numbers stay consistent.
+- **Stats card:** a `CircularProgressView` plus Reviewed / Delete / Keep / Store `MonthStatItemView`s, clamped so the numbers stay consistent. Compact width (iPhones, the Duo's cover display) and Split View always use it.
+- **iPhone Duo inner display** (`updateFoldSplit()`, re-checked on every layout pass, only where `FoldRegion.splittingFold` crosses the view):
+  - **The overview** is a `ProgressOverviewView` (board P1) instead of the stats card, with a Continue pill (`DynamicGlassButton`, `ButtonSize.large`) under it; the All Photos card stays too, so it's clear what Continue resumes: "Continue · N left", "Continue" before the total is known, "All caught up" and disabled once complete. It runs `allPhotosCardTapped()`. The pill's colors are resolved per appearance (`applyContinueButtonStyle()`, re-applied on trait changes) because the glass doesn't keep a dynamic title color legible.
+  - **Fed by `updateStats()`** through `updateProgressOverview(_:)`, before its year-key early return: the same clamped reviewed / deleted / kept / stored and the total from `ReviewProgressStore`. A total of 0 (a year before its preload finishes) shows an empty ring and "–".
+  - **Held sideways** (vertical fold): the overview filling its column with the pill below; on the other side All Photos and then the four filters, one per row, then `binSlotView` spanning the column at `ButtonSize.large`, so the bin is as wide as the pill and on its baseline; there the bin shows its title (`showsTitle: true`).
+  - **Upright** (horizontal fold, regular width only; board TP2), fully open and partly folded: the overview above the fold, All Photos over the four filters' 2×2 grid on the base, and a bottom row with the pill and `binSlotView` (132pt). The global bin moves into that slot through `setBinButtonPlacement(.slot(rect))`, sent from `viewDidLayoutSubviews` when it moves and again in `viewDidAppear`; `viewWillDisappear` and leaving the split layouts restore `.standard`. The sideways layout uses the same slot mechanism.
+  - **The gap at the fold** is the custom spacing after the overview only, so folding moves just the gap: centered on the fold line while open, clearing the whole region while folded.
 - **Cards:**
   - Photos: Similar & Duplicated | Largest First, Eyes Closed | Screenshots, All Photos.
   - Videos: Slow Motion | Largest First, Time-lapse | Screen Recordings, All Videos.
@@ -694,7 +700,7 @@ There is **one global `FloatingBinButton`**, owned by `MainTabBarController` and
   - **Before iOS 26:** pinned to `view` ±16, above `tabBar.topAnchor − 24`.
   - Compact mode activates trailing only; wide mode activates both sides.
   - DeleteBin's edit mode uses half the width minus 1.5 × 16.
-  - **Slot placement:** `setBinButtonPlacement(.slot(windowRect))` pins the button into a rect a screen hands over (MonthReview's sideways bottom row); `.standard` restores the constraints above. A tab switch and every push or pop (`navigationController(willShow:)`) reset it to `.standard`, so the screen sends its slot again once it is on top and whenever the rect moves.
+  - **Slot placement:** `setBinButtonPlacement(.slot(windowRect))` pins the button into a rect a screen hands over (MonthReview's sideways bottom row, MonthFilterCards' inner-display slot); `.standard` restores the constraints above. `.slot(rect, showsTitle: true)` puts the title before the count ("Bin · 14", "Bin" while empty; `floatingBin.*` keys) through `FloatingBinButton.setShowsTitle(_:)`; MonthFilterCards asks for it only sideways, where the slot spans the filters column. `.standard` turns it off. A tab switch and every push or pop (`navigationController(willShow:)`) reset it to `.standard`, so the screen sends its slot again once it is on top and whenever the rect moves.
 
 ## Storage analysis and Live Activity (`Managers/StorageAnalysis`)
 

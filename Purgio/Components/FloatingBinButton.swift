@@ -7,6 +7,15 @@
 
 import UIKit
 
+// MARK: - Strings
+
+private enum Strings {
+    static let title = NSLocalizedString("floatingBin.title", comment: "Bin button title when it has room for one")
+    static func titleWithCount(_ count: String) -> String {
+        String(format: NSLocalizedString("floatingBin.titleWithCount", comment: "Bin button title with its count, e.g. Bin · 14"), count)
+    }
+}
+
 class FloatingBinButton: UIButton {
 
     enum DisplayMode: Equatable {
@@ -17,6 +26,8 @@ class FloatingBinButton: UIButton {
 
     private var widthConstraint: NSLayoutConstraint?
     private var isWideMode = false
+    /// Set while a screen's slot gives the button room for a title ("Bin · 14" instead of "14").
+    private var showsTitle = false
     private(set) var currentMode: DisplayMode = .count(0)
 
     override init(frame: CGRect) {
@@ -58,17 +69,9 @@ class FloatingBinButton: UIButton {
         currentMode = .count(count)
         guard var config = configuration else { return }
 
-        if count > 0 {
-            config.image = UIImage(
-                systemName: "trash", withConfiguration: UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold))
-            var container = AttributeContainer()
-            container.font = UIFont.monospacedDigitSystemFont(ofSize: 18, weight: .bold)
-            config.attributedTitle = AttributedString("\(count)", attributes: container)
-        } else {
-            config.image = UIImage(
-                systemName: "trash", withConfiguration: UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold))
-            config.attributedTitle = nil
-        }
+        config.image = UIImage(
+            systemName: "trash", withConfiguration: UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold))
+        config.attributedTitle = countTitle(count > 0 ? "\(count)" : nil)
 
         if animated {
             UIView.animate(withDuration: 0.25, delay: 0, options: .curveEaseInOut) {
@@ -87,13 +90,7 @@ class FloatingBinButton: UIButton {
         config.image = UIImage(
             systemName: "trash", withConfiguration: UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold))
 
-        if count > 0 {
-            var container = AttributeContainer()
-            container.font = UIFont.monospacedDigitSystemFont(ofSize: 18, weight: .bold)
-            config.attributedTitle = AttributedString("+\(count)", attributes: container)
-        } else {
-            config.attributedTitle = nil
-        }
+        config.attributedTitle = countTitle(count > 0 ? "+\(count)" : nil)
 
         if animated {
             UIView.animate(withDuration: 0.25, delay: 0, options: .curveEaseInOut) {
@@ -176,13 +173,7 @@ class FloatingBinButton: UIButton {
         config.image = UIImage(
             systemName: "trash", withConfiguration: UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold))
 
-        if count > 0 {
-            var container = AttributeContainer()
-            container.font = UIFont.monospacedDigitSystemFont(ofSize: 18, weight: .bold)
-            config.attributedTitle = AttributedString("\(count)", attributes: container)
-        } else {
-            config.attributedTitle = nil
-        }
+        config.attributedTitle = countTitle(count > 0 ? "\(count)" : nil)
 
         configuration = config
 
@@ -200,6 +191,32 @@ class FloatingBinButton: UIButton {
         } else {
             animations()
         }
+    }
+
+    /// Shows "Bin · 14" (or "Bin" while empty) instead of the bare count, for a slot wide enough.
+    func setShowsTitle(_ shows: Bool) {
+        guard shows != showsTitle else { return }
+        showsTitle = shows
+        switch currentMode {
+        case .count(let count): updateCount(count, animated: false)
+        case .increment(let count): updateIncrement(count, animated: false)
+        case .wide: break
+        }
+    }
+
+    /// The count or increment text, with the title in front while `showsTitle` is on.
+    private func countTitle(_ number: String?) -> AttributedString? {
+        let text: String
+        if showsTitle {
+            text = number.map { Strings.titleWithCount($0) } ?? Strings.title
+        } else if let number = number {
+            text = number
+        } else {
+            return nil
+        }
+        var container = AttributeContainer()
+        container.font = UIFont.monospacedDigitSystemFont(ofSize: 18, weight: .bold)
+        return AttributedString(text, attributes: container)
     }
 
     func setWidthConstraint(_ constraint: NSLayoutConstraint) {

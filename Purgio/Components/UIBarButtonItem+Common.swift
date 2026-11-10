@@ -37,4 +37,20 @@ extension UIBarButtonItem {
         item.tintColor = .textPrimary
         return item
     }
+
+    /// MonthReview's iPhone Duo table-pose Layout item: its menu picks the swipe area or the keys.
+    /// The image shows the current choice.
+    static func tableLayoutItem(title: String, layout: TablePoseControlsLayout, menu: UIMenu) -> UIBarButtonItem {
+        let item = UIBarButtonItem(title: title, image: tableLayoutImage(for: layout), primaryAction: nil, menu: menu)
+        item.tintColor = .textPrimary
+        return item
+    }
+
+    static func tableLayoutImage(for layout: TablePoseControlsLayout) -> UIImage? {
+        let config = UIImage.SymbolConfiguration(pointSize: 16, weight: .medium)
+        switch layout {
+        case .trackpad: return UIImage(systemName: "hand.draw", withConfiguration: config)
+        case .keys: return UIImage(systemName: "square.grid.2x2", withConfiguration: config)
+        }
+    }
 }

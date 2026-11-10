@@ -26,7 +26,7 @@ Purgio is **plain UIKit MVC**. There are no view models, coordinators, routers o
   - Use an `if #available(iOS 16.0, *)` custom detent (`.custom { $0.maximumDetentValue * 0.75 }`) with an iOS 15 fallback to `.medium()` or `.large()`.
   - Size-dependent detents are chosen in `viewWillAppear` (see **Layout**).
 - **Alerts** use `UIAlertController`. **Menus** use `UIMenu` / `UIAction`.
-- **Large view controllers are split into `+Feature.swift` extensions:** `MonthReviewViewController+DataLoading/+Swipe/+UI/+Video/+Helpers/+UndoHistory/+Fold/+Landscape`, and `StorageAnalysisManager+ChunkedAnalysis/+BackgroundTasks/+AppLifecycle/+LiveActivity`.
+- **Large view controllers are split into `+Feature.swift` extensions:** `MonthReviewViewController+DataLoading/+Swipe/+UI/+Video/+Helpers/+UndoHistory/+Fold/+Landscape/+TablePose`, and `StorageAnalysisManager+ChunkedAnalysis/+BackgroundTasks/+AppLifecycle/+LiveActivity`.
   - Members used across those files must be `internal`, not `private`.
 - **Navigation:**
   - The 4 tabs live in `MainTabBarController`, each in its own `UINavigationController`. **The tab indices are fixed and used across screens:** 0 Home, 1 Photos (`MonthsListViewController(mediaType: .image)`), 2 Videos (`.video`), 3 Settings.
@@ -137,7 +137,7 @@ Declare each name as a `Notification.Name` extension next to its owner, with the
   - Vertical rail (`DuoLayout.RailPadding`, `Purgio/Others/DuoLayout.swift`): `nextToRail` 6, `bottom` 20, `cornerClearance` 18
   - `ButtonSize.small` 30, `medium` 44, `mediumLarge` 50, `large` 56
   - `Spacer.buttonBottom` 24
-  - `ActionGrip` (MonthReview's sideways grips): `width` 104 (corner radius is half), `inset` 8, `storeSegmentHeight` 120
+  - `ActionGrip` (MonthReview's sideways grips and table-pose trays): `width` 104 (corner radius is half), `inset` 8, `storeSegmentHeight` 120, `trayCornerRadius` 44 (segments inside a tray use 44 − `inset`), and the shared tray shadow `Shadow.opacity` 0.07, `offsetY` 8, `radius` 12
   - `BulkYear.sparseYearThreshold` 50
 
   If a value has no token yet and repeats, add the token first.
@@ -174,7 +174,7 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
   - **Nothing tappable goes on the fold.** Inner layouts split at the fold's real position:
     - Home: storage plus the Photos/Videos tiles on one side, the dashboard on the other.
     - MonthFilterCards: stats plus All Photos/Videos on one side, the four filters on the other (one per row when side by side).
-    - MonthReview (`+Fold.swift`): a vertical fold splits the undo/history row (undo ends before the fold, history starts after it). In the table pose the card sits on the raised half and stats plus controls on the base; in the book pose the video play button moves to the larger side of the fold. Held sideways (`+Landscape.swift`), the bottom row splits at the fold (Undo + History before it, the bin button's slot after it) and the video controls split into two capsules there.
+    - MonthReview (`+Fold.swift`): a vertical fold splits the undo/history row (undo ends before the fold, history starts after it). In the table pose (`+TablePose.swift`) the stats and the card sit on the raised half and the base holds the trackpad or the keys; in the book pose the video play button moves to the larger side of the fold. Held sideways (`+Landscape.swift`), the bottom row splits at the fold (Undo + History before it, the bin button's slot after it) and the video controls split into two capsules there.
     - DeleteBin: a vertical fold splits the grid into two equal halves on either side of the fold line (`FoldSplitFlowLayout` widens the gap there). The half with less room sets the cell size, so the other side gets a wider margin.
     - The wide "Delete All" bin button keeps to the trailing side of the fold in the book pose.
     - Split controls the same way Home splits content: use `splittingFold` so they don't jump when the device folds, center the gap on the fold line while fully open, and clear the whole fold region (`activeFold`'s width) while folded.
@@ -182,7 +182,7 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
   - `isVerticalRail(tabBarController)`: the tab bar is taller than wide.
   - `railSide(_:in:)`: the physical side (`.left` / `.right`). The rail sits on the app's outer edge: right on the full display, left in Split View on the left half.
   - `railEdge(_:in:)`: the same as a layout edge (`.leading` / `.trailing`), for leading/trailing constraints.
-- **Bar items are standard titled `UIBarButtonItem`s, never `customView`s.** The system can then move them into the vertical bar or the overflow menu. Give every item a `title`, even when it shows an image. Shared items live in `UIBarButtonItem+Common.swift` (`.helpItem`, `.luckyItem`). Set `visibilityPriority` (iOS 27.1) on screens with more than one item, so the frequent action overflows last.
+- **Bar items are standard titled `UIBarButtonItem`s, never `customView`s.** The system can then move them into the vertical bar or the overflow menu. Give every item a `title`, even when it shows an image. Shared items live in `UIBarButtonItem+Common.swift` (`.helpItem`, `.luckyItem`, `.tableLayoutItem`). Set `visibilityPriority` (iOS 27.1) on screens with more than one item, so the frequent action overflows last.
 - **Horizontal edges come from the safe area, never the superview.**
   - Every view a view controller adds to `view` pins its sides to `view.safeAreaLayoutGuide.leadingAnchor` / `trailingAnchor`, never to `view.leadingAnchor` / `trailingAnchor`.
   - Portrait iPhones can have a horizontal safe area: the Duo's 84pt camera strip.
@@ -272,8 +272,9 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
   - Morphs use a spring (0.4 s, damping 0.75, velocity 0.8). Fades take 0.25–0.3 s.
   - No `UIViewPropertyAnimator` or `CADisplayLink`.
 - **Reusable components** (`Purgio/Components`, `Purgio/Views`):
-  - Buttons: `DynamicGlassButton`, `FloatingBinButton`, `CloseButton` (44×44), `ActionGripView` (MonthReview's sideways Store + Delete/Keep column).
-  - Bar items: `UIBarButtonItem.helpItem(target:action:)` and `.luckyItem(title:target:action:)`.
+  - Buttons: `DynamicGlassButton`, `FloatingBinButton`, `CloseButton` (44×44), `ActionGripView` (MonthReview's sideways Store + Delete/Keep column), `TablePoseKeysView` (MonthReview's table-pose Store key over Delete | Keep). Store / Delete / Keep segments share `UIButton.Configuration.actionSegment(title:systemImage:iconSize:iconColor:cornerRadius:)`.
+  - Controls: `TablePoseTrackpadView` (MonthReview's table-pose swipe pad: `panGesture`, a mini gray box (`.systemGray5`, thin `.systemGray3` border) at the top card's aspect ratio via `setPreview(aspectRatio:identifier:)` / `setPreviewTransform(_:cardWidth:)`, VoiceOver custom actions).
+  - Bar items: `UIBarButtonItem.helpItem(target:action:)`, `.luckyItem(title:target:action:)` and `.tableLayoutItem(title:layout:menu:)`.
   - Cards and rows: `FilterCard`, `DashboardCard`, `SwipeCardView`, `StatItemView`, `MonthStatItemView`, `ImpactStatsView`, `SettingsInfoCardView`, `SettingsLinkRowView`, `TipTier`, `FakeAlbumCell`, `ReviewStatsPillView` (reviewed/total, a black (`.label`) progress bar and the three counts).
   - Progress: `SegmentedBarView`, `CircularProgressView`, `MiniProgressRing`, `AnalysisProgressRing`.
   - Controls and players: `SlideToConfirmButton`, `VideoPlayerController`.
@@ -334,6 +335,7 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
   - `allowInternetAccess`, `internetOverrideActive`, `skipICloudPhotos`
   - `hasShownInitialICloudWarning`, `hasShownPerCardICloudWarning`, `hasShownStoreTutorial`
   - `remindersEnabled`, `reminderHour` (20), `reminderMinute` (0), `reminderFrequency` (`.weekly`), `reminderWeekdays` (`[6]`, Friday), `reminderMonthDay` (1, clamped to 1…28)
+  - `tablePoseControlsLayout` (`TablePoseControlsLayout` raw value, `.trackpad` default; defined next to `MonthReviewViewController`)
 - **`OnboardingStore`:** `hasCompletedOnboarding`.
 - **`DashboardCardManager`:** `hasGeneratedDashboardCard`. `cachedDashboardCardContent` is declared but unused.
 - **`StorageAnalysisManager`:** `storageAnalysisSessionId`, `iCloudPhotosSyncOn`.
@@ -547,11 +549,12 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
   - `VideoPlayerController` (an 80pt play button + scrubber) embeds its layer in the top card. There's **no autoplay**.
   - The controls hide while dragging. While playing they fade to 0.5 alpha after 2 s.
 - **Size badge:** shown for largeFiles, for videos, or when `isSizeBadgeOpen`.
+- **Stats pill:** on the inner display (regular width: upright, sideways, book and table pose) `ReviewStatsPillView` replaces the one-line stats label, sitting in the hidden label's slot and fed by `updateStats()` (`updateStatsPill`). `updateStatsPillVisibility()` switches it on every layout pass; the cover display keeps the label.
 - **iPhone Duo inner display held sideways** (`+Landscape.swift`; regular width and `view.bounds.width > view.bounds.height`, re-checked on every layout pass; the cover display and the upright inner display keep the standard layout):
   - **Switching** swaps constraint sets inside `UIView.performWithoutAnimation` and lays out at once, because the switch can land inside the push transition or the skeleton fade. `DuoEdgeConstraints.isEnabled = false` hands the standard edges over.
   - **Background** is `.mainBackground` (the grips and pills are white cards); otherwise `.systemBackground`.
   - **Grips:** an `ActionGripView` on each side, Store + Delete on the left and Store + Keep on the right. Gray segments with only the icon colored (yellow, red, green) and no counts. A grip tap calls `completeSwipe`, the same path as a swipe.
-  - **Stats:** `ReviewStatsPillView` sits in the hidden stats label's slot and gets the same numbers from `updateStats()` (`updateLandscapeStats`).
+  - **Stats:** `ReviewStatsPillView`, as on every inner-display layout (see **Stats pill** below).
   - **Deck:**
     - Each photo card hugs its own aspect ratio inside the card area minus `Layout.landscapeDeckInset` (`applyCardSizing`, `CardHugConstraints`). Every card, the top one included, is clamped to `Layout.landscapeCardRatioRange` (9:16…16:9), so a card never changes shape as it comes to the top; an extreme photo is aspect-fit inside its card over the card's blurred backdrop, never cropped.
     - The cards behind fan out to alternate sides (`stackTransform`): 3.5° turn, less for wide photos, plus a sideways offset and a small scale step. All cards are opaque.
@@ -560,6 +563,16 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
     - The cards behind the top one show the next assets still to review (`deckIndices(count:)`), never processed ones, so they don't hide when sorted assets sit in between. After a swipe, a card reassigned to an asset another card already shows reuses that image (`configureCard(_:at:placeholderImages:)`) until its own load finishes.
   - **Badges:** photos get a "date · size" chip at the bottom (`DateFormatterManager.dayMonthTime`); videos a date chip at the top plus the size badge. Only the top card shows its chip.
   - **Bottom row:** Undo and History become titled pills; the global bin button moves into `binSlotGuide` beside them through `setBinButtonPlacement(.slot(rect))` (see **Floating bin button**).
+- **iPhone Duo table pose** (`+TablePose.swift`; upright inner display partly folded with a horizontal fold, `FoldRegion.pose == .table` and not sideways; flat, book, sideways and the cover display don't use it):
+  - **Raised half:** the stats pill (see **Stats pill**) at the top, then the deck down to `fold.minY − Layout.foldGap` (12). The card keeps its own pan gesture.
+  - **Deck:** the same fan as sideways (`usesFannedDeckLayout`: `isLandscapeDeckActive || currentFoldPose == .table`): each photo card hugs its aspect ratio, the cards behind fan out, and a video on top fills the card area. Badges stay standard (no date chip). Entering or leaving the pose re-sizes and re-fans the cards in the fold animation (`refreshCardsForLayoutChange`).
+  - **Base:** `tableBaseGuide` runs from `fold.maxY + 12` down to the bottom row − 12, with the card's side edges. It holds `tableBaseContainerView` with one of two controls, chosen by `SettingsStore.tablePoseControlsLayout`:
+    - `.trackpad` (default, board T1): `TablePoseTrackpadView`. Its pan targets `handlePan`, which reads the drag in `view`, so the raised card moves exactly like a direct swipe (same thresholds, gradients, haptics, `completeSwipe`). Its pad shows a mini gray box at the top card's aspect ratio (the next one springs in from 0.7 scale) that follows the card's drag, turn and fly-off (`updateTablePosePreview()`, called from `handlePan`, `springBackTopCard`, `completeSwipe`, `layoutCards` and when the pose starts). Its sides are physical (forced left-to-right) because a drag's direction is.
+    - `.keys` (board T4): `TablePoseKeysView`, Store over Delete | Keep, through `performGripAction` like the sideways grips.
+  - **Layout bar item** (`.tableLayoutItem`): a single-selection menu ("Swipe area" / "Buttons") that saves the choice, cross-dissolves the controls (0.25 s) and plays a selection haptic. It's added when the table pose starts and removed when it ends (never on every layout pass), after the filter progress ring, with `visibilityPriority` `.low` (the ring `.high`).
+  - The base fades with the deck: hidden while the skeleton loads, on the empty state and on the completion summary. The grouped background (`.mainBackground`) applies here as sideways, so the white trays show.
+  - Leaving the table pose mid-drag cancels the trackpad's pan, and `handlePan` springs the card back (`springBackTopCard`) instead of completing a swipe.
+  - `updateFoldLayout()` does nothing until `setupMainUI` has added the card: the push lays out before it, and recording the pose early would skip the first real switch (and crashed while folded).
 
 ### Similar photos (`Screens/SimilarPhotos`)
 - **Inputs:** `(assets?, monthTitle?, monthKey?, mediaType)`.

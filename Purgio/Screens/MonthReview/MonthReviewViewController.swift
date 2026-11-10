@@ -44,6 +44,15 @@ enum FilterContext {
     case timeLapse
 }
 
+/// Which control fills the base in the iPhone Duo table pose (see +TablePose).
+/// Persisted in `SettingsStore.tablePoseControlsLayout`.
+enum TablePoseControlsLayout: String {
+    /// A swipe area that drives the raised card like a direct swipe.
+    case trackpad
+    /// A Store key over Delete and Keep keys.
+    case keys
+}
+
 final class MonthReviewViewController: UIViewController {
 
     public var isFilterResultMode = false
@@ -134,13 +143,14 @@ final class MonthReviewViewController: UIViewController {
         /// Width / height range every sideways photo card is shown in (9:16 to 16:9); a photo
         /// outside it is fitted inside the card over its blurred backdrop.
         static let landscapeCardRatioRange: ClosedRange<CGFloat> = (9.0 / 16.0)...(16.0 / 9.0)
+        /// Clearance between the iPhone Duo fold and the content on either side of it (see +Fold, +TablePose).
+        static let foldGap: CGFloat = 12
     }
 
     // iPhone Duo fold layout (see +Fold): constraint sets swapped by pose
     var flatLayoutConstraints: [NSLayoutConstraint] = []
     var tablePoseLayoutConstraints: [NSLayoutConstraint] = []
     var cardBottomToFoldConstraint: NSLayoutConstraint?
-    var statsTopToFoldConstraint: NSLayoutConstraint?
     var playPauseCenterXConstraint: NSLayoutConstraint?
     var undoHistoryEqualWidthConstraint: NSLayoutConstraint?
     var undoTrailingToFoldConstraint: NSLayoutConstraint?
@@ -171,6 +181,9 @@ final class MonthReviewViewController: UIViewController {
         pill.translatesAutoresizingMaskIntoConstraints = false
         return pill
     }()
+    // Inner display: the stats as a capsule (see +Landscape, Stats Pill)
+    var hasSetupStatsPill = false
+    var statsLabelPillHeightConstraint: NSLayoutConstraint?
     let binSlotGuide = UILayoutGuide()
     var landscapeConstraints: [NSLayoutConstraint] = []
     var rowSplitConstraint: NSLayoutConstraint?
@@ -182,6 +195,28 @@ final class MonthReviewViewController: UIViewController {
     /// True while the top card flies off: the cards behind already move into their new places.
     var isPromotingDeck = false
     var didRequestBarRelayoutForCamera = false
+
+    // iPhone Duo table pose (see +TablePose): the controls on the base below the fold
+    let tableBaseGuide = UILayoutGuide()
+    let tableBaseContainerView: UIView = {
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.isHidden = true
+        return view
+    }()
+    let tablePoseKeysView: TablePoseKeysView = {
+        let keys = TablePoseKeysView()
+        keys.translatesAutoresizingMaskIntoConstraints = false
+        return keys
+    }()
+    let tablePoseTrackpadView: TablePoseTrackpadView = {
+        let trackpad = TablePoseTrackpadView()
+        trackpad.translatesAutoresizingMaskIntoConstraints = false
+        return trackpad
+    }()
+    var tableLayoutBarItem: UIBarButtonItem?
+    var tableBaseTopConstraint: NSLayoutConstraint?
+    var hasSetupTablePoseViews = false
 
     let monthTitle: String
     let monthKey: String
@@ -291,11 +326,12 @@ final class MonthReviewViewController: UIViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         updateLandscapeDeckLayout()
+        updateStatsPillVisibility()
         updateBinSpacerWidth(animated: false)
         let railEdge = DuoLayout.railEdge(tabBarController, in: view)
         (duoEdges + skeletonDuoEdges).forEach { $0.update(railEdge: railEdge) }
         updateFoldLayout()
-        if isLandscapeDeckActive {
+        if usesFannedDeckLayout {
             applyCardSizing()
         }
     }

@@ -19,7 +19,7 @@ private enum Strings {
 // iPhone Duo inner display held sideways (regular width, wider than tall), boards L7b / L7d–f:
 // - A grip on each side: Store + Delete on the left, Store + Keep on the right. They run the
 //   same code as an up, left or right swipe.
-// - Above the card a stats pill (ReviewStatsPillView) replaces the stats label.
+// - Above the card the stats pill (ReviewStatsPillView), as on every inner-display layout.
 // - Between them each card hugs its own photo's aspect ratio and the next cards fan out behind
 //   the top one. Every card's ratio is clamped to 9:16…16:9 (an extreme photo is fitted over a
 //   blurred copy of itself), so a card keeps its shape as it comes to the top. On a swipe or grip tap the deck moves into
@@ -30,9 +30,10 @@ private enum Strings {
 // The cover display and the upright inner display keep the standard layout.
 extension MonthReviewViewController {
 
-    /// Sideways the grips and pills are white cards, so the screen gets the grouped background.
+    /// Sideways (grips, pills) and in the table pose (the base's tray) the controls are white cards,
+    /// so the screen gets the grouped background.
     var screenBackgroundColor: UIColor {
-        isLandscapeDeckActive ? .mainBackground : .systemBackground
+        isLandscapeDeckActive || currentFoldPose == .table ? .mainBackground : .systemBackground
     }
 
     /// The cards that make up the deck's layout. While the top card flies off it's left out, so
@@ -41,10 +42,16 @@ extension MonthReviewViewController {
         isPromotingDeck ? Array(cardStack.dropLast()) : cardStack
     }
 
-    /// Sideways with a photo on top the cards fan out to the sides, each at its own photo's size.
+    /// Sideways and in the table pose (a wide, short card area on the raised half) the deck is a
+    /// fan of cards, each hugging its own photo, instead of the standard full-size stack.
+    var usesFannedDeckLayout: Bool {
+        isLandscapeDeckActive || currentFoldPose == .table
+    }
+
+    /// With a photo on top the cards fan out to the sides, each at its own photo's size.
     /// A video on top fills the card area instead.
     var isLandscapeDeckFanned: Bool {
-        guard isLandscapeDeckActive, let top = deckCards.last(where: { !$0.isHidden }) else { return false }
+        guard usesFannedDeckLayout, let top = deckCards.last(where: { !$0.isHidden }) else { return false }
         return top.mediaType == .photo && (top.contentAspectRatio ?? 0) > 0
     }
 
@@ -94,8 +101,6 @@ extension MonthReviewViewController {
         leftGrip.isHidden = true
         rightGrip.isHidden = true
 
-        statsPill.isHidden = true
-        view.addSubview(statsPill)
         view.addLayoutGuide(binSlotGuide)
 
         let safeArea = view.safeAreaLayoutGuide
@@ -132,13 +137,7 @@ extension MonthReviewViewController {
             binSlotGuide.topAnchor.constraint(equalTo: bottomControlsStack.topAnchor),
             binSlotGuide.bottomAnchor.constraint(equalTo: bottomControlsStack.bottomAnchor),
             slotLeading,
-            rowEqualWidth,
-
-            // The hidden stats label keeps its slot above the card; the pill sits in it
-            statsLabel.heightAnchor.constraint(greaterThanOrEqualToConstant: ReviewStatsPillView.height),
-            statsPill.centerYAnchor.constraint(equalTo: statsLabel.centerYAnchor),
-            statsPill.centerXAnchor.constraint(equalTo: cardContainerView.centerXAnchor),
-            statsPill.widthAnchor.constraint(lessThanOrEqualTo: cardContainerView.widthAnchor)
+            rowEqualWidth
         ]
         + bottomConstraints(for: leftGrip.bottomAnchor)
         + bottomConstraints(for: rightGrip.bottomAnchor)
@@ -176,9 +175,6 @@ extension MonthReviewViewController {
         }
         leftGrip.isHidden = false
         rightGrip.isHidden = false
-        statsPill.alpha = statsLabel.alpha
-        statsPill.isHidden = false
-        statsLabel.isHidden = true
 
         refreshCardsForLayoutChange()
         updateStats()
@@ -205,8 +201,6 @@ extension MonthReviewViewController {
         setVideoControlsSplit(false)
         leftGrip.isHidden = true
         rightGrip.isHidden = true
-        statsPill.isHidden = true
-        statsLabel.isHidden = false
 
         lastSentBinSlot = nil
         binController?.setBinButtonPlacement(.standard)
@@ -216,13 +210,13 @@ extension MonthReviewViewController {
         }
     }
 
-    private func applyScreenBackground() {
+    func applyScreenBackground() {
         view.backgroundColor = screenBackgroundColor
         historyBadge.layer.borderColor = screenBackgroundColor.cgColor
     }
 
     /// Re-applies sizes, badges and stack transforms without reloading images or the video.
-    private func refreshCardsForLayoutChange() {
+    func refreshCardsForLayoutChange() {
         // Same lookup as refreshStack, so cards behind processed assets get their badges too
         let indices = deckIndices(count: cardStack.count)
         for (i, card) in cardStack.enumerated() where !card.isHidden {
@@ -325,7 +319,7 @@ extension MonthReviewViewController {
     /// After a swipe the deck resizes to the new top card and the fan settles; call inside the
     /// swipe's animation block.
     func animateDeckToNewTopCard() {
-        guard isLandscapeDeckActive else { return }
+        guard usesFannedDeckLayout else { return }
         applyCardSizing()
         cardContainerView.layoutIfNeeded()
     }
@@ -420,9 +414,46 @@ extension MonthReviewViewController {
         completeSwipe(direction: direction)
     }
 
-    func updateLandscapeStats(_ counts: ReviewStatsPillView.Counts) {
-        guard hasSetupLandscapeViews else { return }
-        statsPill.update(with: counts, animated: isLandscapeDeckActive)
+    // MARK: - Stats Pill
+
+    /// On the inner display (regular width: upright, sideways, book or table pose) the stats show
+    /// as a capsule, ReviewStatsPillView, in the hidden stats label's slot above the card. The cover
+    /// display keeps the one-line label. Called on every layout pass; switches only on a change.
+    func updateStatsPillVisibility() {
+        guard cardContainerView.superview != nil else { return }
+        let showsPill = traitCollection.horizontalSizeClass == .regular
+        if showsPill { setupStatsPillIfNeeded() }
+        guard hasSetupStatsPill, statsPill.isHidden == showsPill else { return }
+
+        UIView.performWithoutAnimation {
+            statsPill.alpha = statsLabel.alpha
+            statsPill.isHidden = !showsPill
+            statsLabel.isHidden = showsPill
+            statsLabelPillHeightConstraint?.isActive = showsPill
+            if showsPill { updateStats() }
+            view.layoutIfNeeded()
+        }
+    }
+
+    private func setupStatsPillIfNeeded() {
+        guard !hasSetupStatsPill else { return }
+        hasSetupStatsPill = true
+        statsPill.isHidden = true
+        view.addSubview(statsPill)
+
+        // The hidden stats label keeps its slot above the card; the pill sits in it
+        statsLabelPillHeightConstraint = statsLabel.heightAnchor.constraint(
+            greaterThanOrEqualToConstant: ReviewStatsPillView.height)
+        NSLayoutConstraint.activate([
+            statsPill.centerYAnchor.constraint(equalTo: statsLabel.centerYAnchor),
+            statsPill.centerXAnchor.constraint(equalTo: cardContainerView.centerXAnchor),
+            statsPill.widthAnchor.constraint(lessThanOrEqualTo: cardContainerView.widthAnchor)
+        ])
+    }
+
+    func updateStatsPill(_ counts: ReviewStatsPillView.Counts) {
+        guard hasSetupStatsPill else { return }
+        statsPill.update(with: counts, animated: !statsPill.isHidden)
     }
 
     // MARK: - Camera

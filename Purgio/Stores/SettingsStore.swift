@@ -23,6 +23,7 @@ final class SettingsStore {
     private let reminderFrequencyKey = "reminderFrequency"
     private let reminderWeekdaysKey = "reminderWeekdays"
     private let reminderMonthDayKey = "reminderMonthDay"
+    private let tablePoseControlsLayoutKey = "tablePoseControlsLayout"
 
     private init() {}
     
@@ -98,6 +99,23 @@ final class SettingsStore {
     var hasShownStoreTutorial: Bool {
         get { defaults.bool(forKey: hasShownStoreTutorialKey) }
         set { defaults.set(newValue, forKey: hasShownStoreTutorialKey) }
+    }
+
+    // MARK: - iPhone Duo Table Pose
+
+    /// The control MonthReview shows on the base in the iPhone Duo table pose. Defaults to the trackpad.
+    var tablePoseControlsLayout: TablePoseControlsLayout {
+        get {
+            guard defaults.object(forKey: tablePoseControlsLayoutKey) != nil,
+                  let rawValue = defaults.string(forKey: tablePoseControlsLayoutKey),
+                  let value = TablePoseControlsLayout(rawValue: rawValue) else {
+                return .trackpad
+            }
+            return value
+        }
+        set {
+            defaults.set(newValue.rawValue, forKey: tablePoseControlsLayoutKey)
+        }
     }
 
     var remindersEnabled: Bool {

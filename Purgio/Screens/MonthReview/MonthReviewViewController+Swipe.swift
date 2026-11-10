@@ -39,6 +39,7 @@ extension MonthReviewViewController {
             let rotation = translation.x / view.bounds.width * 0.2
             topCard.transform = CGAffineTransform(translationX: translation.x, y: translation.y)
                 .rotated(by: rotation)
+            updateTablePosePreview()
             
             let absX = abs(translation.x)
             let absY = abs(translation.y)
@@ -75,6 +76,11 @@ extension MonthReviewViewController {
             }
 
         case .ended, .cancelled:
+            // The table pose ended under a trackpad drag (+TablePose): put the card back
+            if isCancelledTrackpadDrag(gesture) {
+                springBackTopCard(topCard)
+                return
+            }
             let threshold: CGFloat = 100
             let velocityThreshold: CGFloat = 800
 
@@ -100,27 +106,33 @@ extension MonthReviewViewController {
                     completeSwipe(direction: isRightSwipe ? .right : .left)
                 } else {
                     // Not enough movement, spring back
-                    UIView.animate(withDuration: 0.6, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.3, options: [.allowUserInteraction], animations: {
-                        topCard.transform = .identity
-                        self.leftGradient.alpha = 0
-                        self.rightGradient.alpha = 0
-                        self.topGradient.alpha = 0
-
-                        // Show video controls again if it's a video
-                        if self.currentIndex < self.reviewAssets.count {
-                            let asset = self.reviewAssets[self.currentIndex].asset
-                            if asset.mediaType == .video {
-                                self.videoController.playPauseButton.alpha = 1.0
-                                self.videoController.controlsContainer.alpha = self.videoController.isPlaying ? 0.5 : 1.0
-                            }
-                        }
-
-                        topCard.setBadgeAlpha(1.0)
-                    })
+                    springBackTopCard(topCard)
                 }
             }
         default: break
         }
+    }
+
+    /// Returns the top card to its place and clears the edge gradients.
+    func springBackTopCard(_ topCard: SwipeCardView) {
+        UIView.animate(withDuration: 0.6, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.3, options: [.allowUserInteraction], animations: {
+            topCard.transform = .identity
+            self.updateTablePosePreview()
+            self.leftGradient.alpha = 0
+            self.rightGradient.alpha = 0
+            self.topGradient.alpha = 0
+
+            // Show video controls again if it's a video
+            if self.currentIndex < self.reviewAssets.count {
+                let asset = self.reviewAssets[self.currentIndex].asset
+                if asset.mediaType == .video {
+                    self.videoController.playPauseButton.alpha = 1.0
+                    self.videoController.controlsContainer.alpha = self.videoController.isPlaying ? 0.5 : 1.0
+                }
+            }
+
+            topCard.setBadgeAlpha(1.0)
+        })
     }
 
     func completeSwipe(direction: SwipeDirection) {
@@ -144,6 +156,7 @@ extension MonthReviewViewController {
             UIView.animate(withDuration: 0.4, animations: {
                 topCard.transform = CGAffineTransform(translationX: offScreenX, y: 50).rotated(by: -0.2)
                 self.leftGradient.alpha = 1.0
+                self.updateTablePosePreview()
             }) { _ in
                 self.advanceToNext(markForDeletion: true, willBeStored: false)
             }
@@ -153,6 +166,7 @@ extension MonthReviewViewController {
             UIView.animate(withDuration: 0.4, animations: {
                 topCard.transform = CGAffineTransform(translationX: offScreenX, y: 50).rotated(by: 0.2)
                 self.rightGradient.alpha = 1.0
+                self.updateTablePosePreview()
             }) { _ in
                 self.advanceToNext(markForDeletion: false, willBeStored: false)
             }
@@ -162,6 +176,7 @@ extension MonthReviewViewController {
             UIView.animate(withDuration: 0.4, animations: {
                 topCard.transform = CGAffineTransform(translationX: 0, y: offScreenY)
                 self.topGradient.alpha = 1.0
+                self.updateTablePosePreview()
             }) { _ in
                 self.advanceToNext(markForDeletion: false, willBeStored: true)
             }
@@ -275,7 +290,7 @@ extension MonthReviewViewController {
         recycledCard.alpha = 0
         recycledCard.showsInfoChip = false
         // Size it for its new photo up front, so it doesn't also morph from the old top card's size
-        if isLandscapeDeckActive {
+        if usesFannedDeckLayout {
             UIView.performWithoutAnimation {
                 applyCardSizing()
                 cardContainerView.layoutIfNeeded()

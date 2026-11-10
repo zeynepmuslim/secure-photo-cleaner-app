@@ -2821,6 +2821,57 @@
         }
       }
     },
+    "monthReview.tableLayout": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Layout"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Düzen"
+          }
+        }
+      }
+    },
+    "monthReview.tableLayoutButtons": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buttons"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Düğmeler"
+          }
+        }
+      }
+    },
+    "monthReview.tableLayoutSwipeArea": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe area"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaydırma alanı"
+          }
+        }
+      }
+    },
     "monthReview.timeLapseTitle": {
       "extractionState": "manual",
       "localizations": {
@@ -2834,6 +2885,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hızlandırılmış · %@"
+          }
+        }
+      }
+    },
+    "monthReview.trackpadHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe here · the photo above follows your finger"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Burada kaydır · üstteki fotoğraf parmağını takip eder"
           }
         }
       }

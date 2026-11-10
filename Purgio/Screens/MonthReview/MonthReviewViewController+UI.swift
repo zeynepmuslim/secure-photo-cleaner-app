@@ -66,6 +66,7 @@ extension MonthReviewViewController {
                 self?.skeletonStack?.alpha = 0
                 self?.skeletonStatsView?.alpha = 0
                 self?.cardContainerView.alpha = 1
+                self?.tableBaseContainerView.alpha = 1
                 self?.statsLabel.alpha = 1
                 self?.statsPill.alpha = 1
                 self?.bottomControlsStack.alpha = 1
@@ -108,8 +109,8 @@ extension MonthReviewViewController {
         view.addSubview(bottomControlsStack)
         bottomControlsStack.alpha = 0
 
-        // Stats on top, card, controls at the bottom. The table-pose set (iPhone Duo)
-        // puts the card on the raised half and stats + controls on the flat base.
+        // Stats on top, card, controls at the bottom. The table-pose set (iPhone Duo) keeps the
+        // stats and the card on the raised half, down to the fold; +TablePose adds the base.
         let cardBottomToControls = cardContainerView.bottomAnchor.constraint(
             equalTo: bottomControlsStack.topAnchor, constant: -Layout.cardToControlsGap)
         cardBottomToControlsConstraint = cardBottomToControls
@@ -119,13 +120,11 @@ extension MonthReviewViewController {
             cardBottomToControls
         ]
         let cardBottomToFold = cardContainerView.bottomAnchor.constraint(equalTo: view.topAnchor)
-        let statsTopToFold = statsLabel.topAnchor.constraint(equalTo: view.topAnchor)
         cardBottomToFoldConstraint = cardBottomToFold
-        statsTopToFoldConstraint = statsTopToFold
         tablePoseLayoutConstraints = [
-            cardContainerView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 4),
-            cardBottomToFold,
-            statsTopToFold
+            statsLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 4),
+            cardContainerView.topAnchor.constraint(equalTo: statsLabel.bottomAnchor, constant: 16),
+            cardBottomToFold
         ]
         NSLayoutConstraint.activate(flatLayoutConstraints)
 
@@ -370,12 +369,13 @@ extension MonthReviewViewController {
             cardContainerView.bringSubviewToFront(videoController.playPauseButton)
         }
         cardContainerView.bringSubviewToFront(videoController.controlsContainer)
+        updateTablePosePreview()
     }
 
     /// Where a card sits in the stack: 0 is the top card.
     func stackTransform(reverseIndex: Int) -> CGAffineTransform {
         let level = CGFloat(reverseIndex)
-        if isLandscapeDeckActive {
+        if usesFannedDeckLayout {
             guard reverseIndex > 0 else { return .identity }
             // Behind a photo the next cards fan out to alternate sides, like a hand of prints.
             // A video fills the card area, so there they stay tucked in behind it.

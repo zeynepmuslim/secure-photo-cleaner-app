@@ -11,16 +11,19 @@ import UIKit
 // - Vertical fold (book pose, and fully open so the row doesn't jump): undo ends before
 //   the fold and history starts after it. The card stays (it is content); the centered
 //   video play button moves to the larger side of the fold while folded.
-// - Table pose: card on the raised half, stats + controls on the flat base.
+// - Table pose: stats + card on the raised half, the base controls below the fold (+TablePose).
+//   The deck fans out there like sideways (+Landscape), so the next cards show behind the top one.
 // Same controls, actions and gestures in every pose.
 extension MonthReviewViewController {
 
     private enum FoldLayout {
-        static let gap: CGFloat = 12
         static let playPauseHalfWidth: CGFloat = 40
     }
 
     func updateFoldLayout() {
+        // The main UI is built after the first appearance (the push lays out before it). Until then
+        // there's nothing to place, and recording the pose early would skip the first real switch.
+        guard cardContainerView.superview != nil else { return }
         let fold = FoldRegion.activeFold(in: view)
         let pose = FoldRegion.pose(for: fold)
         // The sideways layout splits its own row and video controls at the fold (+Landscape)
@@ -75,14 +78,13 @@ extension MonthReviewViewController {
 
     private func applyFoldPose(_ pose: FoldRegion.Pose, fold: CGRect?) {
         if pose == .table, let fold = fold {
-            let cardBottom = fold.minY - FoldLayout.gap
-            let statsTop = fold.maxY + FoldLayout.gap
+            // Before the constants below, so the base's constraints exist the first time
+            setupTablePoseViewsIfNeeded()
+            let cardBottom = fold.minY - Layout.foldGap
             if cardBottomToFoldConstraint?.constant != cardBottom {
                 cardBottomToFoldConstraint?.constant = cardBottom
             }
-            if statsTopToFoldConstraint?.constant != statsTop {
-                statsTopToFoldConstraint?.constant = statsTop
-            }
+            updateTableBase(fold: fold)
         }
 
         let wasTable = currentFoldPose == .table
@@ -97,12 +99,23 @@ extension MonthReviewViewController {
             NSLayoutConstraint.deactivate(tablePoseLayoutConstraints)
             NSLayoutConstraint.activate(flatLayoutConstraints)
         }
+        setTablePoseControlsVisible(isTable)
+        setTableLayoutBarItemVisible(isTable)
+        applyScreenBackground()
 
-        guard view.window != nil else { return }
+        // The raised half shows the deck as a fan (+Landscape); flat it's the standard stack again
+        guard view.window != nil else {
+            refreshCardsForLayoutChange()
+            return
+        }
         // Animate outside the current layout pass
         DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
             UIView.animate(withDuration: 0.3) {
-                self?.view.layoutIfNeeded()
+                // Card area first, then the cards sized and fanned inside its new bounds
+                self.view.layoutIfNeeded()
+                self.refreshCardsForLayoutChange()
+                self.view.layoutIfNeeded()
             }
         }
     }

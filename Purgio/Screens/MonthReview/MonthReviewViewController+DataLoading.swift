@@ -361,7 +361,7 @@ extension MonthReviewViewController {
         }
 
         applyBadges(to: card, reviewAsset: reviewAsset)
-        if isLandscapeDeckActive {
+        if usesFannedDeckLayout {
             applyCardSizing()
         }
 

@@ -57,9 +57,9 @@ final class ActionGripView: UIView {
         layer.cornerRadius = GeneralConstants.ActionGrip.width / 2
         layer.cornerCurve = .continuous
         layer.shadowColor = UIColor.black.cgColor
-        layer.shadowOpacity = 0.07
-        layer.shadowOffset = CGSize(width: 0, height: 8)
-        layer.shadowRadius = 12
+        layer.shadowOpacity = GeneralConstants.ActionGrip.Shadow.opacity
+        layer.shadowOffset = CGSize(width: 0, height: GeneralConstants.ActionGrip.Shadow.offsetY)
+        layer.shadowRadius = GeneralConstants.ActionGrip.Shadow.radius
 
         storeButton.addTarget(self, action: #selector(handleStoreTap), for: .touchUpInside)
         primaryButton.addTarget(self, action: #selector(handlePrimaryTap), for: .touchUpInside)
@@ -88,39 +88,13 @@ final class ActionGripView: UIView {
     /// Both segments are a gray fill with the action's color on the icon only (yellow for Store);
     /// the counts live in the stats pill above the card.
     func configure(primaryTitle: String, primarySystemImage: String, primaryColor: UIColor, storeTitle: String) {
-        storeButton.configuration = Self.segmentConfiguration(
+        storeButton.configuration = .actionSegment(
             title: storeTitle, systemImage: "archivebox", iconSize: 22,
-            background: .tertiarySystemFill, foreground: .label, iconColor: ThemeManager.Colors.statusYellow)
+            iconColor: ThemeManager.Colors.statusYellow, cornerRadius: Layout.segmentCornerRadius)
 
-        primaryButton.configuration = Self.segmentConfiguration(
+        primaryButton.configuration = .actionSegment(
             title: primaryTitle, systemImage: primarySystemImage, iconSize: 28,
-            background: .tertiarySystemFill, foreground: .label, iconColor: primaryColor)
-    }
-
-    private static func segmentConfiguration(
-        title: String, systemImage: String, iconSize: CGFloat, background: UIColor, foreground: UIColor,
-        iconColor: UIColor? = nil
-    ) -> UIButton.Configuration {
-        var config = UIButton.Configuration.filled()
-        config.image = UIImage(
-            systemName: systemImage,
-            withConfiguration: UIImage.SymbolConfiguration(pointSize: iconSize, weight: .semibold))
-        config.imagePlacement = .top
-        config.imagePadding = 8
-        config.titleAlignment = .center
-        config.titlePadding = 4
-        var container = AttributeContainer()
-        container.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
-        config.attributedTitle = AttributedString(title, attributes: container)
-        config.baseBackgroundColor = background
-        config.baseForegroundColor = foreground
-        if let iconColor = iconColor {
-            config.imageColorTransformer = UIConfigurationColorTransformer { _ in iconColor }
-        }
-        config.cornerStyle = .fixed
-        config.background.cornerRadius = Layout.segmentCornerRadius
-        config.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 4, bottom: 8, trailing: 4)
-        return config
+            iconColor: primaryColor, cornerRadius: Layout.segmentCornerRadius)
     }
 
     // MARK: - Actions

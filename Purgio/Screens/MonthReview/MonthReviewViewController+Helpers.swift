@@ -99,6 +99,8 @@ extension MonthReviewViewController {
 
         cleanupVideo()
         cardContainerView.alpha = 0
+        // The table-pose base controls follow the deck (+TablePose)
+        tableBaseContainerView.alpha = 0
         videoController.playPauseButton.alpha = 0
         videoController.controlsContainer.alpha = 0
     }
@@ -707,7 +709,7 @@ extension MonthReviewViewController {
         attributedText.append(NSAttributedString(string: " \(displayStored.compactFormatted)", attributes: textAttributes))
 
         statsLabel.attributedText = attributedText
-        updateLandscapeStats(.init(
+        updateStatsPill(.init(
             reviewed: reviewed, total: displayTotal,
             deleted: displayDeleted, kept: displayKept, stored: displayStored))
 
@@ -743,6 +745,7 @@ extension MonthReviewViewController {
             self.rightGradient.alpha = 0
             self.topGradient.alpha = 0
             self.cardContainerView.alpha = 0
+            self.tableBaseContainerView.alpha = 0
         }
         let alert = UIAlertController(
             title: Strings.monthCompleteTitle,

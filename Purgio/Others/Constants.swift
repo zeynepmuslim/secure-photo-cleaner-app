@@ -70,6 +70,16 @@ enum GeneralConstants {
         /// Padding inside the grip and the gap between its segments.
         static let inset: CGFloat = 8
         static let storeSegmentHeight: CGFloat = 120
+        /// Corner radius of the iPhone Duo table-pose trays (keys, trackpad); their segments use
+        /// this minus `inset`, so the corners stay concentric.
+        static let trayCornerRadius: CGFloat = 44
+
+        /// Soft shadow under the grips and trays (black).
+        enum Shadow {
+            static let opacity: Float = 0.07
+            static let offsetY: CGFloat = 8
+            static let radius: CGFloat = 12
+        }
     }
 
     enum BulkYear {

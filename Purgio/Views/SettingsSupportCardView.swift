@@ -7,9 +7,9 @@
 
 import UIKit
 
-/// Settings' Support section as one card for the iPhone Duo split layouts: the support text,
-/// the ink "Leave a Tip" button, and Rate / Feedback side by side under it. A link title that
-/// doesn't fit half the card wraps to a second line.
+/// Settings' Support section as one card: the support text, the ink "Leave a Tip" button, and
+/// Rate / Feedback under it, side by side in the split layouts (a title that doesn't fit half
+/// the card wraps to a second line) or stacked in the single column (`setLinksStacked`).
 final class SettingsSupportCardView: UIView {
 
     var onTip: (() -> Void)?
@@ -21,6 +21,9 @@ final class SettingsSupportCardView: UIView {
         static let horizontalPadding: CGFloat = 18
         static let iconSize: CGFloat = 24
         static let linkCornerRadius: CGFloat = 12
+        static let linkBorderWidth: CGFloat = 1
+        static let linkSideInset: CGFloat = 8
+        static let linkFont = UIFont.systemFont(ofSize: 15, weight: .semibold)
     }
 
     private let iconView: UIImageView = {
@@ -79,8 +82,12 @@ final class SettingsSupportCardView: UIView {
         return button
     }()
 
-    private let rateButton = SettingsSupportCardView.makeLinkButton(iconName: "star", iconColor: .systemYellow)
-    private let feedbackButton = SettingsSupportCardView.makeLinkButton(iconName: "envelope", iconColor: .systemBlue)
+    // Rate and Feedback are equal outline buttons under the ink tip button: no fill, a hairline
+    // border and the title color, only their icons colored (a yellow star, a blue envelope)
+    private let rateButton = SettingsSupportCardView.makeLinkButton(
+        iconName: "star.fill", iconColor: .systemYellow)
+    private let feedbackButton = SettingsSupportCardView.makeLinkButton(
+        iconName: "envelope", iconColor: .systemBlue)
 
     private let linksStack: UIStackView = {
         let stack = UIStackView()
@@ -118,11 +125,48 @@ final class SettingsSupportCardView: UIView {
         setNeedsLayout()
     }
 
+    /// The single column (iPhones, the cover display) stacks Rate and Feedback under the tip
+    /// button, one full-width row each, so neither title has to wrap; the split layouts keep
+    /// them side by side to save height
+    func setLinksStacked(_ stacked: Bool) {
+        let axis: NSLayoutConstraint.Axis = stacked ? .vertical : .horizontal
+        guard linksStack.axis != axis else { return }
+        linksStack.axis = axis
+        linksStack.distribution = stacked ? .fill : .fillEqually
+        setNeedsLayout()
+    }
+
     // MARK: - Layout
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        updateLinkInsets()
         updateLinkCorners()
+    }
+
+    /// A title that wraps takes the button's whole width, so its icon sits at the leading edge
+    /// with the lines off-center. The side insets grow by the wrapped lines' unused width, split
+    /// evenly, so the icon and title sit centered together; the lines wrap the same, so the
+    /// button's height doesn't change
+    private func updateLinkInsets() {
+        for button in [rateButton, feedbackButton] {
+            guard var config = button.configuration, let title = config.title,
+                  button.bounds.width > 0 else { continue }
+            let iconWidth = (config.image?.size.width ?? 0) + config.imagePadding
+            let available = button.bounds.width - 2 * Layout.linkSideInset - iconWidth
+            guard available > 0 else { continue }
+            let used = (title as NSString).boundingRect(
+                with: CGSize(width: available, height: .greatestFiniteMagnitude),
+                options: [.usesLineFragmentOrigin],
+                attributes: [.font: Layout.linkFont],
+                context: nil).width
+            // A point of slack so the label doesn't wrap one word earlier than measured
+            let side = Layout.linkSideInset + max(0, floor((available - ceil(used) - 1) / 2))
+            guard config.contentInsets.leading != side else { continue }
+            config.contentInsets.leading = side
+            config.contentInsets.trailing = side
+            button.configuration = config
+        }
     }
 
     /// A link button's bottom corner that sits in the card's bottom corner is concentric with
@@ -153,6 +197,13 @@ final class SettingsSupportCardView: UIView {
         }
     }
 
+    /// The iOS 26 border is the layer's, so its `CGColor` is resolved per appearance
+    private func updateLinkBorderColor() {
+        let color = UIColor.separator.resolvedColor(with: traitCollection).cgColor
+        rateButton.layer.borderColor = color
+        feedbackButton.layer.borderColor = color
+    }
+
     // MARK: - Setup
 
     private func setupUI() {
@@ -179,6 +230,13 @@ final class SettingsSupportCardView: UIView {
         rateButton.addTarget(self, action: #selector(rateTapped), for: .touchUpInside)
         feedbackButton.addTarget(self, action: #selector(feedbackTapped), for: .touchUpInside)
 
+        if #available(iOS 26.0, *) {
+            updateLinkBorderColor()
+            registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (self: Self, _: UITraitCollection) in
+                self.updateLinkBorderColor()
+            }
+        }
+
         NSLayoutConstraint.activate([
             iconView.widthAnchor.constraint(equalToConstant: Layout.iconSize),
             iconView.heightAnchor.constraint(equalToConstant: Layout.iconSize),
@@ -200,33 +258,41 @@ final class SettingsSupportCardView: UIView {
 
     private static func makeLinkButton(iconName: String, iconColor: UIColor) -> UIButton {
         let button = UIButton(type: .system)
-        var config = UIButton.Configuration.filled()
-        config.baseBackgroundColor = .tertiarySystemFill
+        var config = UIButton.Configuration.plain()
         config.baseForegroundColor = .label
+        // A dynamic color, resolved against the button's appearance
+        config.imageColorTransformer = UIConfigurationColorTransformer { _ in iconColor }
         let symbolConfig = UIImage.SymbolConfiguration(pointSize: 15, weight: .medium)
-        config.image = UIImage(systemName: iconName, withConfiguration: symbolConfig)?
-            .withTintColor(iconColor, renderingMode: .alwaysOriginal)
+        config.image = UIImage(systemName: iconName, withConfiguration: symbolConfig)
         config.imagePadding = 6
-        // Always side by side: a title that doesn't fit half the card (Turkish, the upright
-        // column) wraps to a second line, and both buttons keep the same height
+        // Side by side, a title that doesn't fit half the card (Turkish, the upright column)
+        // wraps to a second line, its lines centered, and both buttons keep the same height
         config.titleLineBreakMode = .byWordWrapping
         config.titleAlignment = .center
+        let centered = NSMutableParagraphStyle()
+        centered.alignment = .center
         config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { attributes in
             var updated = attributes
-            updated.font = .systemFont(ofSize: 15, weight: .semibold)
+            updated.font = Layout.linkFont
+            updated.paragraphStyle = centered
             return updated
         }
         config.cornerStyle = .fixed
         if #available(iOS 26.0, *) {
             // The view's corner configuration shapes it (updateLinkCorners), so the
-            // background fills the bounds and the view clips it
+            // background fills the bounds, the view clips it and the layer draws the border
+            // along those corners (a background stroke would be cut off at them)
             config.background.cornerRadius = 0
             button.clipsToBounds = true
+            button.layer.borderWidth = Layout.linkBorderWidth
         } else {
             config.background.cornerRadius = Layout.linkCornerRadius
+            config.background.strokeColor = .separator
+            config.background.strokeWidth = Layout.linkBorderWidth
         }
-        // Tight sides so both titles fit half the card in Turkish too, keeping them side by side
-        config.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 8, bottom: 10, trailing: 8)
+        // Tight sides so both titles fit half the card in Turkish too when side by side
+        config.contentInsets = NSDirectionalEdgeInsets(
+            top: 10, leading: Layout.linkSideInset, bottom: 10, trailing: Layout.linkSideInset)
         button.configuration = config
         return button
     }

@@ -115,6 +115,7 @@ final class UndoHistoryViewController: UIViewController {
         tabel.separatorStyle = .singleLine
         tabel.rowHeight = 76
         tabel.allowsMultipleSelectionDuringEditing = true
+        tabel.useSoftTopEdgeEffect()
         return tabel
     }()
 

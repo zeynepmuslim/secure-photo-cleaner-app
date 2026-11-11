@@ -48,6 +48,7 @@ final class MonthsListViewController: UIViewController {
         table.separatorStyle = .none
         table.rowHeight = UITableView.automaticDimension
         table.estimatedRowHeight = 80
+        table.useSoftTopEdgeEffect()
         table.translatesAutoresizingMaskIntoConstraints = false
         return table
     }()

@@ -76,6 +76,7 @@ class SimilarPhotosViewController: UIViewController {
         tableView.delegate = self
         tableView.dataSource = self
         tableView.contentInsetAdjustmentBehavior = .automatic
+        tableView.useSoftTopEdgeEffect()
         tableView.translatesAutoresizingMaskIntoConstraints = false
         return tableView
     }()

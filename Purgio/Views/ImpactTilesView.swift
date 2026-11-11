@@ -8,7 +8,7 @@
 import UIKit
 
 /// Settings' impact numbers as three equal tiles in a row (space saved, stored items,
-/// reviewed), used by the iPhone Duo split layouts. Same numbers as `ImpactStatsView`.
+/// reviewed), used by every Settings layout. Same numbers as `ImpactStatsView`.
 final class ImpactTilesView: UIView {
 
     // MARK: - Strings
@@ -52,6 +52,14 @@ final class ImpactTilesView: UIView {
         reviewedTile.setValue("\(reviewedCount)")
     }
 
+    /// The single column keeps titles readable on 375pt phones: a title shrinks only a little
+    /// on one line, and wraps to a second line when that isn't enough. The split layouts keep
+    /// one shrink-to-fit line, which the fold needs. The tiles stay equal in height and keep
+    /// the same bottom padding either way.
+    func setTitlesWrap(_ wraps: Bool) {
+        [spaceSavedTile, storedTile, reviewedTile].forEach { $0.setTitleWraps(wraps) }
+    }
+
     // MARK: - Setup
 
     private func setupUI() {
@@ -80,7 +88,17 @@ private final class ImpactTile: UIView {
         static let iconToValue: CGFloat = 6
         static let iconSize: CGFloat = 24
         static let minimumHeight: CGFloat = 100
+        static let valueToTitle: CGFloat = 4
+        static let wrappedTitleLines = 2
+        /// Split layouts: one line, shrinking as far as it takes
+        static let shrinkScale: CGFloat = 0.7
+        /// Single column: one line only while it stays this readable, else two lines
+        static let readableScale: CGFloat = 0.85
     }
+
+    /// Whether the title may wrap (single column), decided against the tile's width on
+    /// every layout pass
+    private var titleMayWrap = false
 
     private let iconView: UIImageView = {
         let imageView = UIImageView()
@@ -102,11 +120,12 @@ private final class ImpactTile: UIView {
         let label = UILabel()
         label.font = ThemeManager.Fonts.regularCaption
         label.textColor = .secondaryLabel
-        // One line, shrinking to fit: a second line would make the tiles taller and push the
-        // cards under them off the fold and the baseline
+        // One line, shrinking to fit, by default: split at the fold a second line would make the
+        // tiles taller and push the cards under them off the fold and the baseline
+        // (setTitleWraps lets the single column wrap)
         label.numberOfLines = 1
         label.adjustsFontSizeToFitWidth = true
-        label.minimumScaleFactor = 0.7
+        label.minimumScaleFactor = Layout.shrinkScale
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
@@ -123,6 +142,33 @@ private final class ImpactTile: UIView {
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    func setTitleWraps(_ wraps: Bool) {
+        titleMayWrap = wraps
+        updateTitleLines()
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        updateTitleLines()
+    }
+
+    /// One shrink-to-fit line unless the title may wrap and wouldn't stay readable on one
+    private func updateTitleLines() {
+        let available = bounds.width - 2 * Layout.padding
+        var wraps = false
+        if titleMayWrap, available > 0, let title = titleLabel.text, let font = titleLabel.font {
+            let fullWidth = (title as NSString).size(withAttributes: [.font: font]).width
+            wraps = fullWidth * Layout.readableScale > available
+        }
+        let lines = wraps ? Layout.wrappedTitleLines : 1
+        let scale = titleMayWrap ? Layout.readableScale : Layout.shrinkScale
+        guard titleLabel.numberOfLines != lines || titleLabel.minimumScaleFactor != scale else { return }
+        titleLabel.numberOfLines = lines
+        titleLabel.adjustsFontSizeToFitWidth = !wraps
+        titleLabel.minimumScaleFactor = scale
+        titleLabel.invalidateIntrinsicContentSize()
     }
 
     func setValue(_ value: String) {
@@ -149,15 +195,17 @@ private final class ImpactTile: UIView {
             iconView.widthAnchor.constraint(equalToConstant: Layout.iconSize),
             iconView.heightAnchor.constraint(equalToConstant: Layout.iconSize),
 
-            // The number and title sit at the bottom; the gap under the icon grows
-            valueLabel.topAnchor.constraint(
-                greaterThanOrEqualTo: iconView.bottomAnchor, constant: Layout.iconToValue),
             valueLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Layout.padding),
             valueLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Layout.padding),
 
-            titleLabel.topAnchor.constraint(equalTo: valueLabel.bottomAnchor, constant: 4),
+            titleLabel.topAnchor.constraint(equalTo: valueLabel.bottomAnchor, constant: Layout.valueToTitle),
             titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Layout.padding),
             titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Layout.padding),
+
+            // The number and title sit at the bottom, the same padding in every tile; the gap
+            // under the icon grows
+            valueLabel.topAnchor.constraint(
+                greaterThanOrEqualTo: iconView.bottomAnchor, constant: Layout.iconToValue),
             titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -Layout.verticalPadding)
         ])
     }

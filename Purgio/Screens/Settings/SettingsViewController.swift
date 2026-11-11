@@ -532,13 +532,6 @@ final class SettingsViewController: UIViewController {
         NSLayoutConstraint.deactivate(isStacked ? sideBySidePaneConstraints : stackedPaneConstraints)
         NSLayoutConstraint.activate(isStacked ? stackedPaneConstraints : sideBySidePaneConstraints)
 
-        // Photo Management, Features, Transparency & Safety: the same in every layout
-        let settingsGroups: [UIView] = [
-            photoSectionLabel, internetToggleContainer, skipICloudToggleContainer,
-            storeSectionLabel, remindersToggleContainer, languageCard, storeCard,
-            transparencySectionLabel, privacyCard, transparencyCard
-        ]
-        let aboutViews: [UIView] = [aboutSectionLabel, versionLabel, madeByLabel]
         // The split layouts' grouped rows (board S3t)
         let splitSettingsGroups: [UIView] = [
             photoSectionLabel, photoGroup, storeSectionLabel, featuresGroup,
@@ -561,18 +554,17 @@ final class SettingsViewController: UIViewController {
             stack.setCustomSpacing(GeneralConstants.EdgePadding.small, after: self.storageAnalysisView)
         }
 
+        // Tile titles may wrap only in the single column; split at the fold they stay on one
+        // line so the cards under them keep clear of the fold and the baseline
+        impactTilesView.setTitlesWrap(layout == .single)
+        // The single column has the width for Tip, Rate and Feedback as three full rows
+        supportCardView.setLinksStacked(layout == .single)
+
         switch layout {
         case .uprightScroll, .uprightPanes:
             // The raised half: the tiles, then Storage | Support side by side, without their labels
-            // Under the card's title row, like the support card's; the content fills the
-            // height the row gives the card
-            storageCardSlot.addSubview(storageAnalysisView)
-            NSLayoutConstraint.activate([
-                storageAnalysisView.topAnchor.constraint(equalTo: storageTitleRow.bottomAnchor),
-                storageAnalysisView.leadingAnchor.constraint(equalTo: storageCardSlot.leadingAnchor),
-                storageAnalysisView.trailingAnchor.constraint(equalTo: storageCardSlot.trailingAnchor),
-                storageAnalysisView.bottomAnchor.constraint(lessThanOrEqualTo: storageCardSlot.bottomAnchor)
-            ])
+            // Under the card's title row, like the support card's; the slot grows with the row
+            placeStorageInSlot(hugsContent: false)
             // No section labels: the cards carry their own titles, and the raised half needs
             // the height to fit above the fold
             fill(storageRowColumn, [storageCardSlot])
@@ -594,12 +586,33 @@ final class SettingsViewController: UIViewController {
             fill(secondPaneStack, splitSettingsGroups)
             [firstPaneStack, secondPaneStack].forEach(applySplitSpacing)
         case .single:
+            // The split layouts' pieces in one column, in the iPhone order: the tiles, the
+            // storage card (its own title, no label), the grouped rows, Support, then About
+            placeStorageInSlot(hugsContent: true)
             fill(contentStack,
-                 [statsSectionLabel, impactStatsView, storageSectionLabel, storageAnalysisView]
-                 + settingsGroups
-                 + [supportSectionLabel, supportCard, helpLinksContainer]
-                 + aboutViews)
+                 [impactTilesView, storageCardSlot,
+                  photoSectionLabel, photoGroup, storeSectionLabel, featuresGroup,
+                  transparencySectionLabel, transparencyGroup,
+                  supportSectionLabel, supportCardView,
+                  aboutSectionLabel, aboutGroup, madeByLabel])
+            applySplitSpacing(contentStack)
         }
+    }
+
+    /// StorageAnalysisView under the slot's title row. Upright the slot grows with the
+    /// Storage | Support row and the view keeps its own height at the top; in the single
+    /// column the slot hugs the view, so its height is the title row plus the view.
+    private func placeStorageInSlot(hugsContent: Bool) {
+        storageCardSlot.addSubview(storageAnalysisView)
+        let slotBottom = storageCardSlot.bottomAnchor
+        NSLayoutConstraint.activate([
+            storageAnalysisView.topAnchor.constraint(equalTo: storageTitleRow.bottomAnchor),
+            storageAnalysisView.leadingAnchor.constraint(equalTo: storageCardSlot.leadingAnchor),
+            storageAnalysisView.trailingAnchor.constraint(equalTo: storageCardSlot.trailingAnchor),
+            hugsContent
+                ? storageAnalysisView.bottomAnchor.constraint(equalTo: slotBottom)
+                : storageAnalysisView.bottomAnchor.constraint(lessThanOrEqualTo: slotBottom)
+        ])
     }
 
     private static func makePaneScrollView() -> UIScrollView {
@@ -610,10 +623,8 @@ final class SettingsViewController: UIViewController {
         // The column already starts below the bar and ends on the baseline; a system inset
         // would leave the last card short of it
         scrollView.contentInsetAdjustmentBehavior = .never
-        if #available(iOS 26.0, *) {
-            // Rows scrolling under the title fade out progressively, not under a solid band
-            scrollView.topEdgeEffect.style = .soft
-        }
+        // Rows scrolling under the title fade out progressively, not under a solid band
+        scrollView.useSoftTopEdgeEffect()
         return scrollView
     }
 
@@ -672,6 +683,7 @@ final class SettingsViewController: UIViewController {
     private func setupUI() {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.backgroundColor = .mainBackground
+        scrollView.useSoftTopEdgeEffect()
         view.addSubview(scrollView)
 
         contentStack.translatesAutoresizingMaskIntoConstraints = false
@@ -1201,11 +1213,11 @@ final class SettingsViewController: UIViewController {
     }
 
     func scrollToInternetToggle() {
-        // Split at the fold the grouped rows show the toggle: in the second pane sideways (the
-        // trailing column) and upright partly folded (the base), else in the one scroll view
+        // Every layout shows the Internet row first in photoGroup: in the second pane sideways
+        // (the trailing column) and upright partly folded (the base), else in the one scroll view
         let usesPanes = splitLayout == .sideBySide || splitLayout == .uprightPanes
         let scrollView = usesPanes ? secondPaneScrollView : self.scrollView
-        let target: UIView = splitLayout != .single ? photoGroup : internetToggleContainer
+        let target: UIView = photoGroup
         let targetY = target.convert(CGPoint.zero, to: scrollView).y
         let topInset = scrollView.adjustedContentInset.top
         let maxOffsetY = scrollView.contentSize.height - scrollView.bounds.height + scrollView.contentInset.bottom

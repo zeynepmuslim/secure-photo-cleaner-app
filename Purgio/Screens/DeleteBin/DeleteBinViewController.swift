@@ -113,6 +113,7 @@ final class DeleteBinViewController: UIViewController {
         collectionView.allowsMultipleSelection = false
         collectionView.contentInset = UIEdgeInsets(top: 50, left: 0, bottom: 100, right: 0)
         collectionView.scrollIndicatorInsets = collectionView.contentInset
+        collectionView.useSoftTopEdgeEffect()
         return collectionView
     }()
 

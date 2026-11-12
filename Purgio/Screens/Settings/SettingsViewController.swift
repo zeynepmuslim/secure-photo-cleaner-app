@@ -295,7 +295,8 @@ final class SettingsViewController: UIViewController {
         navigationItem.largeTitleDisplayMode = .never
         impactStatsView.update(stats: statsStore, storedCount: storedStore.count)
         impactTilesView.configure(
-            spaceSaved: statsStore.formattedSpaceSaved(), storedCount: storedStore.count,
+            spaceSaved: statsStore.spaceSavedBytes.formattedBytes(allowedUnits: [.useKB, .useMB, .useGB, .useTB]),
+            storedCount: storedStore.count,
             reviewedCount: statsStore.totalReviewed)
         storageAnalysisView.update(with: storageManager.currentState)
         updateInternetToggleState()
@@ -554,9 +555,6 @@ final class SettingsViewController: UIViewController {
             stack.setCustomSpacing(GeneralConstants.EdgePadding.small, after: self.storageAnalysisView)
         }
 
-        // Tile titles may wrap only in the single column; split at the fold they stay on one
-        // line so the cards under them keep clear of the fold and the baseline
-        impactTilesView.setTitlesWrap(layout == .single)
         // The single column has the width for Tip, Rate and Feedback as three full rows
         supportCardView.setLinksStacked(layout == .single)
 

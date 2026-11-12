@@ -44,6 +44,11 @@ private enum Strings {
 
 final class StorageAnalysisView: UIView {
 
+    private enum Layout {
+        /// The content's leading and trailing inset inside the card.
+        static let horizontalInset: CGFloat = 18
+    }
+
     var onRefreshTapped: (() -> Void)?
 
     private let containerStack: UIStackView = {
@@ -57,9 +62,6 @@ final class StorageAnalysisView: UIView {
     private let storageBar: SegmentedBarView = {
         let bar = SegmentedBarView()
         bar.translatesAutoresizingMaskIntoConstraints = false
-        bar.clipsToBounds = true
-        bar.layer.cornerRadius = 4
-        bar.layer.cornerCurve = .continuous
         return bar
     }()
 
@@ -81,7 +83,7 @@ final class StorageAnalysisView: UIView {
 
     private let statusDot: UIView = {
         let view = UIView()
-        view.layer.cornerRadius = 4
+        view.layer.cornerRadius = GeneralConstants.LegendCapsule.width / 2
         view.layer.cornerCurve = .continuous
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
@@ -242,6 +244,28 @@ final class StorageAnalysisView: UIView {
 
     private var currentData: StorageAnalysisData?
     private var currentAvailablePercentage: CGFloat?
+    private var lastState: StorageAnalysisState?
+    private var lastRenderedCompactWidth: Bool?
+    /// The legend's items and the width they were laid out for; the rows are rebuilt when it changes.
+    private var legendItems: [UIView] = []
+    private var legendLayoutWidth: CGFloat = 0
+
+    /// The legend's width: the card's minus the content insets (estimated before the first layout).
+    private var legendAvailableWidth: CGFloat {
+        let width = bounds.width > 0
+            ? bounds.width
+            : (window?.bounds.width ?? 0) - 2 * GeneralConstants.EdgePadding.content
+        return max(0, width - 2 * Layout.horizontalInset)
+    }
+
+    /// The legend's compact variant follows the card's own width (Settings column, Duo panes,
+    /// the bottom sheet), not the window's.
+    private var isCompactWidth: Bool {
+        let width = bounds.width > 0
+            ? bounds.width
+            : (window?.bounds.width ?? 0) - 2 * GeneralConstants.EdgePadding.content
+        return width < GeneralConstants.CompactContentWidth.fullWidthCard
+    }
     private var debugSavedBytesOverride: Int64?
 
     override init(frame: CGRect) {
@@ -261,7 +285,17 @@ final class StorageAnalysisView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
 
+        // Legend rows are built per state; rebuild them when the width variant flips.
+        if let state = lastState, lastRenderedCompactWidth != isCompactWidth {
+            update(with: state)
+        } else if !legendItems.isEmpty, abs(legendAvailableWidth - legendLayoutWidth) > 0.5 {
+            // Same variant, new width (Duo panes, Split View): re-check which items fit a column.
+            layoutLegendItems(legendItems)
+        }
+
         if let data = currentData, let percentage = currentAvailablePercentage {
+            // Lay out the stack first so the bar has its real width (and segments) for the overlay.
+            containerStack.layoutIfNeeded()
             updateSavedSpaceOverlay(data: data, availablePercentage: percentage)
         }
     }
@@ -329,8 +363,8 @@ final class StorageAnalysisView: UIView {
     private func setupConstraint() {
         NSLayoutConstraint.activate([
             containerStack.topAnchor.constraint(equalTo: topAnchor, constant: 20),
-            containerStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 18),
-            containerStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -18),
+            containerStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Layout.horizontalInset),
+            containerStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Layout.horizontalInset),
             containerStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -20),
 
             storageBar.heightAnchor.constraint(equalToConstant: 14),
@@ -338,8 +372,8 @@ final class StorageAnalysisView: UIView {
             circularProgress.widthAnchor.constraint(equalToConstant: 22),
             circularProgress.heightAnchor.constraint(equalToConstant: 22),
 
-            statusDot.widthAnchor.constraint(equalToConstant: 8),
-            statusDot.heightAnchor.constraint(equalToConstant: 8),
+            statusDot.widthAnchor.constraint(equalToConstant: GeneralConstants.LegendCapsule.width),
+            statusDot.heightAnchor.constraint(equalToConstant: GeneralConstants.LegendCapsule.height),
 
             iCloudIcon.widthAnchor.constraint(equalToConstant: 24),
             iCloudIcon.heightAnchor.constraint(equalToConstant: 24),
@@ -351,6 +385,9 @@ final class StorageAnalysisView: UIView {
     }
 
     func update(with state: StorageAnalysisState) {
+        lastState = state
+        lastRenderedCompactWidth = isCompactWidth
+        legendItems = []
         containerStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
 
         switch state {
@@ -433,82 +470,7 @@ final class StorageAnalysisView: UIView {
             items.append(savedItem)
         }
 
-        let isSmallScreen = (window?.bounds.width ?? bounds.width) < 390
-
-        if !isSmallScreen && items.count >= 5 {
-            // 3 columns: (2, 2, 1) — last item vertically centered
-            let col1 = UIStackView(arrangedSubviews: [items[0], items[2]])
-            col1.axis = .vertical
-            col1.alignment = .leading
-            col1.spacing = 6
-
-            let col2 = UIStackView(arrangedSubviews: [items[1], items[3]])
-            col2.axis = .vertical
-            col2.alignment = .leading
-            col2.spacing = 6
-
-            let lastItem = items[4]
-
-            let columnsStack = UIStackView(arrangedSubviews: [col1, col2, lastItem])
-            columnsStack.axis = .horizontal
-            columnsStack.alignment = .center
-            columnsStack.distribution = .fill
-            columnsStack.spacing = 12
-
-            col2.widthAnchor.constraint(equalTo: col1.widthAnchor).isActive = true
-
-            legendStack.addArrangedSubview(columnsStack)
-        } else if isSmallScreen && items.count >= 5 {
-            // 3 rows: (2, 2, 1)
-            let itemsPerRow = 2
-            var rowStart = 0
-            while rowStart < items.count {
-                let rowEnd = min(rowStart + itemsPerRow, items.count)
-                let row = UIStackView()
-                row.axis = .horizontal
-                row.distribution = .fillEqually
-                row.spacing = 12
-                for i in rowStart..<rowEnd {
-                    row.addArrangedSubview(items[i])
-                }
-                legendStack.addArrangedSubview(row)
-                rowStart = rowEnd
-            }
-        } else if items.count > 3 || (isSmallScreen && items.count > 2) {
-            // 2 rows: split at midpoint
-            let row1 = UIStackView()
-            row1.axis = .horizontal
-            row1.distribution = .fillEqually
-            row1.spacing = 12
-
-            let row2 = UIStackView()
-            row2.axis = .horizontal
-            row2.distribution = .fillEqually
-            row2.spacing = 12
-
-            let midPoint = (items.count + 1) / 2
-            for (index, item) in items.enumerated() {
-                if index < midPoint {
-                    row1.addArrangedSubview(item)
-                } else {
-                    row2.addArrangedSubview(item)
-                }
-            }
-
-            legendStack.addArrangedSubview(row1)
-            if !row2.arrangedSubviews.isEmpty {
-                legendStack.addArrangedSubview(row2)
-            }
-        } else {
-            // Single row
-            let row = UIStackView()
-            row.axis = .horizontal
-            row.distribution = .equalSpacing
-            for item in items {
-                row.addArrangedSubview(item)
-            }
-            legendStack.addArrangedSubview(row)
-        }
+        layoutLegendItems(items)
         containerStack.addArrangedSubview(legendStack)
 
         let partialData = StorageAnalysisData(
@@ -747,13 +709,7 @@ final class StorageAnalysisView: UIView {
                 items.append(savedItem)
             }
 
-            let row = UIStackView()
-            row.axis = .horizontal
-            row.distribution = .equalSpacing
-            for item in items {
-                row.addArrangedSubview(item)
-            }
-            legendStack.addArrangedSubview(row)
+            layoutLegendItems(items)
             return
         }
 
@@ -810,82 +766,7 @@ final class StorageAnalysisView: UIView {
             items.append(savedItem)
         }
 
-        let isSmallScreen = (window?.bounds.width ?? bounds.width) < 390
-
-        if !isSmallScreen && items.count >= 5 {
-            // 3 columns: (2, 2, 1) — last item vertically centered
-            let col1 = UIStackView(arrangedSubviews: [items[0], items[2]])
-            col1.axis = .vertical
-            col1.alignment = .leading
-            col1.spacing = 6
-
-            let col2 = UIStackView(arrangedSubviews: [items[1], items[3]])
-            col2.axis = .vertical
-            col2.alignment = .leading
-            col2.spacing = 6
-
-            let lastItem = items[4]
-
-            let columnsStack = UIStackView(arrangedSubviews: [col1, col2, lastItem])
-            columnsStack.axis = .horizontal
-            columnsStack.alignment = .center
-            columnsStack.distribution = .fill
-            columnsStack.spacing = 12
-
-            col2.widthAnchor.constraint(equalTo: col1.widthAnchor).isActive = true
-
-            legendStack.addArrangedSubview(columnsStack)
-        } else if isSmallScreen && items.count >= 5 {
-            // 3 rows: (2, 2, 1)
-            let itemsPerRow = 2
-            var rowStart = 0
-            while rowStart < items.count {
-                let rowEnd = min(rowStart + itemsPerRow, items.count)
-                let row = UIStackView()
-                row.axis = .horizontal
-                row.distribution = .fillEqually
-                row.spacing = 12
-                for i in rowStart..<rowEnd {
-                    row.addArrangedSubview(items[i])
-                }
-                legendStack.addArrangedSubview(row)
-                rowStart = rowEnd
-            }
-        } else if items.count > 3 || (isSmallScreen && items.count > 2) {
-            // 2 rows: split at midpoint
-            let row1 = UIStackView()
-            row1.axis = .horizontal
-            row1.distribution = .fillEqually
-            row1.spacing = 12
-
-            let row2 = UIStackView()
-            row2.axis = .horizontal
-            row2.distribution = .fillEqually
-            row2.spacing = 12
-
-            let midPoint = (items.count + 1) / 2
-            for (index, item) in items.enumerated() {
-                if index < midPoint {
-                    row1.addArrangedSubview(item)
-                } else {
-                    row2.addArrangedSubview(item)
-                }
-            }
-
-            legendStack.addArrangedSubview(row1)
-            if !row2.arrangedSubviews.isEmpty {
-                legendStack.addArrangedSubview(row2)
-            }
-        } else {
-            // Single row
-            let row = UIStackView()
-            row.axis = .horizontal
-            row.distribution = .equalSpacing
-            for item in items {
-                row.addArrangedSubview(item)
-            }
-            legendStack.addArrangedSubview(row)
-        }
+        layoutLegendItems(items)
     }
 
     private func updateStatus(with data: StorageAnalysisData) {
@@ -926,6 +807,69 @@ final class StorageAnalysisView: UIView {
         }
     }
 
+    /// Lays the legend out on a column grid: 2 columns in the compact variant, 3 in the regular
+    /// one (2 × 2 for four items; five regular items keep the (2, 2, 1) columns). A short row keeps
+    /// its empty cells, so its items line up with the other rows instead of spreading to the edges.
+    private func layoutLegendItems(_ items: [UIView]) {
+        legendStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        legendItems = items
+        legendLayoutWidth = legendAvailableWidth
+        guard !items.isEmpty else { return }
+
+        let isSmallScreen = isCompactWidth
+        let availableWidth = legendLayoutWidth
+        let fittingWidths = items.map { $0.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize).width }
+
+        if !isSmallScreen && items.count >= 5 {
+            // 3 columns: (2, 2, 1) — last item vertically centered
+            let col1 = UIStackView(arrangedSubviews: [items[0], items[2]])
+            col1.axis = .vertical
+            col1.alignment = .leading
+            col1.spacing = 6
+
+            let col2 = UIStackView(arrangedSubviews: [items[1], items[3]])
+            col2.axis = .vertical
+            col2.alignment = .leading
+            col2.spacing = 6
+
+            let columnsStack = UIStackView(arrangedSubviews: [col1, col2, items[4]])
+            columnsStack.axis = .horizontal
+            columnsStack.alignment = .center
+            // Equal thirds, the same columns as a 3-column grid row.
+            columnsStack.distribution = .fillEqually
+            columnsStack.spacing = GeneralConstants.LegendGrid.columnSpacing
+
+            legendStack.addArrangedSubview(columnsStack)
+            return
+        }
+
+        let columns = isSmallScreen || items.count == 4 ? 2 : 3
+        // An item wider than a column (a long saved label) gets its own full-width row at the end
+        // instead of being cut off.
+        let cellWidth = (availableWidth - GeneralConstants.LegendGrid.columnSpacing * CGFloat(columns - 1)) / CGFloat(columns)
+        let fitting = items.indices.filter { fittingWidths[$0] <= cellWidth }.map { items[$0] }
+        let overflowing = items.indices.filter { fittingWidths[$0] > cellWidth }.map { items[$0] }
+
+        var rowStart = 0
+        while rowStart < fitting.count {
+            let rowEnd = min(rowStart + columns, fitting.count)
+            legendStack.addArrangedSubview(makeLegendRow(Array(fitting[rowStart..<rowEnd]), columns: columns))
+            rowStart = rowEnd
+        }
+        overflowing.forEach { legendStack.addArrangedSubview(makeLegendRow([$0], columns: 1)) }
+    }
+
+    private func makeLegendRow(_ items: [UIView], columns: Int) -> UIStackView {
+        let row = UIStackView(arrangedSubviews: items)
+        row.axis = .horizontal
+        row.distribution = .fillEqually
+        row.spacing = GeneralConstants.LegendGrid.columnSpacing
+        for _ in items.count..<max(columns, items.count) {
+            row.addArrangedSubview(UIView())
+        }
+        return row
+    }
+
     private func createLegendItem(color: UIColor, title: String, value: String) -> UIView {
         let container = UIStackView()
         container.axis = .vertical
@@ -934,11 +878,11 @@ final class StorageAnalysisView: UIView {
 
         let colorDot = UIView()
         colorDot.backgroundColor = color
-        colorDot.layer.cornerRadius = 4
+        colorDot.layer.cornerRadius = GeneralConstants.LegendCapsule.width / 2
         colorDot.layer.cornerCurve = .continuous
         colorDot.translatesAutoresizingMaskIntoConstraints = false
-        colorDot.widthAnchor.constraint(equalToConstant: 8).isActive = true
-        colorDot.heightAnchor.constraint(equalToConstant: 8).isActive = true
+        colorDot.widthAnchor.constraint(equalToConstant: GeneralConstants.LegendCapsule.width).isActive = true
+        colorDot.heightAnchor.constraint(equalToConstant: GeneralConstants.LegendCapsule.height).isActive = true
 
         let titleStack = UIStackView()
         titleStack.axis = .horizontal
@@ -995,7 +939,11 @@ final class StorageAnalysisView: UIView {
         let usedPercentage = 1.0 - availablePercentage
         let separatorWidth: CGFloat = 2
 
-        let availableStartX = (barWidth * usedPercentage) + separatorWidth
+        // Available is the bar's last segment; read its start from the bar so the overlay
+        // follows the segments' minimum-width adjustment.
+        let lastSegmentStartX = availablePercentage > 0
+            ? storageBar.segmentStartX(at: storageBar.segmentCount - 1) : nil
+        let availableStartX = (lastSegmentStartX ?? barWidth * usedPercentage) + separatorWidth
         let calculatedWidth = barWidth * savedPercentage
         let overlayWidth = min(max(calculatedWidth, 0), barWidth)
 

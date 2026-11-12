@@ -82,6 +82,21 @@ enum GeneralConstants {
         }
     }
 
+    /// The small vertical capsule that marks a color in the storage cards' legends and status.
+    /// Its corner radius is half the width.
+    enum LegendCapsule {
+        static let width: CGFloat = 5
+        static let height: CGFloat = 12
+    }
+
+    /// Spacing in the storage cards' legends.
+    enum LegendGrid {
+        /// Between the columns of a legend grid row.
+        static let columnSpacing: CGFloat = 12
+        /// Between items packed in a single legend row (Home's card).
+        static let packedItemSpacing: CGFloat = 16
+    }
+
     enum BulkYear {
         static let sparseYearThreshold: Int = 50
     }

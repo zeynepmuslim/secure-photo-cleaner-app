@@ -33,13 +33,8 @@ final class SegmentedBarView: UIView {
     private var currentSegments: [Segment] = []
     private var lastKnownWidth: CGFloat = 0
 
-    var cornerRadius: CGFloat = 4 {
-        didSet {
-            backgroundBar.layer.cornerRadius = cornerRadius
-            backgroundBar.layer.cornerCurve = .continuous
-            updateCornerRadius()
-        }
-    }
+    /// A segment with a non-zero share is at least this wide, so a tiny share still shows.
+    private let minimumSegmentWidth: CGFloat = 4
 
     var separatorWidth: CGFloat = 2 {
         didSet {
@@ -75,7 +70,9 @@ final class SegmentedBarView: UIView {
     }
 
     private func setupUI() {
-        backgroundBar.layer.cornerRadius = cornerRadius
+        // The whole bar is a capsule; it also clips views callers add on top (saved-space overlay).
+        clipsToBounds = true
+        layer.cornerCurve = .continuous
         backgroundBar.layer.cornerCurve = .continuous
         addSubview(backgroundBar)
         setupConstraint()
@@ -157,7 +154,33 @@ final class SegmentedBarView: UIView {
         setNeedsLayout()
         layoutIfNeeded()
         updateSegmentWidths(normalizedSegments, animated: animated)
-        updateCornerRadius()
+    }
+
+    var segmentCount: Int { currentSegments.count }
+
+    /// The x position where segment `index` starts at the bar's current width, including the
+    /// minimum-width adjustment. Nil before the bar has a width or for an invalid index.
+    func segmentStartX(at index: Int) -> CGFloat? {
+        let widths = segmentWidths(currentSegments, barWidth: bounds.width)
+        guard bounds.width > 0, widths.indices.contains(index) else { return nil }
+        return widths[..<index].reduce(0, +)
+    }
+
+    /// Proportional widths, with every non-zero segment raised to `minimumSegmentWidth`; the
+    /// extra width comes from the largest segment, so the total stays `barWidth`.
+    private func segmentWidths(_ segments: [Segment], barWidth: CGFloat) -> [CGFloat] {
+        var widths = segments.map { barWidth * $0.percentage }
+        guard let largestIndex = widths.indices.max(by: { widths[$0] < widths[$1] }) else { return widths }
+
+        var deficit: CGFloat = 0
+        for index in widths.indices where index != largestIndex {
+            if segments[index].percentage > 0 && widths[index] < minimumSegmentWidth {
+                deficit += minimumSegmentWidth - widths[index]
+                widths[index] = minimumSegmentWidth
+            }
+        }
+        widths[largestIndex] = max(0, widths[largestIndex] - deficit)
+        return widths
     }
 
     private func updateSegmentWidths(_ segments: [Segment], animated: Bool) {
@@ -172,26 +195,16 @@ final class SegmentedBarView: UIView {
 
         lastKnownWidth = barWidth
 
-        for (index, segment) in segments.enumerated() {
-            segmentWidthConstraints[index].constant = barWidth * segment.percentage
+        for (index, width) in segmentWidths(segments, barWidth: barWidth).enumerated() {
+            segmentWidthConstraints[index].constant = width
         }
 
         if animated {
             UIView.animate(withDuration: 0.35, delay: 0, usingSpringWithDamping: 0.85, initialSpringVelocity: 0) {
                 self.layoutIfNeeded()
-                self.updateCornerRadius()
             }
         } else {
             layoutIfNeeded()
-            updateCornerRadius()
-        }
-    }
-
-    private func updateCornerRadius() {
-        segmentViews.forEach { segment in
-            segment.layer.maskedCorners = []
-            segment.layer.cornerRadius = cornerRadius
-            segment.layer.cornerCurve = .continuous
         }
     }
 
@@ -204,7 +217,10 @@ final class SegmentedBarView: UIView {
             updateSegmentWidths(currentSegments, animated: false)
         }
 
-        updateCornerRadius()
+        // Capsule ends follow the real height; segments have no rounding of their own.
+        let radius = bounds.height / 2
+        layer.cornerRadius = radius
+        backgroundBar.layer.cornerRadius = radius
     }
 }
 
@@ -250,6 +266,20 @@ final class SegmentedBarView: UIView {
                 segments: [
                     .init(color: .systemBlue, percentage: 0.7),
                     .init(color: .systemGray4, percentage: 0.3)
+                ], animated: false)
+        }
+        .padding()
+    }
+
+    @available(iOS 17.0, *)
+    #Preview("Tiny Shares", traits: .sizeThatFitsLayout) {
+        SegmentedBarViewPreview { view in
+            view.configure(
+                segments: [
+                    .init(color: .photo100, percentage: 0.002),
+                    .init(color: .video100, percentage: 0.001),
+                    .init(color: .storageOther, percentage: 0.6),
+                    .init(color: .storageAvailable, percentage: 0.397)
                 ], animated: false)
         }
         .padding()

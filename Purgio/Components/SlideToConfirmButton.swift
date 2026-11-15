@@ -49,7 +49,8 @@ final class SlideToConfirmButton: UIControl {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
         label.font = ThemeManager.Fonts.semiboldBody
-        label.textColor = .white
+        // Dark on the light-gray track in light mode, white on the dark track in dark mode.
+        label.textColor = .label
         label.textAlignment = .center
         label.numberOfLines = 1
         label.adjustsFontSizeToFitWidth = true

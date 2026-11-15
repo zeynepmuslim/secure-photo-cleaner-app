@@ -144,7 +144,7 @@ final class MonthReviewViewController: UIViewController {
         /// outside it is fitted inside the card over its blurred backdrop.
         static let landscapeCardRatioRange: ClosedRange<CGFloat> = (9.0 / 16.0)...(16.0 / 9.0)
         /// Clearance between the iPhone Duo fold and the content on either side of it (see +Fold, +TablePose).
-        static let foldGap: CGFloat = 12
+        static let foldGap: CGFloat = GeneralConstants.Spacer.foldGap
         /// Upright inner display fully open (table layout): the base's height over the deck's, so the
         /// deck gets about 70% and the keys 30% of the room between the stats and the bottom row.
         static let openTableBaseToDeckRatio: CGFloat = 0.3 / 0.7

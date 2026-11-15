@@ -51,6 +51,8 @@ enum GeneralConstants {
 
     enum Spacer {
         static let buttonBottom: CGFloat = 24
+        /// Clearance between the iPhone Duo fold region and the content on either side of it.
+        static let foldGap: CGFloat = 12
     }
 
     /// Own-width thresholds for compact content variants (replaces window-width checks).
@@ -99,6 +101,18 @@ enum GeneralConstants {
 
     enum BulkYear {
         static let sparseYearThreshold: Int = 50
+    }
+
+    /// The tip jar's vertical capsules (the tier picker and the thank-you capsule).
+    enum TipCapsule {
+        /// Full capsule width; the corner radius is half the shorter side.
+        static let width: CGFloat = 72
+        /// Narrowest a tier capsule shrinks to when the sheet is short, so it stays tappable.
+        static let minimumWidth: CGFloat = 44
+        /// Tallest tier capsule (the large tier).
+        static let maximumHeight: CGFloat = 200
+        /// Between the tier columns.
+        static let spacing: CGFloat = 10
     }
 
 }

@@ -6,8 +6,21 @@
 //
 
 import Photos
-import SwiftUI
 import UIKit
+
+// MARK: - Strings
+
+private enum Strings {
+    static func photosToReview(_ count: Int) -> String {
+        String.localizedStringWithFormat(
+            NSLocalizedString("monthCell.photosToReview", comment: "Photos to review count"), count)
+    }
+
+    static func videosToReview(_ count: Int) -> String {
+        String.localizedStringWithFormat(
+            NSLocalizedString("monthCell.videosToReview", comment: "Videos to review count"), count)
+    }
+}
 
 final class MonthListCell: UITableViewCell {
 
@@ -21,38 +34,10 @@ final class MonthListCell: UITableViewCell {
         return view
     }()
 
-    private let progressBackgroundView: UIView = {
-        let view = UIView()
-        view.backgroundColor = .progressInProgress
+    private let rowView: MonthProgressRowView = {
+        let view = MonthProgressRowView()
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
-    }()
-
-    private let titleLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 17, weight: .semibold)
-        label.textColor = .textPrimary
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
-    }()
-
-    private let detailLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 13, weight: .regular)
-        label.textColor = .textSecondary
-        label.numberOfLines = 0
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
-    }()
-
-    private let statsStackView: UIStackView = {
-        let stack = UIStackView()
-        stack.axis = .horizontal
-        stack.distribution = .fill
-        stack.alignment = .center
-        stack.spacing = 0
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        return stack
     }()
 
     private let chevronImageView: UIImageView = {
@@ -65,12 +50,7 @@ final class MonthListCell: UITableViewCell {
         return imageView
     }()
 
-    private let reviewedStat = StatItemView()
-    private let deletedStat = StatItemView()
-    private let keptStat = StatItemView()
-    private let storedStat = StatItemView()
-
-    private var progressWidthConstraint: NSLayoutConstraint?
+    // MARK: - Init
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -82,295 +62,166 @@ final class MonthListCell: UITableViewCell {
         fatalError("init(coder:) has not been implemented")
     }
 
+    // MARK: - Setup
+
     private func setupUI() {
+        // The card draws the row and its corners: no inset-grouped section background
+        // (rounded around the whole year) behind it
+        backgroundConfiguration = .clear()
         backgroundColor = .clear
         selectionStyle = .none
 
         contentView.addSubview(containerView)
-        containerView.addSubview(progressBackgroundView)
-        containerView.addSubview(titleLabel)
-        containerView.addSubview(detailLabel)
+        containerView.addSubview(rowView)
         containerView.addSubview(chevronImageView)
-        containerView.addSubview(statsStackView)
 
-        statsStackView.addArrangedSubview(reviewedStat)
-        statsStackView.addArrangedSubview(deletedStat)
-        statsStackView.addArrangedSubview(keptStat)
-        statsStackView.addArrangedSubview(storedStat)
+        // The whole row is one VoiceOver element
+        isAccessibilityElement = true
+        accessibilityTraits = .button
+
+        if #available(iOS 17.0, *) {
+            registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (self: MonthListCell, _: UITraitCollection) in
+                self.updateSelectionBorderColor()
+            }
+        }
     }
 
     private func setupConstraint() {
-        reviewedStat.translatesAutoresizingMaskIntoConstraints = false
-        deletedStat.translatesAutoresizingMaskIntoConstraints = false
-        keptStat.translatesAutoresizingMaskIntoConstraints = false
-        storedStat.translatesAutoresizingMaskIntoConstraints = false
-
         NSLayoutConstraint.activate([
-            deletedStat.widthAnchor.constraint(equalTo: keptStat.widthAnchor),
-            keptStat.widthAnchor.constraint(equalTo: storedStat.widthAnchor),
-            reviewedStat.widthAnchor.constraint(equalTo: deletedStat.widthAnchor, multiplier: 1.7),
-
             containerView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 6),
             containerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             containerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             containerView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -6),
 
-            progressBackgroundView.topAnchor.constraint(equalTo: containerView.topAnchor),
-            progressBackgroundView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
-            progressBackgroundView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
-
-            titleLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 12),
-            titleLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
-            titleLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -32),
+            rowView.topAnchor.constraint(equalTo: containerView.topAnchor),
+            rowView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            rowView.trailingAnchor.constraint(equalTo: chevronImageView.leadingAnchor),
+            rowView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
 
             chevronImageView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
             chevronImageView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
             chevronImageView.widthAnchor.constraint(equalToConstant: 12),
-            chevronImageView.heightAnchor.constraint(equalToConstant: 20),
-
-            detailLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
-            detailLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
-            detailLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -36),
-            detailLabel.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -12),
-
-            statsStackView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
-            statsStackView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
-            statsStackView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -36),
-            statsStackView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -12),
-            statsStackView.heightAnchor.constraint(equalToConstant: 20)
+            chevronImageView.heightAnchor.constraint(equalToConstant: 20)
         ])
     }
 
+    // MARK: - Layout
+
+    /// The inset-grouped table rounds each year's section by masking its first and last
+    /// cells, which cut the card's own corners (and its selection outline). Each card rounds
+    /// itself, so the cell keeps no mask.
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        if layer.cornerRadius != 0 { layer.cornerRadius = 0 }
+        if layer.masksToBounds { layer.masksToBounds = false }
+    }
+
+    // MARK: - Selection
+
+    /// Only the iPhone Duo's list | detail split keeps a row selected: the row showing in the
+    /// detail. Elsewhere rows deselect on tap, so the look never changes there.
+    override func setSelected(_ selected: Bool, animated: Bool) {
+        super.setSelected(selected, animated: animated)
+        // An outline, not a fill: a gray fill would hide the capsule's gray "left" segment
+        // On screen the outline fades between rows as the selection moves
+        containerView.layer.setBorderWidth(selected ? 2 : 0, animated: window != nil)
+        updateSelectionBorderColor()
+        accessibilityTraits = selected ? [.button, .selected] : .button
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        // iOS 17+ uses registerForTraitChanges
+        if #available(iOS 17.0, *) { return }
+        if traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
+            updateSelectionBorderColor()
+        }
+    }
+
+    private func updateSelectionBorderColor() {
+        containerView.layer.borderColor = UIColor.label.resolvedColor(with: traitCollection).cgColor
+    }
+
+    // MARK: - Reuse
+
     override func prepareForReuse() {
         super.prepareForReuse()
-        progressBackgroundView.backgroundColor = .clear
-        progressBackgroundView.frame.size.width = 0
-        removeProgressConstraint()
+        rowView.reset()
+        accessibilityLabel = nil
     }
 
-    private func removeProgressConstraint() {
-        progressWidthConstraint?.isActive = false
-        progressWidthConstraint = nil
-    }
+    // MARK: - Configure
 
     func configure(with item: MonthItem) {
-        titleLabel.text = item.title
-
         let total = item.originalTotalCount > 0 ? item.originalTotalCount : item.currentPhotoCount
-        let reviewed = item.reviewedCount
 
-        removeProgressConstraint()
+        let notStartedSubtitle = item.mediaType == .video
+            ? Strings.videosToReview(item.currentPhotoCount)
+            : Strings.photosToReview(item.currentPhotoCount)
 
-        if total > 0 && reviewed >= total {
-            configureFullyReviewed()
-        } else if reviewed == 0 {
-            configureNotTouched(totalCount: item.currentPhotoCount, mediaType: item.mediaType)
-        } else {
-            configureInProgress(item: item, total: total)
+        rowView.configure(
+            title: item.title,
+            deleted: item.deletedCount,
+            kept: item.keptCount,
+            stored: item.storedCount,
+            total: total,
+            reviewed: item.reviewedCount,
+            notStartedSubtitle: notStartedSubtitle)
+        accessibilityLabel = rowView.accessibilitySummary
+    }
+}
+
+// MARK: - Preview
+
+#if DEBUG
+import SwiftUI
+
+private enum MonthListCellPreview {
+    static func item(
+        _ title: String, total: Int, reviewed: Int = 0, deleted: Int = 0, kept: Int = 0, stored: Int = 0,
+        mediaType: PHAssetMediaType = .image
+    ) -> MonthItem {
+        MonthItem(
+            title: title, key: "2026-09", currentPhotoCount: total, reviewedCount: reviewed,
+            keptCount: kept, deletedCount: deleted, storedCount: stored, originalTotalCount: total,
+            mediaType: mediaType)
+    }
+
+    static let items: [MonthItem] = [
+        item("September 2026", total: 29),
+        item("August 2026", total: 92, reviewed: 63, deleted: 20, kept: 38, stored: 5),
+        item("July 2026", total: 40, reviewed: 12, deleted: 12),
+        item("June 2026", total: 150, reviewed: 150, deleted: 100, kept: 50),
+        item("May 2026", total: 12_345, reviewed: 9_876, deleted: 4_321, kept: 5_000, stored: 555),
+        item("April 2026", total: 2_000, reviewed: 1, deleted: 1)
+    ]
+
+    /// Every state, one cell under another
+    static func stack() -> UIView {
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.backgroundColor = .mainBackground
+        items.forEach { item in
+            let cell = MonthListCell(style: .default, reuseIdentifier: "cell")
+            cell.configure(with: item)
+            stack.addArrangedSubview(cell)
         }
-    }
-
-    private func configureFullyReviewed() {
-        detailLabel.isHidden = false
-        statsStackView.isHidden = true
-
-        progressBackgroundView.backgroundColor = .progressCompleted
-
-        progressWidthConstraint = progressBackgroundView.widthAnchor.constraint(equalTo: containerView.widthAnchor)
-        progressWidthConstraint?.isActive = true
-
-        let textAttributes: [NSAttributedString.Key: Any] = [
-            .foregroundColor: ThemeManager.Colors.statusGreen,
-            .font: UIFont.systemFont(ofSize: 13, weight: .medium)
-        ]
-
-        let config = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
-        if let image = UIImage(systemName: "checkmark.seal.fill", withConfiguration: config)?.withTintColor(
-            ThemeManager.Colors.statusGreen)
-        {
-            let attachment = NSTextAttachment()
-            attachment.image = image
-            attachment.bounds = CGRect(x: 0, y: -2, width: 14, height: 14)
-            let attributedString = NSMutableAttributedString(attachment: attachment)
-            attributedString.append(NSAttributedString(string: "  " + NSLocalizedString("monthCell.allCaughtUp", comment: "All caught up message"), attributes: textAttributes))
-            detailLabel.attributedText = attributedString
-        } else {
-            detailLabel.attributedText = NSAttributedString(string: NSLocalizedString("monthCell.allCaughtUp", comment: "All caught up message"), attributes: textAttributes)
-        }
-    }
-
-    private func configureNotTouched(totalCount: Int, mediaType: PHAssetMediaType) {
-        detailLabel.isHidden = false
-        statsStackView.isHidden = true
-
-        progressBackgroundView.backgroundColor = .clear
-
-        let textAttributes: [NSAttributedString.Key: Any] = [
-            .foregroundColor: UIColor.textSecondary,
-            .font: UIFont.systemFont(ofSize: 13, weight: .regular)
-        ]
-
-        let text = mediaType == .video
-            ? String.localizedStringWithFormat(NSLocalizedString("monthCell.videosToReview", comment: "Videos to review count"), totalCount)
-            : String.localizedStringWithFormat(NSLocalizedString("monthCell.photosToReview", comment: "Photos to review count"), totalCount)
-        detailLabel.attributedText = NSAttributedString(string: text, attributes: textAttributes)
-    }
-
-    private func configureInProgress(item: MonthItem, total: Int) {
-        detailLabel.isHidden = true
-        statsStackView.isHidden = false
-
-        let color =
-            item.mediaType == .video
-            ? UIColor.video50
-            : UIColor.photo50
-        progressBackgroundView.backgroundColor = color
-
-        let percentage = CGFloat(item.reviewedCount) / CGFloat(total)
-
-        progressWidthConstraint = progressBackgroundView.widthAnchor.constraint(
-            equalTo: containerView.widthAnchor, multiplier: percentage)
-        progressWidthConstraint?.isActive = true
-
-        let totalCount = item.originalTotalCount > 0 ? item.originalTotalCount : item.currentPhotoCount
-
-        reviewedStat.configure(
-            systemName: "eye.fill", color: .textPrimary,
-            text: "\(item.reviewedCount.compactFormatted)/\(totalCount.compactFormatted)")
-        deletedStat.configure(
-            systemName: "trash.fill", color: ThemeManager.Colors.statusRed,
-            text: item.deletedCount.compactFormatted)
-        keptStat.configure(
-            systemName: "checkmark.circle.fill", color: ThemeManager.Colors.statusGreen,
-            text: item.keptCount.compactFormatted)
-        storedStat.configure(
-            systemName: "archivebox.fill", color: ThemeManager.Colors.statusYellow,
-            text: item.storedCount.compactFormatted, iconPointSize: 14)
+        return stack
     }
 }
 
 @available(iOS 17.0, *)
-#Preview("Photos (Untouched)", traits: .fixedLayout(width: 375, height: 90)) {
-    let cell = MonthListCell(style: .default, reuseIdentifier: "cell")
-    let item = MonthItem(
-        title: "September 2024",
-        key: "202409",
-        currentPhotoCount: 100,
-        reviewedCount: 0,
-        keptCount: 0,
-        deletedCount: 0,
-        storedCount: 0,
-        originalTotalCount: 100,
-        mediaType: .image
-    )
-    cell.configure(with: item)
-    return cell
+#Preview("All states · 320", traits: .fixedLayout(width: 320, height: 520)) {
+    MonthListCellPreview.stack()
 }
 
 @available(iOS 17.0, *)
-#Preview("Photos (In Progress)", traits: .fixedLayout(width: 375, height: 90)) {
-    let cell = MonthListCell(style: .default, reuseIdentifier: "cell")
-    let item = MonthItem(
-        title: "January 2024",
-        key: "202401",
-        currentPhotoCount: 100,
-        reviewedCount: 30,
-        keptCount: 10,
-        deletedCount: 20,
-        storedCount: 0,
-        originalTotalCount: 100,
-        mediaType: .image
-    )
-    cell.configure(with: item)
-    return cell
+#Preview("All states · 375", traits: .fixedLayout(width: 375, height: 520)) {
+    MonthListCellPreview.stack()
 }
 
 @available(iOS 17.0, *)
-#Preview("Photos (Finished)", traits: .fixedLayout(width: 375, height: 90)) {
-    let cell = MonthListCell(style: .default, reuseIdentifier: "cell")
-    let item = MonthItem(
-        title: "March 2024",
-        key: "202403",
-        currentPhotoCount: 150,
-        reviewedCount: 150,
-        keptCount: 50,
-        deletedCount: 100,
-        storedCount: 0,
-        originalTotalCount: 150,
-        mediaType: .image
-    )
-    cell.configure(with: item)
-    return cell
+#Preview("All states · 430", traits: .fixedLayout(width: 430, height: 520)) {
+    MonthListCellPreview.stack()
 }
-
-@available(iOS 17.0, *)
-#Preview("Videos (Untouched)", traits: .fixedLayout(width: 375, height: 90)) {
-    let cell = MonthListCell(style: .default, reuseIdentifier: "cell")
-    let item = MonthItem(
-        title: "February 2024",
-        key: "202402",
-        currentPhotoCount: 50,
-        reviewedCount: 0,
-        keptCount: 0,
-        deletedCount: 0,
-        storedCount: 0,
-        originalTotalCount: 50,
-        mediaType: .video
-    )
-    cell.configure(with: item)
-    return cell
-}
-
-@available(iOS 17.0, *)
-#Preview("Videos (In Progress)", traits: .fixedLayout(width: 375, height: 90)) {
-    let cell = MonthListCell(style: .default, reuseIdentifier: "cell")
-    let item = MonthItem(
-        title: "June 2024",
-        key: "202406",
-        currentPhotoCount: 40,
-        reviewedCount: 20,
-        keptCount: 10,
-        deletedCount: 10,
-        storedCount: 0,
-        originalTotalCount: 40,
-        mediaType: .video
-    )
-    cell.configure(with: item)
-    return cell
-}
-
-@available(iOS 17.0, *)
-#Preview("Videos (Finished)", traits: .fixedLayout(width: 375, height: 90)) {
-    let cell = MonthListCell(style: .default, reuseIdentifier: "cell")
-    let item = MonthItem(
-        title: "April 2024",
-        key: "202404",
-        currentPhotoCount: 20,
-        reviewedCount: 20,
-        keptCount: 5,
-        deletedCount: 15,
-        storedCount: 0,
-        originalTotalCount: 20,
-        mediaType: .video
-    )
-    cell.configure(with: item)
-    return cell
-}
-
-@available(iOS 17.0, *)
-#Preview("Photos (Large numbers)", traits: .fixedLayout(width: 375, height: 90)) {
-    let cell = MonthListCell(style: .default, reuseIdentifier: "cell")
-    let item = MonthItem(
-        title: "Summer 2023",
-        key: "year-2023",
-        currentPhotoCount: 5000,
-        reviewedCount: 3200,
-        keptCount: 1500,
-        deletedCount: 1200,
-        storedCount: 500,
-        originalTotalCount: 5000,
-        mediaType: .image
-    )
-    cell.configure(with: item)
-    return cell
-}
+#endif

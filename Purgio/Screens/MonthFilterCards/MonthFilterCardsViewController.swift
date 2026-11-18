@@ -195,6 +195,43 @@ final class MonthFilterCardsViewController: UIViewController {
     /// Upright the slot is a fixed width beside Continue; sideways it spans the filters column.
     private var binSlotWidthConstraint: NSLayoutConstraint?
 
+    private enum EmbeddedHeader {
+        static let titleFontSize: CGFloat = 22
+        static let spacing: CGFloat = 8
+        static let infoIconPointSize: CGFloat = 17
+    }
+
+    /// Embedded in MonthsList's detail pane the nav bar is the list's, so the hub names its
+    /// month (and, for a year, offers the details sheet) in a header row of its own.
+    private let embeddedHeaderStack: UIStackView = {
+        let stack = UIStackView()
+        stack.axis = .horizontal
+        stack.alignment = .center
+        stack.spacing = EmbeddedHeader.spacing
+        return stack
+    }()
+
+    private let embeddedTitleLabel: UILabel = {
+        let label = UILabel()
+        label.font = ThemeManager.Fonts.titleFont(size: EmbeddedHeader.titleFontSize, weight: .bold)
+        label.textColor = .textPrimary
+        label.adjustsFontSizeToFitWidth = true
+        label.minimumScaleFactor = 0.8
+        label.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        return label
+    }()
+
+    private lazy var embeddedInfoButton: UIButton = {
+        let button = UIButton(type: .system)
+        let config = UIImage.SymbolConfiguration(pointSize: EmbeddedHeader.infoIconPointSize, weight: .medium)
+        button.setImage(UIImage(systemName: "info.circle", withConfiguration: config), for: .normal)
+        button.tintColor = .textPrimary
+        button.accessibilityLabel = Strings.yearDetails
+        button.addTarget(self, action: #selector(infoButtonTapped), for: .touchUpInside)
+        button.setContentHuggingPriority(.required, for: .horizontal)
+        return button
+    }()
+
     private var continueButtonTitle: String?
     private var continueButtonSymbol: String?
 
@@ -240,14 +277,27 @@ final class MonthFilterCardsViewController: UIViewController {
     private var binCountTask: Task<Void, Never>?
     private var preloadedYearAssets: [PHAsset]?
     private var yearSection: YearSection?
+    /// Shown as MonthsList's detail pane on the iPhone Duo inner display: one column with a
+    /// header and a bottom row (Continue + the global bin's slot), never split at the fold.
+    private let isEmbedded: Bool
+    /// Set by the months list before it swaps this embedded hub for another month's: the new
+    /// hub's bin slot is in the same place, so disappearing leaves the bin where it is
+    var keepsBinPlacementOnDisappear = false
 
-    init(monthTitle: String, monthKey: String, mediaType: PHAssetMediaType = .image, yearSection: YearSection? = nil) {
+    init(
+        monthTitle: String, monthKey: String, mediaType: PHAssetMediaType = .image, yearSection: YearSection? = nil,
+        isEmbedded: Bool = false
+    ) {
         self.monthTitle = monthTitle
         self.monthKey = monthKey
         self.mediaType = mediaType
         self.yearSection = yearSection
+        self.isEmbedded = isEmbedded
         super.init(nibName: nil, bundle: nil)
     }
+
+    /// The month or year key this hub shows.
+    var sessionKey: String { monthKey }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
@@ -272,7 +322,11 @@ final class MonthFilterCardsViewController: UIViewController {
         }
 
         if monthKey.hasPrefix("year-") {
-            setupInfoButton()
+            if isEmbedded {
+                embeddedInfoButton.isHidden = false
+            } else {
+                setupInfoButton()
+            }
             preloadYearAssets()
         }
     }
@@ -298,13 +352,29 @@ final class MonthFilterCardsViewController: UIViewController {
         // Every push and pop resets the bin to .standard; send the slot again now we're on top
         lastSentBinSlot = nil
         updateBinSlot()
+        if isEmbedded {
+            // In the list's detail pane the hub can appear before the pane's layout (fold gap,
+            // rail edges) settles, and before a tab switch resets the bin (mode, month, handler,
+            // placement). Configure the bin and send the slot again once both have happened.
+            DispatchQueue.main.async { [weak self] in
+                guard let self, self.view.window != nil else { return }
+                self.view.layoutIfNeeded()
+                self.configureGlobalBinButton()
+                self.lastSentBinSlot = nil
+                self.updateBinSlot()
+            }
+        }
     }
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        // Embedded and replaced by another month's hub, the bin stays in the slot the new hub
+        // takes over, so it doesn't jump to its standard place and back
         if lastSentBinSlot != nil {
             lastSentBinSlot = nil
-            binController?.setBinButtonPlacement(.standard)
+            if !keepsBinPlacementOnDisappear {
+                binController?.setBinButtonPlacement(.standard)
+            }
         }
         if isMovingFromParent {
             binCountTask?.cancel()
@@ -328,6 +398,12 @@ final class MonthFilterCardsViewController: UIViewController {
 
         configureCards()
         continueButton.addTarget(self, action: #selector(allPhotosCardTapped), for: .touchUpInside)
+
+        embeddedTitleLabel.text = monthTitle
+        embeddedInfoButton.isHidden = true
+        embeddedHeaderStack.addArrangedSubview(embeddedTitleLabel)
+        embeddedHeaderStack.addArrangedSubview(embeddedInfoButton)
+
         view.addSubview(contentStack)
     }
 
@@ -342,6 +418,12 @@ final class MonthFilterCardsViewController: UIViewController {
     /// groups don't jump when the device folds), the same way Home does. A vertical fold puts
     /// the overview and the filters side by side; a horizontal one stacks them.
     private func updateFoldSplit() {
+        // The detail pane sits on one side of the fold already: one column
+        if isEmbedded {
+            if !hasBuiltContent { rebuildContent(splitAlong: nil) }
+            updateEmbeddedDensity()
+            return
+        }
         var fold = FoldRegion.splittingFold(in: view)
         // A horizontal fold only splits the inner display (regular width); compact keeps one column
         if let candidate = fold, candidate.width >= candidate.height,
@@ -371,6 +453,16 @@ final class MonthFilterCardsViewController: UIViewController {
         }
     }
 
+    /// Embedded above the fold (the upright inner display) the pane is wider than tall and too
+    /// short for the stats card as well as the cards. The selected row on the base shows its
+    /// progress, so the cards take that room; the header still names the month.
+    private func updateEmbeddedDensity() {
+        guard view.bounds.height > 0 else { return }
+        let isShortPane = view.bounds.width > view.bounds.height
+        guard statsContainerView.isHidden != isShortPane else { return }
+        statsContainerView.isHidden = isShortPane
+    }
+
     private func rebuildContent(splitAlong axis: NSLayoutConstraint.Axis?) {
         hasBuiltContent = true
         foldSplitAxis = axis
@@ -397,8 +489,20 @@ final class MonthFilterCardsViewController: UIViewController {
             cardsContainerStack.addArrangedSubview(topRowStack)
             cardsContainerStack.addArrangedSubview(middleRowStack)
             cardsContainerStack.addArrangedSubview(allPhotosCard)
-            contentStack.addArrangedSubview(statsContainerView)
-            contentStack.addArrangedSubview(cardsContainerStack)
+            if isEmbedded {
+                // The list's detail pane: its own header, and Continue with the bin's slot
+                // along the bottom (board TP2's bottom row), so the bin covers no card
+                binSlotWidthConstraint?.isActive = true
+                bottomRowStack.addArrangedSubview(continueButton)
+                bottomRowStack.addArrangedSubview(binSlotView)
+                contentStack.addArrangedSubview(embeddedHeaderStack)
+                contentStack.addArrangedSubview(statsContainerView)
+                contentStack.addArrangedSubview(cardsContainerStack)
+                contentStack.addArrangedSubview(bottomRowStack)
+            } else {
+                contentStack.addArrangedSubview(statsContainerView)
+                contentStack.addArrangedSubview(cardsContainerStack)
+            }
             return
         }
 
@@ -498,14 +602,16 @@ final class MonthFilterCardsViewController: UIViewController {
     /// Continue, sideways full width under the filters, level with Continue. The slot is sent
     /// again only when it moves (folding, the rail).
     private func updateBinSlot() {
-        guard foldSplitAxis != nil, binSlotView.window != nil else {
+        guard foldSplitAxis != nil || isEmbedded, binSlotView.window != nil else {
             if lastSentBinSlot != nil {
                 lastSentBinSlot = nil
                 binController?.setBinButtonPlacement(.standard)
             }
             return
         }
-        guard navigationController?.topViewController === self else { return }
+        // Embedded, the list that holds this hub is the one on top
+        // (pushed, `parent` is the navigation controller itself)
+        guard navigationController?.topViewController === (isEmbedded ? parent : self) else { return }
         let slot = binSlotView.convert(binSlotView.bounds, to: nil)
         guard slot.width > 0, slot.height > 0, slot != lastSentBinSlot else { return }
         lastSentBinSlot = slot
@@ -588,6 +694,7 @@ final class MonthFilterCardsViewController: UIViewController {
     }
 
     private func configureGlobalBinButton() {
+        binCountTask?.cancel()
         let binIds = DeleteBinStore.shared.loadAssetIds()
 
         binController?.configureBinButton(

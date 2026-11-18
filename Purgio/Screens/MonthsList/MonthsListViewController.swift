@@ -86,6 +86,45 @@ final class MonthsListViewController: UIViewController {
     // iOS 26+ top gradient blur view
     private var topGradientView: GradientView?
 
+    // iPhone Duo inner display: the list on one side of the fold, the selected month's hub
+    // (an embedded MonthFilterCardsViewController) on the other
+    private let detailContainerView: UIView = {
+        let view = UIView()
+        view.backgroundColor = .mainBackground
+        view.isHidden = true
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
+    private var detailViewController: MonthFilterCardsViewController?
+    /// The month key (or `year-YYYY`) the detail shows; kept while the split is off, so it
+    /// comes back on the same row.
+    private var selectedDetailKey: String?
+    /// Axis the screen is split along at the fold; nil means the single list.
+    private var detailSplitAxis: NSLayoutConstraint.Axis?
+    private var singleListConstraints: [NSLayoutConstraint] = []
+    private var sidewaysSplitConstraints: [NSLayoutConstraint] = []
+    private var uprightSplitConstraints: [NSLayoutConstraint] = []
+    /// Sideways: the list's trailing edge (from the view's leading edge).
+    private var listTrailingToFold: NSLayoutConstraint?
+    /// Sideways: the detail's leading edge (from the view's leading edge).
+    private var detailLeadingToFold: NSLayoutConstraint?
+    /// Upright: the detail fills the raised half and ends at the gap (from the view's top).
+    private var detailBottomToFold: NSLayoutConstraint?
+    /// Upright: the list starts `listTopClearance` below the detail (from the view's top).
+    private var listTopToFold: NSLayoutConstraint?
+    /// Upright: the list's frame starts this far below the detail, so rows scrolling up are cut
+    /// off before they reach its cards; the rest of the gap is the list's top inset
+    private let listTopClearance = GeneralConstants.EdgePadding.small
+    /// Upright: over the list's top edge, rows scrolling up blur away under it (as Settings' base)
+    private let listTopBlurView: ProgressiveBlurView = {
+        let view = ProgressiveBlurView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.isHidden = true
+        return view
+    }()
+    private var listTopBlurHeight: NSLayoutConstraint?
+    private var isDetailSplitActive: Bool { detailSplitAxis != nil }
+
     // MARK: - Private Services
 
     private let photoLibraryService = PhotoLibraryService.shared
@@ -170,12 +209,16 @@ final class MonthsListViewController: UIViewController {
         // Reload months to show updated progress
         loadMonths()
 
-        // Configure global bin button to show if there are items in bin
-        configureGlobalBinButton()
+        // Configure global bin button to show if there are items in bin. With the detail
+        // showing, its hub configures the bin for its month and moves it into its bottom row.
+        if detailViewController == nil {
+            configureGlobalBinButton()
+        }
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        updateDetailSplit()
         updateBinButtonInset()
     }
 
@@ -194,6 +237,8 @@ final class MonthsListViewController: UIViewController {
         permissionStack.addArrangedSubview(permissionButton)
 
         view.addSubview(tableView)
+        view.addSubview(listTopBlurView)
+        view.addSubview(detailContainerView)
         view.addSubview(permissionStack)
 
         // Wide displays (iPhone Duo inner display in landscape) keep rows at a readable width
@@ -214,10 +259,14 @@ final class MonthsListViewController: UIViewController {
         }
 
         var bottom: CGFloat = 100
-        if isVerticalRail {
-            let lastSection = tableView.numberOfSections - 1
-            let lastFooterHeight = lastSection >= 0 ? tableView.rectForFooter(inSection: lastSection).height : 0
+        let lastSection = tableView.numberOfSections - 1
+        let lastFooterHeight = lastSection >= 0 ? tableView.rectForFooter(inSection: lastSection).height : 0
+        if isVerticalRail || detailSplitAxis == .horizontal {
+            // Sideways split too: the last row ends on Home's baseline, level with the detail
             bottom = DuoLayout.RailPadding.bottom - lastFooterHeight - tableView.safeAreaInsets.bottom
+        } else if detailSplitAxis == .vertical {
+            // Upright the bin sits in the detail above: the last row ends 16pt above the tab bar
+            bottom = GeneralConstants.EdgePadding.medium - lastFooterHeight
         }
         guard tableView.contentInset.bottom != bottom else { return }
         tableView.contentInset.bottom = bottom
@@ -225,12 +274,51 @@ final class MonthsListViewController: UIViewController {
     }
 
     private func setupConstraint() {
+        // The table is a vertical scroller that insets its rows by the safe area, so it pins
+        // to the view; the detail's hub pins its own content to its safe area
+        let tableTop = tableView.topAnchor.constraint(equalTo: view.topAnchor)
+        let tableTrailing = tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+        let tableBottom = tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        singleListConstraints = [tableTop, tableTrailing, tableBottom]
+
+        // Sideways (vertical fold): list | detail
+        let listTrailing = tableView.trailingAnchor.constraint(equalTo: view.leadingAnchor)
+        let detailLeading = detailContainerView.leadingAnchor.constraint(equalTo: view.leadingAnchor)
+        sidewaysSplitConstraints = [
+            tableTop, listTrailing, tableBottom,
+            detailLeading,
+            detailContainerView.topAnchor.constraint(equalTo: view.topAnchor),
+            detailContainerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            detailContainerView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ]
+        listTrailingToFold = listTrailing
+        detailLeadingToFold = detailLeading
+
+        // Upright (horizontal fold): the detail on the raised half, standing still, and the
+        // list on the base, scrolling under the blur at its top
+        let detailBottom = detailContainerView.bottomAnchor.constraint(equalTo: view.topAnchor)
+        let listTop = tableView.topAnchor.constraint(equalTo: view.topAnchor)
+        uprightSplitConstraints = [
+            listTop, tableTrailing, tableBottom,
+            detailContainerView.topAnchor.constraint(equalTo: view.topAnchor),
+            detailContainerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            detailContainerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            detailBottom
+        ]
+        detailBottomToFold = detailBottom
+        listTopToFold = listTop
+
+        let blurHeight = listTopBlurView.heightAnchor.constraint(equalToConstant: 0)
+        listTopBlurHeight = blurHeight
+
+        NSLayoutConstraint.activate(singleListConstraints)
         NSLayoutConstraint.activate([
-            // TableView extends to full screen
-            tableView.topAnchor.constraint(equalTo: view.topAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            listTopBlurView.topAnchor.constraint(equalTo: tableView.topAnchor),
+            listTopBlurView.leadingAnchor.constraint(equalTo: tableView.leadingAnchor),
+            listTopBlurView.trailingAnchor.constraint(equalTo: tableView.trailingAnchor),
+            blurHeight,
 
             permissionStack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             permissionStack.centerYAnchor.constraint(equalTo: view.centerYAnchor),
@@ -291,6 +379,209 @@ final class MonthsListViewController: UIViewController {
     private func handleBinTap() {
         let binVC = DeleteBinViewController()
         navigationController?.pushViewController(binVC, animated: true)
+    }
+
+    // MARK: - Detail Split
+
+    /// Splits the screen at the fold on the iPhone Duo inner display: sideways the list before
+    /// the fold and the selected month's hub after it; upright the hub on the raised half,
+    /// standing still, and the list on the base. Like Home, it splits wherever a fold crosses the
+    /// view (inactive included, so nothing jumps when the device folds); a horizontal fold
+    /// only in regular width, so the cover display keeps the single list.
+    private func updateDetailSplit() {
+        var fold = FoldRegion.splittingFold(in: view)
+        if let candidate = fold, candidate.width >= candidate.height,
+           traitCollection.horizontalSizeClass != .regular {
+            fold = nil
+        }
+        let status = photoLibraryService.authorizationStatus()
+        let hasRows = (status == .authorized || status == .limited) && !yearSections.isEmpty
+        if !hasRows { fold = nil }
+
+        let axis: NSLayoutConstraint.Axis? = fold.map { $0.height > $0.width ? .horizontal : .vertical }
+        if axis != detailSplitAxis {
+            applyDetailSplit(axis)
+        }
+
+        guard let fold = fold, let axis = axis else { return }
+        let foldStart = axis == .horizontal ? fold.minX : fold.minY
+        let foldLength = axis == .horizontal ? fold.width : fold.height
+        let foldCenter = foldStart + foldLength / 2
+        // Fully open, the panes keep the fold gap, centered on the fold line.
+        // Folded, they clear the whole region.
+        let isFolded = FoldRegion.activeFold(in: view) != nil
+        let gap = isFolded
+            ? max(GeneralConstants.Spacer.foldGap, foldLength)
+            : GeneralConstants.Spacer.foldGap
+        let firstEdge = foldCenter - gap / 2
+        if axis == .horizontal {
+            // The fold's x is physical; measured from the leading edge it holds for
+            // left-to-right languages, the only ones the app ships (English, Turkish)
+            setConstant(firstEdge, of: listTrailingToFold)
+            setConstant(foldCenter + gap / 2, of: detailLeadingToFold)
+        } else {
+            // The detail ends at the gap; the list starts a clearance below it, its top inset
+            // keeping the first row a gap away, and the blur fills the gap. Fully open the gap
+            // is small, so the blur keeps a minimum band over the first header's own padding.
+            setConstant(firstEdge, of: detailBottomToFold)
+            setConstant(firstEdge + listTopClearance, of: listTopToFold)
+            setConstant(max(gap - listTopClearance, GeneralConstants.EdgePadding.content), of: listTopBlurHeight)
+            setListTopInset(max(0, gap - listTopClearance))
+            updateListTopBlur()
+        }
+    }
+
+    private func setConstant(_ constant: CGFloat, of constraint: NSLayoutConstraint?) {
+        guard let constraint = constraint, constraint.constant != constant else { return }
+        constraint.constant = constant
+    }
+
+    private func setListTopInset(_ top: CGFloat) {
+        guard tableView.contentInset.top != top else { return }
+        // A list resting at its top keeps resting there when the top inset changes
+        let wasAtTop = tableView.contentOffset.y <= -tableView.adjustedContentInset.top + 0.5
+        tableView.contentInset.top = top
+        tableView.verticalScrollIndicatorInsets.top = top
+        if wasAtTop {
+            tableView.contentOffset.y = -tableView.adjustedContentInset.top
+        }
+    }
+
+    /// Upright: the blur over the list's top shows only as far as rows have scrolled under it
+    private func updateListTopBlur() {
+        guard detailSplitAxis == .vertical else { return }
+        listTopBlurView.setContentOverlap(tableView.contentOffset.y + tableView.adjustedContentInset.top)
+    }
+
+    private func applyDetailSplit(_ axis: NSLayoutConstraint.Axis?) {
+        detailSplitAxis = axis
+        NSLayoutConstraint.deactivate(singleListConstraints + sidewaysSplitConstraints + uprightSplitConstraints)
+        switch axis {
+        case .horizontal?: NSLayoutConstraint.activate(sidewaysSplitConstraints)
+        case .vertical?: NSLayoutConstraint.activate(uprightSplitConstraints)
+        case nil: NSLayoutConstraint.activate(singleListConstraints)
+        @unknown default: NSLayoutConstraint.activate(singleListConstraints)
+        }
+        detailContainerView.isHidden = axis == nil
+        listTopBlurView.isHidden = axis != .vertical
+        if axis != .vertical {
+            setListTopInset(0)
+        }
+
+        if axis == nil {
+            removeDetail()
+            tableView.indexPathsForSelectedRows?.forEach { tableView.deselectRow(at: $0, animated: false) }
+            // The hub's disappearance put the bin back in its standard place. Only while the
+            // list is on top: mid push or pop, the bin belongs to the other screen.
+            if navigationController?.topViewController === self {
+                configureGlobalBinButton()
+            }
+        } else {
+            ensureDetailSelection()
+        }
+    }
+
+    /// Keeps the selected row if it's still listed, else picks the first unfinished one
+    /// (the first row when every one is done), and shows it in the detail.
+    private func ensureDetailSelection() {
+        guard isDetailSplitActive else { return }
+        let indexPath = selectedDetailKey.flatMap { indexPath(forDetailKey: $0) } ?? firstUnfinishedIndexPath()
+        guard let indexPath = indexPath else {
+            removeDetail()
+            return
+        }
+        if tableView.indexPathForSelectedRow != indexPath {
+            tableView.selectRow(at: indexPath, animated: false, scrollPosition: .none)
+        }
+        showDetail(at: indexPath)
+    }
+
+    private func showDetail(at indexPath: IndexPath) {
+        let key = detailKey(at: indexPath)
+        selectedDetailKey = key
+        guard detailViewController?.sessionKey != key else { return }
+
+        let ys = yearSections[indexPath.section]
+        let detail: MonthFilterCardsViewController
+        if isSparseYear(ys) {
+            detail = MonthFilterCardsViewController(
+                monthTitle: ys.year, monthKey: key, mediaType: mediaType, yearSection: ys, isEmbedded: true)
+        } else {
+            detail = MonthFilterCardsViewController(
+                monthTitle: ys.months[indexPath.row].title, monthKey: key, mediaType: mediaType, isEmbedded: true)
+        }
+
+        // The old hub leaves the bin in its slot, where the new hub's slot is too, so the bin
+        // doesn't jump to its standard place and back. A snapshot of it fades out over the new one.
+        let snapshot = detailViewController?.view.snapshotView(afterScreenUpdates: false)
+        detailViewController?.keepsBinPlacementOnDisappear = true
+        removeDetail()
+        addChild(detail)
+        detail.view.translatesAutoresizingMaskIntoConstraints = false
+        detailContainerView.addSubview(detail.view)
+        NSLayoutConstraint.activate([
+            detail.view.topAnchor.constraint(equalTo: detailContainerView.topAnchor),
+            detail.view.leadingAnchor.constraint(equalTo: detailContainerView.leadingAnchor),
+            detail.view.trailingAnchor.constraint(equalTo: detailContainerView.trailingAnchor),
+            detail.view.bottomAnchor.constraint(equalTo: detailContainerView.bottomAnchor)
+        ])
+        detail.didMove(toParent: self)
+        detailViewController = detail
+
+        guard let snapshot = snapshot else { return }
+        snapshot.frame = detailContainerView.bounds
+        detailContainerView.addSubview(snapshot)
+        UIView.animate(withDuration: 0.25, animations: {
+            snapshot.alpha = 0
+        }, completion: { _ in
+            snapshot.removeFromSuperview()
+        })
+    }
+
+    private func removeDetail() {
+        guard let detail = detailViewController else { return }
+        detail.willMove(toParent: nil)
+        detail.view.removeFromSuperview()
+        detail.removeFromParent()
+        detailViewController = nil
+    }
+
+    private func isSparseYear(_ ys: YearSection) -> Bool {
+        ys.totalItemCount < GeneralConstants.BulkYear.sparseYearThreshold
+    }
+
+    private func detailKey(at indexPath: IndexPath) -> String {
+        let ys = yearSections[indexPath.section]
+        return isSparseYear(ys) ? "year-\(ys.year)" : ys.months[indexPath.row].key
+    }
+
+    private func indexPath(forDetailKey key: String) -> IndexPath? {
+        for (section, ys) in yearSections.enumerated() {
+            if isSparseYear(ys) {
+                if "year-\(ys.year)" == key { return IndexPath(row: 0, section: section) }
+            } else if let row = ys.months.firstIndex(where: { $0.key == key }) {
+                return IndexPath(row: row, section: section)
+            }
+        }
+        return nil
+    }
+
+    /// The topmost row that isn't complete, the same test as everywhere; the first row when
+    /// every one is done.
+    private func firstUnfinishedIndexPath() -> IndexPath? {
+        for (section, ys) in yearSections.enumerated() {
+            if isSparseYear(ys) {
+                let item = makeYearItem(for: ys)
+                let total = item.originalTotalCount > 0 ? item.originalTotalCount : item.currentTotalCount
+                if !(total > 0 && item.reviewedCount >= total) { return IndexPath(row: 0, section: section) }
+            } else if let row = ys.months.firstIndex(where: { month in
+                let total = month.originalTotalCount > 0 ? month.originalTotalCount : month.currentPhotoCount
+                return !(total > 0 && month.reviewedCount >= total)
+            }) {
+                return IndexPath(row: row, section: section)
+            }
+        }
+        return yearSections.isEmpty ? nil : IndexPath(row: 0, section: 0)
     }
 
     // MARK: - Top Gradient
@@ -562,6 +853,10 @@ final class MonthsListViewController: UIViewController {
         tableView.reloadData()
         updateBinButtonInset()   // Depends on the last section's footer
         updateEmptyState()
+        view.setNeedsLayout()    // The split needs rows; it's decided on the next layout pass
+        if isDetailSplitActive {
+            ensureDetailSelection()
+        }
     }
 
     private func setupFilterButton() {
@@ -712,6 +1007,14 @@ extension MonthsListViewController: UITableViewDataSource, UITableViewDelegate {
     }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        if isDetailSplitActive {
+            // The row stays selected and its hub shows beside the list
+            if detailKey(at: indexPath) != selectedDetailKey {
+                HapticFeedbackManager.shared.selection()
+            }
+            showDetail(at: indexPath)
+            return
+        }
         tableView.deselectRow(at: indexPath, animated: true)
         let ys = yearSections[indexPath.section]
         if ys.totalItemCount < GeneralConstants.BulkYear.sparseYearThreshold {
@@ -727,6 +1030,10 @@ extension MonthsListViewController: UITableViewDataSource, UITableViewDelegate {
         let viewController = MonthFilterCardsViewController(
             monthTitle: item.title, monthKey: item.key, mediaType: mediaType)
         navigationController?.pushViewController(viewController, animated: true)
+    }
+
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        updateListTopBlur()
     }
 }
 

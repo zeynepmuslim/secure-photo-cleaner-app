@@ -229,11 +229,21 @@ class MainTabBarController: UITabBarController, UINavigationControllerDelegate {
 }
 
 extension MainTabBarController: UITabBarControllerDelegate {
-    func tabBarController(_ tabBarController: UITabBarController, didSelect viewController: UIViewController) {
+    /// Resets the bin before the switch, so the new tab's screens configure it and send their
+    /// slot afterwards (resetting in didSelect landed after an embedded hub had sent its slot)
+    func tabBarController(
+        _ tabBarController: UITabBarController, shouldSelect viewController: UIViewController
+    ) -> Bool {
+        guard viewController !== selectedViewController else { return true }
         setBinButtonPlacement(.standard)
         customTapHandler = nil
         currentMonthContext = nil
         binButton.setMode(.count(deleteBinStore.count))
+        return true
+    }
+
+    func tabBarController(_ tabBarController: UITabBarController, didSelect viewController: UIViewController) {
+        // Visibility depends on the tab now selected
         updateVisibility(immediate: true)
     }
 

@@ -2542,6 +2542,23 @@
         }
       }
     },
+    "monthCell.accessibilityReviewed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld of %2$lld reviewed"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%2$lld içinden %1$lld incelendi"
+          }
+        }
+      }
+    },
     "monthCell.allCaughtUp": {
       "extractionState": "manual",
       "localizations": {
@@ -2555,6 +2572,64 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hepsi tamamlandı!"
+          }
+        }
+      }
+    },
+    "monthCell.done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitti"
+          }
+        }
+      }
+    },
+    "monthCell.leftCount": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld left"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld left"
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld kaldı"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld kaldı"
+                }
+              }
+            }
           }
         }
       }
@@ -3419,23 +3494,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Yıl"
-          }
-        }
-      }
-    },
-    "monthsList.yearDone": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Done"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tamamlandı"
           }
         }
       }

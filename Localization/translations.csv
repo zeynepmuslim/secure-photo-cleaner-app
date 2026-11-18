@@ -192,7 +192,6 @@ monthsList.selectVideos;Select Videos;Video Seç;;;;
 monthsList.status;Status;Durum;;;;
 monthsList.videos;Videos;Videolar;;;;
 monthsList.year;Year;Yıl;;;;
-monthsList.yearDone;Done;Tamamlandı;;;;
 videoPlayer.mute;Mute;Sesi Kapat;;;;
 videoPlayer.unmute;Unmute;Sesi Aç;;;;
 yearCell.itemsCount;%d items;%d öğe;;;;
@@ -419,6 +418,9 @@ timeAgo.sevenPlusDays;7+ days ago;7+ gün önce;;;;
 monthCell.allCaughtUp;All caught up!;Hepsi tamamlandı!;;;;
 monthCell.photosToReview;;;%lld photo to review;%lld photos to review;%lld fotoğraf incelenecek;%lld fotoğraf incelenecek
 monthCell.videosToReview;;;%lld video to review;%lld videos to review;%lld video incelenecek;%lld video incelenecek
+monthCell.leftCount;;;%lld left;%lld left;%lld kaldı;%lld kaldı
+monthCell.done;Done;Bitti;;;;
+monthCell.accessibilityReviewed;%1$lld of %2$lld reviewed;%2$lld içinden %1$lld incelendi;;;;
 tipJar.title;Support the Project;Projeyi Destekle;;;;
 tipJar.subtitle;Your tips help keep Purgio free and ad-free.;Bahşişleriniz Purgio'nun ücretsiz ve reklamsız kalmasına yardımcı olur.;;;;
 tipJar.thankYou;Thank you for your support!;Desteğin için teşekkürler!;;;;

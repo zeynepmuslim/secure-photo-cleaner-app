@@ -5,6 +5,7 @@
 //  Created by ZeynepMüslim on 16.11.2026.
 //
 
+import Photos
 import UIKit
 
 // MARK: - Strings
@@ -61,6 +62,8 @@ final class MonthProgressRowView: UIView {
         static let pillFontSize: CGFloat = 13
         static let pillIconPointSize: CGFloat = 12
         static let pillTintAlpha: CGFloat = 0.15
+        static let glyphPointSize: CGFloat = 14
+        static let glyphSpacing: CGFloat = 6
     }
 
     private struct ChipCounts {
@@ -93,6 +96,24 @@ final class MonthProgressRowView: UIView {
         label.textColor = .textPrimary
         label.numberOfLines = 1
         return label
+    }()
+
+    /// Optional photo / video mark after the title, for lists that mix both media types
+    private let glyphView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.contentMode = .scaleAspectFit
+        imageView.isHidden = true
+        imageView.setContentHuggingPriority(.required, for: .horizontal)
+        imageView.setContentCompressionResistancePriority(.required, for: .horizontal)
+        return imageView
+    }()
+
+    private let titleRow: UIStackView = {
+        let stack = UIStackView()
+        stack.axis = .horizontal
+        stack.alignment = .center
+        stack.spacing = Layout.glyphSpacing
+        return stack
     }()
 
     private let subtitleLabel: UILabel = {
@@ -180,7 +201,14 @@ final class MonthProgressRowView: UIView {
         addSubview(capsuleSlot)
         capsuleSlot.addSubview(capsuleView)
 
-        textStack.addArrangedSubview(titleLabel)
+        // The glyph follows the title's text; the spacer takes the rest of the row
+        let titleRowSpacer = UIView()
+        titleRowSpacer.setContentHuggingPriority(UILayoutPriority(1), for: .horizontal)
+        titleRowSpacer.setContentCompressionResistancePriority(UILayoutPriority(1), for: .horizontal)
+        titleRow.addArrangedSubview(titleLabel)
+        titleRow.addArrangedSubview(glyphView)
+        titleRow.addArrangedSubview(titleRowSpacer)
+        textStack.addArrangedSubview(titleRow)
         textStack.addArrangedSubview(subtitleLabel)
         addSubview(textStack)
 
@@ -244,6 +272,7 @@ final class MonthProgressRowView: UIView {
     /// `total` is the row's total (`originalTotalCount`, else the live count). The row is finished
     /// when `total > 0 && reviewed >= total` and not started while `reviewed` is 0.
     /// `notStartedSubtitle` is the cell's own text for a row nobody has touched yet.
+    /// `mediaGlyph` shows a photo or video mark before the title (off by default).
     func configure(
         title: String,
         titleFont: UIFont = ThemeManager.Fonts.titleFont(size: Layout.titleFontSize, weight: .semibold),
@@ -252,9 +281,11 @@ final class MonthProgressRowView: UIView {
         stored: Int,
         total: Int,
         reviewed: Int,
-        notStartedSubtitle: String
+        notStartedSubtitle: String,
+        mediaGlyph: PHAssetMediaType? = nil
     ) {
         titleLabel.text = title
+        applyGlyph(mediaGlyph)
         titleLabel.font = titleFont
         capsuleView.configure(deleted: deleted, kept: kept, stored: stored, total: total, reviewed: reviewed)
 
@@ -294,6 +325,7 @@ final class MonthProgressRowView: UIView {
     func reset() {
         chipCounts = nil
         titleLabel.text = nil
+        applyGlyph(nil)
         subtitleLabel.attributedText = nil
         numberLabel.text = nil
         leftLabel.text = nil
@@ -302,6 +334,20 @@ final class MonthProgressRowView: UIView {
         donePill.isHidden = true
         capsuleView.reset()
         accessibilitySummary = ""
+    }
+
+    private func applyGlyph(_ mediaType: PHAssetMediaType?) {
+        guard let mediaType else {
+            glyphView.isHidden = true
+            glyphView.image = nil
+            return
+        }
+        let isVideo = mediaType == .video
+        glyphView.image = UIImage(
+            systemName: isVideo ? "video.fill" : "photo.fill",
+            withConfiguration: UIImage.SymbolConfiguration(pointSize: Layout.glyphPointSize, weight: .semibold))
+        glyphView.tintColor = .textTertiary
+        glyphView.isHidden = false
     }
 
     /// The number left over its caption, or the Done pill when `left` is nil

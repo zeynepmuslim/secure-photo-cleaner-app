@@ -1862,6 +1862,47 @@
         }
       }
     },
+    "home.itemsCount": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld item"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld items"
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld öğe"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld öğe"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "home.luckyItem": {
       "extractionState": "manual",
       "localizations": {
@@ -1874,7 +1915,24 @@
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Şanslıyım"
+            "value": "Şanslı hissediyorum"
+          }
+        }
+      }
+    },
+    "home.luckySubtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A random month and filter"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rastgele bir ay ve filtre"
           }
         }
       }
@@ -1913,6 +1971,81 @@
         }
       }
     },
+    "home.photosToReview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld photo to review"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld photos to review"
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld fotoğraf incelenecek"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld fotoğraf incelenecek"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "home.resumeTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue Where You Left Off"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaldığınız Yerden Devam Edin"
+          }
+        }
+      }
+    },
+    "home.startReviewing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start Reviewing"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İncelemeye Başlayın"
+          }
+        }
+      }
+    },
     "home.videosTitle": {
       "extractionState": "manual",
       "localizations": {
@@ -1926,6 +2059,47 @@
           "stringUnit": {
             "state": "translated",
             "value": "Videolar"
+          }
+        }
+      }
+    },
+    "home.videosToReview": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld video to review"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld videos to review"
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld video incelenecek"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld video incelenecek"
+                }
+              }
+            }
           }
         }
       }

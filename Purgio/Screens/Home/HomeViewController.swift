@@ -14,18 +14,19 @@ private enum Strings {
     static let navTitle = NSLocalizedString("home.navTitle", comment: "Home tab title")
     static let photosTitle = NSLocalizedString("home.photosTitle", comment: "Photos section title")
     static let videosTitle = NSLocalizedString("home.videosTitle", comment: "Videos section title")
-    static let browseByMonth = NSLocalizedString("home.browseByMonth", comment: "Browse by month section header")
     static let luckyItem = NSLocalizedString("home.luckyItem", comment: "Lucky bar item title (random month and filter)")
 }
 
-private enum HomeLayout {
+enum HomeLayout {
     /// Between Home's cards and groups (also the fold gap when fully open).
     static let cardSpacing: CGFloat = 16
+    /// The dashboard never gets shorter than this (its regular layout's minimum)
+    static let dashboardMinimumHeight: CGFloat = 150
 }
 
 final class HomeViewController: UIViewController {
 
-    private let contentStack: UIStackView = {
+    let contentStack: UIStackView = {
         let stack = UIStackView()
         stack.axis = .vertical
         stack.spacing = HomeLayout.cardSpacing
@@ -41,14 +42,14 @@ final class HomeViewController: UIViewController {
         return view
     }()
 
-    private let dashboardCard: DashboardCard = {
+    let dashboardCard: DashboardCard = {
         let card = DashboardCard()
         card.setContentHuggingPriority(.defaultLow, for: .vertical)
         card.setContentCompressionResistancePriority(.required, for: .vertical)
         return card
     }()
 
-    private let quickAccessStack: UIStackView = {
+    let quickAccessStack: UIStackView = {
         let stack = UIStackView()
         stack.axis = .horizontal
         stack.spacing = 12
@@ -64,9 +65,10 @@ final class HomeViewController: UIViewController {
         card.configure(
             icon: "photo.fill",
             title: Strings.photosTitle,
-            subtitle: Strings.browseByMonth,
+            subtitle: "",
             tintColor: .photo100
         )
+        card.allowsTallVariant = true
         return card
     }()
 
@@ -75,14 +77,24 @@ final class HomeViewController: UIViewController {
         card.configure(
             icon: "video.fill",
             title: Strings.videosTitle,
-            subtitle: Strings.browseByMonth,
+            subtitle: "",
             tintColor: .video100
         )
+        card.allowsTallVariant = true
         return card
     }()
 
+    /// Continue Where You Left Off: in-progress months and sparse years (`+Resume.swift`)
+    let resumeSection: HomeResumeSectionView = {
+        let section = HomeResumeSectionView()
+        section.isHidden = true
+        return section
+    }()
 
-    private let photoLibraryService = PhotoLibraryService.shared
+    /// Feeling Lucky as a row, only while Home is split at the iPhone Duo's fold
+    private let luckyRow = HomeLuckyRowView()
+
+    let photoLibraryService = PhotoLibraryService.shared
     private let statsStore = StatsStore.shared
     private let storageManager = StorageAnalysisManager.shared
     private let cardManager = DashboardCardManager.shared
@@ -97,10 +109,22 @@ final class HomeViewController: UIViewController {
     private var contentBottomConstraint: NSLayoutConstraint?
     private var contentBottomToViewConstraint: NSLayoutConstraint?
     private var quickAccessMaxHeightConstraint: NSLayoutConstraint?
+    /// Single column only: the tiles keep their natural height and the dashboard takes the rest
+    private var quickAccessCompactConstraint: NSLayoutConstraint?
+    var resumeLoadTask: Task<Void, Never>?
+    var resumeItems: [HomeResumeItem] = []
+    /// Rows last shown; nil after new items arrive, so the next layout pass fits them again
+    var appliedResumeRowCount: Int?
 
-    // iPhone Duo inner display: overview (storage + tiles) and dashboard sit on either
-    // side of the fold. Home's own padding and margins stay the same.
+    // iPhone Duo inner display: two groups sit on either side of the fold (see
+    // `rebuildContent`). Home's own padding and margins stay the same.
     private let overviewStack: UIStackView = {
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.spacing = HomeLayout.cardSpacing
+        return stack
+    }()
+    private let secondaryStack: UIStackView = {
         let stack = UIStackView()
         stack.axis = .vertical
         stack.spacing = HomeLayout.cardSpacing
@@ -108,7 +132,7 @@ final class HomeViewController: UIViewController {
     }()
     private var overviewEdgeToFoldConstraint: NSLayoutConstraint?
     /// Axis the content is split along at the fold; nil means the single column.
-    private var foldSplitAxis: NSLayoutConstraint.Axis?
+    private(set) var foldSplitAxis: NSLayoutConstraint.Axis?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -129,6 +153,7 @@ final class HomeViewController: UIViewController {
 
         updateStorageAnalysisView()
         refreshDashboardCard()
+        loadResumeItems()
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -172,10 +197,12 @@ final class HomeViewController: UIViewController {
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         hasNavigatedAway = true
+        resumeLoadTask?.cancel()
     }
 
     deinit {
         dashboardRefreshTask?.cancel()
+        resumeLoadTask?.cancel()
         NotificationCenter.default.removeObserver(self)
     }
 
@@ -251,9 +278,17 @@ final class HomeViewController: UIViewController {
 
         contentStack.addArrangedSubview(storageAnalysisView)
         contentStack.addArrangedSubview(quickAccessStack)
+        contentStack.addArrangedSubview(resumeSection)
         contentStack.addArrangedSubview(dashboardCard)
 
         view.addSubview(contentStack)
+
+        resumeSection.onSelect = { [weak self] item in
+            self?.handleResumeSelection(item)
+        }
+        luckyRow.onTap = { [weak self] in
+            self?.handleLuckyTap()
+        }
 
         storageAnalysisView.onRefreshTapped = { [weak self] in
             self?.storageManager.startAnalysis()
@@ -294,7 +329,7 @@ final class HomeViewController: UIViewController {
             bottom,
 
             storageAnalysisView.heightAnchor.constraint(greaterThanOrEqualToConstant: 110),
-            dashboardCard.heightAnchor.constraint(greaterThanOrEqualToConstant: 150),
+            dashboardCard.heightAnchor.constraint(greaterThanOrEqualToConstant: HomeLayout.dashboardMinimumHeight),
 
             quickAccessStack.heightAnchor.constraint(greaterThanOrEqualToConstant: 60),
         ])
@@ -303,6 +338,11 @@ final class HomeViewController: UIViewController {
         quickAccessMaxHeight.isActive = true
         quickAccessMaxHeightConstraint = quickAccessMaxHeight
 
+        let quickAccessCompact = quickAccessStack.heightAnchor.constraint(equalToConstant: 0)
+        quickAccessCompact.priority = UILayoutPriority(UILayoutPriority.defaultLow.rawValue + 1)
+        quickAccessCompact.isActive = true
+        quickAccessCompactConstraint = quickAccessCompact
+
         updateOuterPaddingForTabBarShape()
     }
 
@@ -310,6 +350,7 @@ final class HomeViewController: UIViewController {
         super.viewDidLayoutSubviews()
         updateFoldSplit()
         updateOuterPaddingForTabBarShape()
+        updateResumeRowCount()
     }
 
     /// Splits Home at the fold when one crosses the view (inactive included, so the
@@ -340,29 +381,48 @@ final class HomeViewController: UIViewController {
         }
     }
 
+    /// Single column: storage, tiles, Continue Where You Left Off, dashboard.
+    /// Split at the fold (sideways and upright): storage, the tiles and the rows | the dashboard
+    /// over Lucky. The tiles take the height the rows leave.
     private func rebuildContent(splitAlong axis: NSLayoutConstraint.Axis?) {
+        let wasSplit = foldSplitAxis != nil
         foldSplitAxis = axis
+        appliedResumeRowCount = nil
         overviewEdgeToFoldConstraint?.isActive = false
         overviewEdgeToFoldConstraint = nil
-        (contentStack.arrangedSubviews + overviewStack.arrangedSubviews).forEach { $0.removeFromSuperview() }
+        (contentStack.arrangedSubviews + overviewStack.arrangedSubviews + secondaryStack.arrangedSubviews)
+            .forEach { $0.removeFromSuperview() }
+
+        // Lucky is a row on Home only while it's split; otherwise it's the bar item
+        if wasSplit != (axis != nil) {
+            navigationItem.leftBarButtonItem = axis == nil
+                ? .luckyItem(title: Strings.luckyItem, target: self, action: #selector(handleLuckyTap))
+                : nil
+        }
 
         guard let axis = axis else {
             contentStack.axis = .vertical
             contentStack.spacing = HomeLayout.cardSpacing
             quickAccessMaxHeightConstraint?.isActive = true
+            quickAccessCompactConstraint?.isActive = true
             contentStack.addArrangedSubview(storageAnalysisView)
             contentStack.addArrangedSubview(quickAccessStack)
+            contentStack.addArrangedSubview(resumeSection)
             contentStack.addArrangedSubview(dashboardCard)
             return
         }
 
-        // Tiles grow to fill the overview group instead of capping at 100pt
+        // Tiles grow to fill their group instead of capping at 100pt
         quickAccessMaxHeightConstraint?.isActive = false
+        quickAccessCompactConstraint?.isActive = false
         overviewStack.addArrangedSubview(storageAnalysisView)
         overviewStack.addArrangedSubview(quickAccessStack)
+        overviewStack.addArrangedSubview(resumeSection)
+        secondaryStack.addArrangedSubview(dashboardCard)
+        secondaryStack.addArrangedSubview(luckyRow)
         contentStack.axis = axis
         contentStack.addArrangedSubview(overviewStack)
-        contentStack.addArrangedSubview(dashboardCard)
+        contentStack.addArrangedSubview(secondaryStack)
 
         let edgeToFold = axis == .horizontal
             ? overviewStack.trailingAnchor.constraint(equalTo: view.leadingAnchor)
@@ -400,12 +460,12 @@ final class HomeViewController: UIViewController {
         updateCardCorners(isVerticalRail: true)
     }
 
-    /// On the vertical rail the card in the device's bottom corner follows its curve: the
-    /// dashboard, or the Photos tile when the groups sit side by side at the fold.
+    /// On the vertical rail the card in the device's bottom corner follows its curve: whichever
+    /// card ends a column (the dashboard, the rows' card, the Lucky row or a tile).
     private func updateCardCorners(isVerticalRail: Bool) {
         // The cards' frames are only final once the stacks are laid out
         if isVerticalRail { contentStack.layoutIfNeeded() }
-        [dashboardCard, quickPhotosCard, quickVideosCard].forEach {
+        [dashboardCard, quickPhotosCard, quickVideosCard, luckyRow, resumeSection.cardView].forEach {
             $0.updateCardCorners(followingDeviceCorner: isVerticalRail)
         }
     }
@@ -511,6 +571,7 @@ final class HomeViewController: UIViewController {
         updateStorageAnalysisView()
         storageManager.refreshIfNeeded()
         refreshDashboardCard()
+        loadResumeItems()
     }
 
     // MARK: - Card Action Handling
@@ -545,7 +606,7 @@ final class HomeViewController: UIViewController {
     }
 
     // MARK: - Navigation
-    private func navigateOnTab(index: Int, pushing viewController: UIViewController) {
+    func navigateOnTab(index: Int, pushing viewController: UIViewController) {
         tabBarController?.selectedIndex = index
         guard let nav = tabBarController?.viewControllers?[index] as? UINavigationController else { return }
         nav.popToRootViewController(animated: false)

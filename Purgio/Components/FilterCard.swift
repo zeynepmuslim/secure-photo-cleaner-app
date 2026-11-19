@@ -8,6 +8,19 @@
 import UIKit
 
 final class FilterCard: UIControl {
+    private enum Layout {
+        /// From this height (with `allowsTallVariant`) the card uses its tall layout
+        static let tallMinimumHeight: CGFloat = 110
+        static let compactIconSize: CGFloat = 28
+        static let compactIconPointSize: CGFloat = 18
+        static let compactTitleSize: CGFloat = 15
+        static let compactInset: CGFloat = 12
+        static let tallIconSize: CGFloat = 30
+        static let tallIconPointSize: CGFloat = 30
+        static let tallTitleSize: CGFloat = 20
+        static let tallInset: CGFloat = 16
+    }
+
     enum Status {
         case notStarted
         case inProgress(percent: Int)
@@ -123,6 +136,19 @@ final class FilterCard: UIControl {
         return ring
     }()
 
+    /// Lets the card switch to its tall layout (icon and chevron at the top, a larger title at the
+    /// bottom) once it's at least 110pt tall. Off by default, so grids of filter cards keep their look.
+    var allowsTallVariant = false {
+        didSet { setNeedsLayout() }
+    }
+
+    private var iconName: String?
+    private var appliedTallVariant: Bool?
+    private var iconWidthConstraint: NSLayoutConstraint?
+    private var iconHeightConstraint: NSLayoutConstraint?
+    private var compactConstraints: [NSLayoutConstraint] = []
+    private var tallConstraints: [NSLayoutConstraint] = []
+
     override var isHighlighted: Bool {
         didSet {
             UIView.animate(withDuration: 0.15) {
@@ -143,7 +169,39 @@ final class FilterCard: UIControl {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        subtitleLabel.isHidden = bounds.width < GeneralConstants.CompactContentWidth.halfWidthCard
+        let isTall = allowsTallVariant && bounds.height >= Layout.tallMinimumHeight
+        if appliedTallVariant != isTall {
+            applyVariant(isTall: isTall)
+        }
+        // An empty subtitle (Home's tiles) takes no room, so the title centers on the icon
+        subtitleLabel.isHidden = isTall || (subtitleLabel.text ?? "").isEmpty
+            || bounds.width < GeneralConstants.CompactContentWidth.halfWidthCard
+    }
+
+    private func applyVariant(isTall: Bool) {
+        appliedTallVariant = isTall
+        NSLayoutConstraint.deactivate(isTall ? compactConstraints : tallConstraints)
+        NSLayoutConstraint.activate(isTall ? tallConstraints : compactConstraints)
+
+        contentStack.axis = isTall ? .vertical : .horizontal
+        contentStack.alignment = isTall ? .leading : .center
+        contentStack.distribution = isTall ? .equalSpacing : .fill
+
+        let iconSize = isTall ? Layout.tallIconSize : Layout.compactIconSize
+        iconWidthConstraint?.constant = iconSize
+        iconHeightConstraint?.constant = iconSize
+        updateIconImage()
+
+        titleLabel.font = isTall
+            ? ThemeManager.Fonts.titleFont(size: Layout.tallTitleSize, weight: .bold)
+            : ThemeManager.Fonts.titleFont(size: Layout.compactTitleSize, weight: .semibold)
+    }
+
+    private func updateIconImage() {
+        guard let iconName else { return }
+        let pointSize = appliedTallVariant == true ? Layout.tallIconPointSize : Layout.compactIconPointSize
+        let iconConfig = UIImage.SymbolConfiguration(pointSize: pointSize, weight: .medium)
+        iconView.image = UIImage(systemName: iconName, withConfiguration: iconConfig)
     }
 
     private func setupUI() {
@@ -165,16 +223,33 @@ final class FilterCard: UIControl {
         statusBadge.addSubview(statusLabel)
         addSubview(statusBadge)
 
-        NSLayoutConstraint.activate([
-            iconView.widthAnchor.constraint(equalToConstant: 28),
-            iconView.heightAnchor.constraint(equalToConstant: 28),
+        let iconWidth = iconView.widthAnchor.constraint(equalToConstant: Layout.compactIconSize)
+        let iconHeight = iconView.heightAnchor.constraint(equalToConstant: Layout.compactIconSize)
+        iconWidthConstraint = iconWidth
+        iconHeightConstraint = iconHeight
 
-            contentStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
-            contentStack.trailingAnchor.constraint(equalTo: chevronIcon.leadingAnchor, constant: -8),
+        compactConstraints = [
+            contentStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Layout.compactInset),
             contentStack.centerYAnchor.constraint(equalTo: centerYAnchor),
+            chevronIcon.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Layout.compactInset),
+            chevronIcon.centerYAnchor.constraint(equalTo: centerYAnchor)
+        ]
+        // Icon at the top-leading corner, title at the bottom-leading one, chevron top-trailing
+        tallConstraints = [
+            contentStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Layout.tallInset),
+            contentStack.topAnchor.constraint(equalTo: topAnchor, constant: Layout.tallInset),
+            contentStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -Layout.tallInset),
+            chevronIcon.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Layout.tallInset),
+            chevronIcon.centerYAnchor.constraint(equalTo: iconView.centerYAnchor)
+        ]
+        appliedTallVariant = false
 
-            chevronIcon.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
-            chevronIcon.centerYAnchor.constraint(equalTo: centerYAnchor),
+        NSLayoutConstraint.activate(compactConstraints + [
+            iconWidth,
+            iconHeight,
+
+            contentStack.trailingAnchor.constraint(equalTo: chevronIcon.leadingAnchor, constant: -8),
+
             chevronIcon.widthAnchor.constraint(equalToConstant: 10),
             chevronIcon.heightAnchor.constraint(equalToConstant: 14),
 
@@ -199,8 +274,8 @@ final class FilterCard: UIControl {
     }
 
     func configure(icon: String, title: String, subtitle: String, tintColor: UIColor) {
-        let iconConfig = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)
-        iconView.image = UIImage(systemName: icon, withConfiguration: iconConfig)
+        iconName = icon
+        updateIconImage()
         iconView.tintColor = tintColor
         titleLabel.text = title
         subtitleLabel.text = subtitle

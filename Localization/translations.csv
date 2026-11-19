@@ -106,7 +106,13 @@ historyDetail.delete;Delete;Sil;;;;
 historyDetail.keep;Keep;Tut;;;;
 historyDetail.store;Store;Depola;;;;
 home.browseByMonth;Browse by Month;Aya Göre Gözat;;;;
-home.luckyItem;Feeling Lucky;Şanslıyım;;;;
+home.luckyItem;Feeling Lucky;Şanslı hissediyorum;;;;
+home.luckySubtitle;A random month and filter;Rastgele bir ay ve filtre;;;;
+home.startReviewing;Start Reviewing;İncelemeye Başlayın;;;;
+home.resumeTitle;Continue Where You Left Off;Kaldığınız Yerden Devam Edin;;;;
+home.photosToReview;;;%lld photo to review;%lld photos to review;%lld fotoğraf incelenecek;%lld fotoğraf incelenecek
+home.videosToReview;;;%lld video to review;%lld videos to review;%lld video incelenecek;%lld video incelenecek
+home.itemsCount;;;%lld item;%lld items;%lld öğe;%lld öğe
 home.navTitle;Home;Ana Sayfa;;;;
 home.photosTitle;Photos;Fotoğraflar;;;;
 home.videosTitle;Videos;Videolar;;;;

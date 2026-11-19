@@ -9,6 +9,53 @@ import UIKit
 
 class DashboardCard: UIView {
 
+    /// From this height the card uses its roomy layout (Home fits its rows around it)
+    static let roomyMinimumHeight: CGFloat = 260
+
+    /// How the card arranges itself for the room it gets (board D1 and the Duo's upright base)
+    private enum SizeVariant {
+        /// Icon beside the title, the note and a small button (phones, short slots)
+        case regular
+        /// The icon over centered texts and the button, all one centered group
+        case roomy
+        /// Wide but short: the icon beside the texts, the button under them, all one centered group
+        case wideShort
+    }
+
+    private enum Layout {
+        static let roomyMinimumHeight = DashboardCard.roomyMinimumHeight
+        static let wideShortMinimumWidth: CGFloat = 500
+        static let regularButtonHeight: CGFloat = 36
+        static let roomyButtonFontSize: CGFloat = 16
+        /// The roomy buttons hug their title with this much on each side
+        static let roomyButtonSideInset: CGFloat = 28
+
+        enum Roomy {
+            static let padding: CGFloat = 24
+            static let iconBox: CGFloat = 56
+            static let iconPointSize: CGFloat = 44
+            static let titleSize: CGFloat = 22
+            static let subtitleSize: CGFloat = 15
+            static let gap: CGFloat = 14
+            static let textSpacing: CGFloat = 6
+            static let groupToButton: CGFloat = 20
+            static let buttonHeight: CGFloat = 50
+        }
+
+        enum WideShort {
+            static let verticalPadding: CGFloat = 16
+            static let sidePadding: CGFloat = 18
+            static let iconBox: CGFloat = 44
+            static let iconPointSize: CGFloat = 36
+            static let titleSize: CGFloat = 20
+            static let subtitleSize: CGFloat = 14
+            static let gap: CGFloat = 16
+            static let textSpacing: CGFloat = 4
+            static let buttonHeight: CGFloat = 48
+            static let groupToButton: CGFloat = 12
+        }
+    }
+
     private let iconView: UIImageView = {
         let imageView = UIImageView()
         imageView.contentMode = .scaleAspectFit
@@ -78,6 +125,43 @@ class DashboardCard: UIView {
         return stack
     }()
 
+    // MARK: Roomy variants
+
+    private let roomyTextStack: UIStackView = {
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        return stack
+    }()
+
+    /// The icon and the texts
+    private let heroGroup: UIStackView = {
+        let stack = UIStackView()
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        return stack
+    }()
+
+    /// The icon and texts over the button, centered in the card as one group
+    private let roomyStack: UIStackView = {
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.alignment = .center
+        stack.isHidden = true
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        return stack
+    }()
+
+    private var appliedVariant: SizeVariant = .regular
+    private var roomyTopConstraint: NSLayoutConstraint?
+    private var roomyLeadingConstraint: NSLayoutConstraint?
+    private var roomyTrailingConstraint: NSLayoutConstraint?
+    private var roomyBottomConstraint: NSLayoutConstraint?
+    private var buttonHeightConstraint: NSLayoutConstraint?
+    /// Roomy variants: the button is at least as wide as the icon and texts above it
+    private var buttonMinimumWidthConstraint: NSLayoutConstraint?
+    /// The regular button's insets, restored when the card goes back to its regular layout
+    private var regularButtonInsets: NSDirectionalEdgeInsets?
+
     private var buttonAction: (() -> Void)?
     private var currentContent: DashboardCardContent?
 
@@ -97,7 +181,123 @@ class DashboardCard: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        applySizeVariant()
+        let variant: SizeVariant
+        if bounds.height >= Layout.roomyMinimumHeight {
+            variant = .roomy
+        } else if bounds.width > Layout.wideShortMinimumWidth {
+            variant = .wideShort
+        } else {
+            variant = .regular
+        }
+        if variant != appliedVariant {
+            apply(variant)
+            setNeedsLayout()
+        }
+        if variant == .regular {
+            applySizeVariant()
+        }
+    }
+
+    /// Moves the icon, the texts and the button between the regular stacks and the roomy one
+    private func apply(_ variant: SizeVariant) {
+        appliedVariant = variant
+
+        guard variant != .regular else {
+            headerStack.insertArrangedSubview(iconView, at: 0)
+            headerStack.addArrangedSubview(titleLabel)
+            contentStack.insertArrangedSubview(subtitleLabel, at: 1)
+            contentStack.addArrangedSubview(actionButton)
+            iconView.contentMode = .scaleAspectFit
+            titleLabel.textAlignment = .natural
+            subtitleLabel.textAlignment = .left
+            subtitleLabel.numberOfLines = 0
+            subtitleLabel.font = .systemFont(ofSize: 14, weight: .regular)
+            buttonHeightConstraint?.constant = Layout.regularButtonHeight
+            buttonMinimumWidthConstraint?.isActive = false
+            titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+            subtitleLabel.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
+            setButtonStyle(font: nil, sideInset: nil)
+            roomyStack.isHidden = true
+            alignmentStack.isHidden = false
+            return
+        }
+
+        let isRoomy = variant == .roomy
+        let iconBox = isRoomy ? Layout.Roomy.iconBox : Layout.WideShort.iconBox
+        heroGroup.insertArrangedSubview(iconView, at: 0)
+        let iconPointSize = isRoomy ? Layout.Roomy.iconPointSize : Layout.WideShort.iconPointSize
+        iconView.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: iconPointSize, weight: .medium)
+        // A plain symbol at its point size, centered in its box (never on a background)
+        iconView.contentMode = .center
+        iconWidthConstraint?.constant = iconBox
+        iconHeightConstraint?.constant = iconBox
+
+        roomyTextStack.addArrangedSubview(titleLabel)
+        roomyTextStack.addArrangedSubview(subtitleLabel)
+        roomyTextStack.spacing = isRoomy ? Layout.Roomy.textSpacing : Layout.WideShort.textSpacing
+        roomyTextStack.alignment = isRoomy ? .center : .leading
+        roomyStack.addArrangedSubview(actionButton)
+        // Both are in the roomy stack now, so the constraint has a common ancestor
+        if buttonMinimumWidthConstraint == nil {
+            buttonMinimumWidthConstraint = actionButton.widthAnchor.constraint(
+                greaterThanOrEqualTo: heroGroup.widthAnchor)
+        }
+        buttonMinimumWidthConstraint?.isActive = true
+        // The button widens to the texts; the texts only shrink when the card itself is too narrow
+        titleLabel.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
+        subtitleLabel.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
+
+        heroGroup.axis = isRoomy ? .vertical : .horizontal
+        heroGroup.alignment = .center
+        heroGroup.spacing = isRoomy ? Layout.Roomy.gap : Layout.WideShort.gap
+
+        let alignment: NSTextAlignment = isRoomy ? .center : .natural
+        titleLabel.textAlignment = alignment
+        subtitleLabel.textAlignment = alignment
+        titleLabel.font = ThemeManager.Fonts.titleFont(
+            size: isRoomy ? Layout.Roomy.titleSize : Layout.WideShort.titleSize, weight: .bold)
+        subtitleLabel.font = .systemFont(
+            ofSize: isRoomy ? Layout.Roomy.subtitleSize : Layout.WideShort.subtitleSize, weight: .regular)
+        subtitleLabel.numberOfLines = isRoomy ? 3 : 2
+
+        let vertical = isRoomy ? Layout.Roomy.padding : Layout.WideShort.verticalPadding
+        let side = isRoomy ? Layout.Roomy.padding : Layout.WideShort.sidePadding
+        roomyTopConstraint?.constant = vertical
+        roomyBottomConstraint?.constant = -vertical
+        roomyLeadingConstraint?.constant = side
+        roomyTrailingConstraint?.constant = -side
+        roomyStack.spacing = isRoomy ? Layout.Roomy.groupToButton : Layout.WideShort.groupToButton
+        buttonHeightConstraint?.constant = isRoomy ? Layout.Roomy.buttonHeight : Layout.WideShort.buttonHeight
+        setButtonStyle(
+            font: .systemFont(ofSize: Layout.roomyButtonFontSize, weight: .semibold),
+            sideInset: Layout.roomyButtonSideInset)
+
+        alignmentStack.isHidden = true
+        roomyStack.isHidden = false
+    }
+
+    /// nil restores the button's standard title font and insets
+    private func setButtonStyle(font: UIFont?, sideInset: CGFloat?) {
+        guard var config = actionButton.configuration else { return }
+        if regularButtonInsets == nil {
+            regularButtonInsets = config.contentInsets
+        }
+        if let sideInset {
+            config.contentInsets = NSDirectionalEdgeInsets(
+                top: 0, leading: sideInset, bottom: 0, trailing: sideInset)
+        } else if let regularButtonInsets {
+            config.contentInsets = regularButtonInsets
+        }
+        if let font {
+            config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+                var outgoing = incoming
+                outgoing.font = font
+                return outgoing
+            }
+        } else {
+            config.titleTextAttributesTransformer = nil
+        }
+        actionButton.configuration = config
     }
 
     private func applySizeVariant() {
@@ -144,6 +344,10 @@ class DashboardCard: UIView {
 
         addSubview(alignmentStack)
 
+        heroGroup.addArrangedSubview(roomyTextStack)
+        roomyStack.addArrangedSubview(heroGroup)
+        addSubview(roomyStack)
+
         setupConstraint()
         applySizeVariant()
     }
@@ -158,6 +362,21 @@ class DashboardCard: UIView {
         self.leadingConstraint = leadingConstraint
         self.trailingConstraint = trailingConstraint
 
+        // The group sits in the card's vertical center and only touches the padding when full
+        let roomyTop = roomyStack.topAnchor.constraint(
+            greaterThanOrEqualTo: topAnchor, constant: Layout.Roomy.padding)
+        let roomyLeading = roomyStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Layout.Roomy.padding)
+        let roomyTrailing = roomyStack.trailingAnchor.constraint(
+            equalTo: trailingAnchor, constant: -Layout.Roomy.padding)
+        let roomyBottom = roomyStack.bottomAnchor.constraint(
+            lessThanOrEqualTo: bottomAnchor, constant: -Layout.Roomy.padding)
+        let buttonHeight = actionButton.heightAnchor.constraint(equalToConstant: Layout.regularButtonHeight)
+        roomyTopConstraint = roomyTop
+        roomyLeadingConstraint = roomyLeading
+        roomyTrailingConstraint = roomyTrailing
+        roomyBottomConstraint = roomyBottom
+        buttonHeightConstraint = buttonHeight
+
         NSLayoutConstraint.activate([
             iconWidthConstraint,
             iconHeightConstraint,
@@ -167,7 +386,13 @@ class DashboardCard: UIView {
             trailingConstraint,
             alignmentStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12),
 
-            actionButton.heightAnchor.constraint(equalToConstant: 36),
+            buttonHeight,
+
+            roomyTop,
+            roomyLeading,
+            roomyTrailing,
+            roomyBottom,
+            roomyStack.centerYAnchor.constraint(equalTo: centerYAnchor)
         ])
     }
 

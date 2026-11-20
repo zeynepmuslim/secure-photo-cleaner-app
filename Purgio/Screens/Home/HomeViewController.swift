@@ -168,18 +168,6 @@ final class HomeViewController: UIViewController {
 
         if !OnboardingStore.shared.hasCompletedOnboarding {
             let onboarding = OnboardingViewController()
-            if let sheet = onboarding.sheetPresentationController {
-                if #available(iOS 16.0, *) {
-                    let threeQuarterDetent = UISheetPresentationController.Detent.custom { context in
-                        context.maximumDetentValue * 0.75
-                    }
-                    sheet.detents = [threeQuarterDetent]
-                } else {
-                    sheet.detents = [.large()]
-                }
-                sheet.prefersGrabberVisible = true
-                sheet.prefersScrollingExpandsWhenScrolledToEdge = false
-            }
             onboarding.onDismiss = { [weak self] in
                 self?.runStartupFlow()
             }
@@ -480,19 +468,6 @@ final class HomeViewController: UIViewController {
 
     @objc private func handleHelpTap() {
         let onboardingVC = OnboardingViewController()
-
-        if let sheet = onboardingVC.sheetPresentationController {
-            if #available(iOS 16.0, *) {
-                let threeQuarterDetent = UISheetPresentationController.Detent.custom { context in
-                    return context.maximumDetentValue * 0.75
-                }
-                sheet.detents = [threeQuarterDetent]
-            } else {
-                sheet.detents = [.large()]
-            }
-            sheet.prefersGrabberVisible = true
-            sheet.prefersScrollingExpandsWhenScrolledToEdge = false
-        }
 
         HapticFeedbackManager.shared.impact(intensity: .medium)
         present(onboardingVC, animated: true)

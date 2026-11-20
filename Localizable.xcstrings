@@ -4301,6 +4301,40 @@
         }
       }
     },
+    "onboarding.keep": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tut"
+          }
+        }
+      }
+    },
+    "onboarding.store": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Store"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Depola"
+          }
+        }
+      }
+    },
     "onboarding.subtitle": {
       "extractionState": "manual",
       "localizations": {

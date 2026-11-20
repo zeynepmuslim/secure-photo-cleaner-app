@@ -239,12 +239,14 @@ notification.title.totalDeleted;Look how far you've come;Ne kadar da çok yol ka
 notification.title.totalReviewed;Whoa! ;Vay be!;;;;
 notification.title.fallback;Photo Cleanup;Fotoğraf Temizliği;;;;
 onboarding.gotIt;Got It!;Anladım!;;;;
+onboarding.keep;Keep;Tut;;;;
+onboarding.store;Store;Depola;;;;
 onboarding.subtitle;Review your photos by swiping. It's quick, easy, and safe!;Fotoğraflarınızı kaydırarak inceleyin. Hızlı, kolay ve güvenli!;;;;
 onboarding.swipeLeftInfo;You can review and confirm before anything is deleted.;Silinmeden önce inceleyip onaylayabilirsiniz;;;;
 onboarding.swipeLeftTitle;Swipe Left to Delete;Silmek İçin Sola Kaydırın;;;;
 onboarding.swipeRightInfo;It remains in your photo library;Fotoğraf kütüphanenizde kalır;;;;
 onboarding.swipeRightTitle;Swipe Right to Keep;Tutmak İçin Sağa Kaydırın;;;;
-onboarding.swipeUpInfo; It is added to the “Will Be Stored” album in Photos;"Fotoğraflardaki ""Depolanacak"" albümüne eklenir";;;;
+onboarding.swipeUpInfo;It is added to the “Will Be Stored” album in Photos;"Fotoğraflardaki ""Depolanacak"" albümüne eklenir";;;;
 onboarding.swipeUpTitle;Swipe Up to Store;Depolamak İçin Yukarı Kaydırın;;;;
 onboarding.title;Welcome to Purgio;Purgio'a Hoş Geldiniz;;;;
 processing.analyzingFileSizes;Analyzing file sizes...;Dosya boyutları analiz ediliyor...;;;;

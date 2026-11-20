@@ -927,21 +927,6 @@ final class MonthsListViewController: UIViewController {
     @objc private func handleHelpTap() {
         let onboardingVC = OnboardingViewController()
 
-        // Configure as native bottom sheet
-        if let sheet = onboardingVC.sheetPresentationController {
-            if #available(iOS 16.0, *) {
-                let threeQuarterDetent = UISheetPresentationController.Detent.custom { context in
-                    return context.maximumDetentValue * 0.75
-                }
-                sheet.detents = [threeQuarterDetent]
-            } else {
-                sheet.detents = [.large()]   // Fallback for older iOS
-            }
-            sheet.prefersGrabberVisible = true
-            sheet.prefersScrollingExpandsWhenScrolledToEdge = false
-            // Don't set preferredCornerRadius - let system use device corners automatically
-        }
-
         // Haptic feedback
         HapticFeedbackManager.shared.impact(intensity: .medium)
 

@@ -53,6 +53,10 @@ enum GeneralConstants {
         static let buttonBottom: CGFloat = 24
         /// Clearance between the iPhone Duo fold region and the content on either side of it.
         static let foldGap: CGFloat = 12
+        /// Bottom clearance of a sheet's full-width primary button (the onboarding guide's Got It!).
+        static let sheetButtonBottom: CGFloat = 34
+        /// The same clearance on short sheets: SE, the Duo's cover display, the table pose.
+        static let compactSheetButtonBottom: CGFloat = 20
     }
 
     /// Own-width thresholds for compact content variants (replaces window-width checks).

@@ -22,7 +22,25 @@ private enum Strings {
     static let deletingProgress = NSLocalizedString("deleteBin.deletingProgress", comment: "Deleting progress label")
     static let deleteCannotUndo = NSLocalizedString("deleteBin.deleteCannotUndo", comment: "Delete warning about Recently Deleted folder")
     static let yourDeleteBin = NSLocalizedString("deleteBin.yourDeleteBin", comment: "Your Delete Bin title")
-    static let deleteBinEmptyMessage = NSLocalizedString("deleteBin.emptyMessage", comment: "Empty delete bin explanation message")
+    static let emptyHint = NSLocalizedString("deleteBin.emptyHint", comment: "Empty delete bin: how items get here and when they're deleted")
+    static let youFreed = NSLocalizedString("deleteBin.youFreed", comment: "Label over the space freed by the last deletion")
+    static let reviewAnother = NSLocalizedString("deleteBin.reviewAnother", comment: "Button after emptying the bin: review another month")
+    static let reviewPhotos = NSLocalizedString("deleteBin.reviewPhotos", comment: "Button on the empty bin: go review photos")
+    static let done = NSLocalizedString("deleteBin.done", comment: "Button after emptying the bin: leave the bin")
+    static func reviewMonth(_ month: String) -> String {
+        String(format: NSLocalizedString("deleteBin.reviewMonth", comment: "Button on the empty bin, e.g. 'Review August'"), month)
+    }
+    static func cleanedMessage(count: Int) -> String {
+        String.localizedStringWithFormat(
+            NSLocalizedString("deleteBin.cleanedMessage", comment: "After emptying the bin: how many items went to Recently Deleted"),
+            count)
+    }
+    static func toReview(count: Int, isVideo: Bool) -> String {
+        let format = isVideo
+            ? NSLocalizedString("monthCell.videosToReview", comment: "Not-started month subtitle for videos")
+            : NSLocalizedString("monthCell.photosToReview", comment: "Not-started month subtitle for photos")
+        return String.localizedStringWithFormat(format, count)
+    }
     static let successTitle = NSLocalizedString("deleteBin.successTitle", comment: "Success alert title")
     static let allDeletedMessage = NSLocalizedString("deleteBin.allDeletedMessage", comment: "All items deleted success message")
     static let errorTitle = NSLocalizedString("deleteBin.errorTitle", comment: "Error alert title")
@@ -72,13 +90,6 @@ private enum Strings {
         String(format: NSLocalizedString("deleteBin.binCountTitle", comment: "Bin count title, e.g. 'Bin · 5'"), count)
     }
     static let allCleanedTitle = NSLocalizedString("deleteBin.allCleanedTitle", comment: "All cleaned up title")
-    static let goBack = NSLocalizedString("deleteBin.goBack", comment: "Go back button")
-    static func freshEmptyMessage(assets: [PHAsset], size: String) -> String {
-        String(format: NSLocalizedString("deleteBin.freshEmptyMessage", comment: "Success message with size, e.g. 'You freed up 2.5 GB by deleting 3 photos.'"), size, mediaDescription(for: assets))
-    }
-    static func freshEmptyMessageNoSize(assets: [PHAsset]) -> String {
-        String(format: NSLocalizedString("deleteBin.freshEmptyMessageNoSize", comment: "Success message without size, e.g. 'You deleted 3 photos from your library.'"), mediaDescription(for: assets))
-    }
 }
 
 final class DeleteBinViewController: UIViewController {
@@ -172,6 +183,26 @@ final class DeleteBinViewController: UIViewController {
         case freshEmpty(assets: [PHAsset], bytes: Int64)
     }
     private var pendingEmptyKind: EmptyKind = .defaultEmpty
+    private var isShowingEmptyState = false
+
+    /// The month the empty bin points back to.
+    private struct ReviewTarget {
+        let key: String
+        let title: String
+        let mediaType: PHAssetMediaType
+    }
+
+    private enum EmptyLayout {
+        static let freedCardInsets = NSDirectionalEdgeInsets(
+            top: GeneralConstants.EdgePadding.cardInner, leading: GeneralConstants.EdgePadding.cardInner,
+            bottom: GeneralConstants.EdgePadding.cardInner, trailing: GeneralConstants.EdgePadding.cardInner)
+        static let freedLabelSize: CGFloat = 13
+        static let freedValueSize: CGFloat = 36
+    }
+
+    private var binController: FloatingBinButtonController? {
+        tabBarController as? FloatingBinButtonController
+    }
 
     private var isEditMode = false
     private var binSpacerWidthConstraint: NSLayoutConstraint?
@@ -243,7 +274,9 @@ final class DeleteBinViewController: UIViewController {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        editButtonsEdges?.update(railEdge: DuoLayout.railEdge(tabBarController, in: view))
+        let railEdge = DuoLayout.railEdge(tabBarController, in: view)
+        editButtonsEdges?.update(railEdge: railEdge)
+        emptyStateView.update(railEdge: railEdge)
         updateRailHeader()
         updateBinSpacerWidth(animated: false)
         headerLabel.layer.cornerRadius = headerLabel.bounds.height / 2
@@ -255,6 +288,11 @@ final class DeleteBinViewController: UIViewController {
         DispatchQueue.main.async { [weak self] in
             self?.updateBinSpacerWidth(animated: false)
         }
+        // Every push and pop lets the bin button show again; the empty states have their own
+        // bottom row where it would float
+        if isShowingEmptyState {
+            binController?.setBinButtonSuppressed(true)
+        }
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -262,8 +300,6 @@ final class DeleteBinViewController: UIViewController {
         if isEditMode {
             setEditing(false, animated: false)
         }
-        findFloatingBinButton()?.isEnabled = true
-        findFloatingBinButton()?.alpha = 1.0
     }
 
     private func setupUI() {
@@ -814,39 +850,181 @@ final class DeleteBinViewController: UIViewController {
     }
 
     // MARK: - Empty State
+
+    /// Board "Empty & finished states · A + B": an empty bin says what it's for and points at
+    /// a month to review; a bin that was just emptied shows the stamp and the space freed.
     private func showEmptyState() {
         switch pendingEmptyKind {
         case .defaultEmpty:
+            let target = reviewTarget()
             emptyStateView.configure(
-                icon: "trash",
-                iconColor: .systemRed,
+                hero: .symbol("trash"),
                 title: filterMonthTitle.map { Strings.monthBinTitle(monthTitle: $0) } ?? Strings.yourDeleteBin,
-                message: Strings.deleteBinEmptyMessage,
-                actionTitle: nil,
-                onAction: nil
-            )
-        case .freshEmpty(let deletedAssets, let bytes):
-            let message = bytes > 0
-                ? Strings.freshEmptyMessage(assets: deletedAssets, size: bytes.formattedBytes())
-                : Strings.freshEmptyMessageNoSize(assets: deletedAssets)
-            emptyStateView.configure(
-                icon: "checkmark.circle.fill",
-                iconColor: .systemGreen,
-                title: Strings.allCleanedTitle,
-                message: message,
-                actionTitle: Strings.goBack,
+                message: Strings.emptyHint,
+                accessory: target.flatMap { makeMonthCard(for: $0) },
+                actionTitle: target.map { Strings.reviewMonth(shortName(of: $0)) } ?? Strings.reviewPhotos,
+                actionIcon: "play.fill",
                 onAction: { [weak self] in
+                    if let target {
+                        self?.openHub(for: target)
+                    } else {
+                        self?.openMonthsList()
+                    }
+                })
+        case .freshEmpty(let deletedAssets, let bytes):
+            emptyStateView.configure(
+                hero: .stamp,
+                title: Strings.allCleanedTitle,
+                message: Strings.cleanedMessage(count: deletedAssets.count),
+                accessory: bytes > 0 ? makeFreedCard(bytes: bytes) : nil,
+                actionTitle: Strings.reviewAnother,
+                actionIcon: "play.fill",
+                onAction: { [weak self] in self?.openMonthsList() },
+                secondaryTitle: Strings.done,
+                onSecondary: { [weak self] in
                     self?.navigationController?.popViewController(animated: true)
-                }
-            )
+                })
         }
+        isShowingEmptyState = true
+        // The states' cards are white; they sit on the grouped background
+        view.backgroundColor = .mainBackground
         emptyStateView.isHidden = false
+        emptyStateView.update(railEdge: DuoLayout.railEdge(tabBarController, in: view))
         emptyStateView.show(animated: true)
         collectionView.isHidden = true
         headerLabel.isHidden = true
         navigationItem.rightBarButtonItems?.forEach { $0.isEnabled = false }
-        findFloatingBinButton()?.isEnabled = false
-        findFloatingBinButton()?.alpha = 0.5
+        binController?.setBinButtonSuppressed(true)
+    }
+
+    /// The bin's own month while it has work left (photos first), else the newest month in
+    /// progress, else none.
+    private func reviewTarget() -> ReviewTarget? {
+        let progressStore = ReviewProgressStore.shared
+        if let key = filterMonthKey, let title = filterMonthTitle {
+            for mediaType in [PHAssetMediaType.image, .video] {
+                // Started or not, as long as its total is known and not all of it is reviewed
+                let hasTotal = progressStore.getProgress(forMonthKey: key, mediaType: mediaType).originalTotalCount > 0
+                if hasTotal, !progressStore.isComplete(monthKey: key, mediaType: mediaType) {
+                    return ReviewTarget(key: key, title: title, mediaType: mediaType)
+                }
+            }
+        }
+        // A record can outlive its month (the library changed since); when the month buckets
+        // are known, the month has to be one of them
+        let newest = DashboardCardManager.shared.getInProgressMonths().first { info in
+            guard let buckets = photoLibraryService.getCachedMonthBuckets(mediaType: info.mediaType) else {
+                return true
+            }
+            return buckets.contains { $0.key == info.monthKey }
+        }
+        guard let newest else { return nil }
+        return ReviewTarget(
+            key: newest.monthKey,
+            title: DateFormatterManager.shared.displayMonth(fromMonthKey: newest.monthKey),
+            mediaType: newest.mediaType)
+    }
+
+    /// "August" for the button; the card shows the full title.
+    private func shortName(of target: ReviewTarget) -> String {
+        DateFormatterManager.shared.monthName(fromMonthKey: target.key) ?? target.title
+    }
+
+    /// The month's row as on the months list, in a tappable card.
+    private func makeMonthCard(for target: ReviewTarget) -> UIView? {
+        let progress = ReviewProgressStore.shared.getProgress(forMonthKey: target.key, mediaType: target.mediaType)
+        guard progress.originalTotalCount > 0 else { return nil }
+
+        let card = MonthLinkCardView()
+        card.rowView.configure(
+            title: target.title,
+            deleted: progress.deletedCount,
+            kept: progress.keptCount,
+            stored: progress.storedCount,
+            total: progress.originalTotalCount,
+            reviewed: progress.reviewedCount,
+            notStartedSubtitle: Strings.toReview(
+                count: progress.originalTotalCount, isVideo: target.mediaType == .video))
+        card.accessibilityLabel = card.rowView.accessibilitySummary
+        card.onTap = { [weak self] in self?.openHub(for: target) }
+        return card
+    }
+
+    private func makeFreedCard(bytes: Int64) -> UIView {
+        let card = UIView()
+        card.backgroundColor = .cardBackground
+        card.layer.cornerRadius = GeneralConstants.CornerRadius.card
+        card.layer.cornerCurve = .continuous
+
+        let label = UILabel()
+        label.font = .systemFont(ofSize: EmptyLayout.freedLabelSize, weight: .regular)
+        label.textColor = .textSecondary
+        label.text = Strings.youFreed
+
+        let valueLabel = UILabel()
+        valueLabel.font = .monospacedDigitSystemFont(ofSize: EmptyLayout.freedValueSize, weight: .heavy)
+        valueLabel.textColor = .textPrimary
+        valueLabel.adjustsFontSizeToFitWidth = true
+        valueLabel.minimumScaleFactor = 0.6
+        valueLabel.text = bytes.formattedBytes()
+
+        let stack = UIStackView(arrangedSubviews: [label, valueLabel])
+        stack.axis = .vertical
+        stack.alignment = .leading
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(stack)
+
+        let insets = EmptyLayout.freedCardInsets
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: card.topAnchor, constant: insets.top),
+            stack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: insets.leading),
+            stack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -insets.trailing),
+            stack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -insets.bottom)
+        ])
+
+        card.isAccessibilityElement = true
+        card.accessibilityLabel = [Strings.youFreed, valueLabel.text].compactMap { $0 }.joined(separator: ", ")
+        return card
+    }
+
+    /// The month's hub on its own tab (Photos 1, Videos 2), with the months list under it.
+    private func openHub(for target: ReviewTarget) {
+        let index = target.mediaType == .video ? 2 : 1
+        guard let tabBarController,
+              let destination = tabBarController.viewControllers?[index] as? UINavigationController,
+              !destination.viewControllers.isEmpty else { return }
+        HapticFeedbackManager.shared.impact(intensity: .medium)
+        let hub = MonthFilterCardsViewController(
+            monthTitle: target.title, monthKey: target.key, mediaType: target.mediaType)
+
+        if destination === navigationController {
+            destination.popToRootViewController(animated: false)
+            destination.pushViewController(hub, animated: true)
+        } else {
+            // Leave this tab's stack clean, then push the hub on the month's tab (as Home's navigateOnTab)
+            navigationController?.popToRootViewController(animated: false)
+            binController?.setBinButtonSuppressed(false)
+            tabBarController.selectedIndex = index
+            destination.popToRootViewController(animated: false)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                destination.pushViewController(hub, animated: true)
+            }
+        }
+    }
+
+    /// The Photos tab's months list.
+    private func openMonthsList() {
+        guard let tabBarController,
+              let destination = tabBarController.viewControllers?[1] as? UINavigationController else { return }
+        HapticFeedbackManager.shared.impact(intensity: .medium)
+        if destination === navigationController {
+            destination.popToRootViewController(animated: true)
+        } else {
+            navigationController?.popToRootViewController(animated: false)
+            binController?.setBinButtonSuppressed(false)
+            tabBarController.selectedIndex = 1
+            destination.popToRootViewController(animated: false)
+        }
     }
 
     private func showErrorAlert() {
@@ -1018,8 +1196,10 @@ final class DeleteBinViewController: UIViewController {
         collectionView.isHidden = false
         headerLabel.isHidden = false
         navigationItem.rightBarButtonItems?.forEach { $0.isEnabled = true }
-        findFloatingBinButton()?.isEnabled = true
-        findFloatingBinButton()?.alpha = 1.0
+        guard isShowingEmptyState else { return }
+        isShowingEmptyState = false
+        view.backgroundColor = .systemBackground
+        binController?.setBinButtonSuppressed(false)
     }
 
     // MARK: - Preview sheeet

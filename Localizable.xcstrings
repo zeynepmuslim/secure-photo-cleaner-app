@@ -729,6 +729,47 @@
         }
       }
     },
+    "deleteBin.cleanedMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld item went to Recently Deleted. You can restore it there for 30 days."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld items went to Recently Deleted. You can restore them there for 30 days."
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld öge Son Silinenler klasörüne taşındı. 30 gün boyunca oradan geri yükleyebilirsiniz."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld öge Son Silinenler klasörüne taşındı. 30 gün boyunca oradan geri yükleyebilirsiniz."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "deleteBin.deleteCannotUndo": {
       "extractionState": "manual",
       "localizations": {
@@ -780,6 +821,23 @@
         }
       }
     },
+    "deleteBin.done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitti"
+          }
+        }
+      }
+    },
     "deleteBin.editMode": {
       "extractionState": "manual",
       "localizations": {
@@ -793,6 +851,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Düzenle"
+          }
+        }
+      }
+    },
+    "deleteBin.emptyHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe left on a photo to put it here. Nothing is deleted until you empty the bin."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buraya koymak için bir fotoğrafı sola kaydırın. Çöp kutusunu boşaltana kadar hiçbir şey silinmez."
           }
         }
       }
@@ -1168,6 +1243,57 @@
         }
       }
     },
+    "deleteBin.reviewAnother": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review another month"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Başka bir ayı incele"
+          }
+        }
+      }
+    },
+    "deleteBin.reviewMonth": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ayını incele"
+          }
+        }
+      }
+    },
+    "deleteBin.reviewPhotos": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review photos"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğrafları incele"
+          }
+        }
+      }
+    },
     "deleteBin.successTitle": {
       "extractionState": "manual",
       "localizations": {
@@ -1256,6 +1382,23 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "deleteBin.youFreed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You freed"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Açılan alan"
           }
         }
       }
@@ -1858,6 +2001,176 @@
           "stringUnit": {
             "state": "translated",
             "value": "Yıl Detayları"
+          }
+        }
+      }
+    },
+    "filterName.eyesClosed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "closed-eye photos"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "gözü kapalı fotoğraf"
+          }
+        }
+      }
+    },
+    "filterName.largePhotos": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "large photos"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "büyük fotoğraf"
+          }
+        }
+      }
+    },
+    "filterName.largeVideos": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "large videos"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "büyük video"
+          }
+        }
+      }
+    },
+    "filterName.photos": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "photos"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "fotoğraf"
+          }
+        }
+      }
+    },
+    "filterName.screenRecordings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "screen recordings"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ekran kaydı"
+          }
+        }
+      }
+    },
+    "filterName.screenshots": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "screenshots"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ekran görüntüsü"
+          }
+        }
+      }
+    },
+    "filterName.similar": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "similar photos"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "benzer fotoğraf"
+          }
+        }
+      }
+    },
+    "filterName.slowMotion": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "slow-motion videos"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ağır çekim video"
+          }
+        }
+      }
+    },
+    "filterName.timeLapse": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "time-lapse videos"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hızlandırılmış video"
+          }
+        }
+      }
+    },
+    "filterName.videos": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "videos"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "video"
           }
         }
       }
@@ -3162,6 +3475,173 @@
         }
       }
     },
+    "monthReview.backToMonth": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ayına dön"
+          }
+        }
+      }
+    },
+    "monthReview.backToYear": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ yılına dön"
+          }
+        }
+      }
+    },
+    "monthReview.completeMessagePhotos": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "You reviewed %lld photo."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "You reviewed all %lld photos."
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld fotoğrafı incelediniz."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld fotoğrafın tümünü incelediniz."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "monthReview.completeMessageVideos": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "You reviewed %lld video."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "You reviewed all %lld videos."
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld videoyu incelediniz."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld videonun tümünü incelediniz."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "monthReview.completeTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is done"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ tamamlandı"
+          }
+        }
+      }
+    },
+    "monthReview.emptyFilterMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ has no %2$@, so this filter is done."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ döneminde %2$@ bulunmadığı için bu filtre tamamlandı."
+          }
+        }
+      }
+    },
+    "monthReview.emptyFilterTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No %@ here"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiç %@ yok"
+          }
+        }
+      }
+    },
     "monthReview.eyesClosedTitle": {
       "extractionState": "manual",
       "localizations": {
@@ -3175,6 +3655,64 @@
           "stringUnit": {
             "state": "translated",
             "value": "Gözler Kapalı · %@"
+          }
+        }
+      }
+    },
+    "monthReview.filterCompleteMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "You reviewed the %lld item in this filter."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "You reviewed all %lld items in this filter."
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Bu filtredeki %lld ögeyi incelediniz."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Bu filtredeki %lld ögenin tümünü incelediniz."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "monthReview.filterCompleteTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing left in %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ filtresinde öge kalmadı"
           }
         }
       }
@@ -3957,6 +4495,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Depolama alanınızın dolmasına izin vermeyin!"
+          }
+        }
+      }
+    },
+    "nextSteps.keepGoing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep going in %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ayında devam et"
           }
         }
       }
@@ -5309,6 +5864,23 @@
         }
       }
     },
+    "reviewSplit.accessibility": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld delete, %2$lld keep, %3$lld store"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld sil, %2$lld tut, %3$lld depola"
+          }
+        }
+      }
+    },
     "settings.about": {
       "extractionState": "manual",
       "localizations": {
@@ -6465,6 +7037,47 @@
         }
       }
     },
+    "similarPhotos.comparedCount": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld photo"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld photos"
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld fotoğraf"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld fotoğraf"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "similarPhotos.confirm": {
       "extractionState": "manual",
       "localizations": {
@@ -6686,6 +7299,74 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tüm gruplar işlendi!"
+          }
+        }
+      }
+    },
+    "similarPhotos.noneMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We compared %1$@ in %2$@ and found no similar sets."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%2$@ içindeki %1$@ karşılaştırıldı, benzer set bulunamadı."
+          }
+        }
+      }
+    },
+    "similarPhotos.noneMessageLibrary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We compared %@ in your library and found no similar sets."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kütüphanenizdeki %@ karşılaştırıldı, benzer set bulunamadı."
+          }
+        }
+      }
+    },
+    "similarPhotos.noneMessageLibraryUncounted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We compared the photos in your library and found no similar sets."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kütüphanenizdeki fotoğraflar karşılaştırıldı, benzer set bulunamadı."
+          }
+        }
+      }
+    },
+    "similarPhotos.noneTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every photo is one of a kind"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Her fotoğraf benzersiz"
           }
         }
       }

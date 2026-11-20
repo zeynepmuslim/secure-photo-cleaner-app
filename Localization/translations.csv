@@ -472,3 +472,36 @@ widget.storage;Storage;Depolama;;;;
 widget.storageAnalysis;Storage Analysis;Depolama Analizi;;;;
 floatingBin.title;Bin;Çöp Kutusu;;;;
 floatingBin.titleWithCount;Bin · %@;Çöp Kutusu · %@;;;;
+monthReview.emptyFilterTitle;No %@ here;Hiç %@ yok;;;;
+monthReview.emptyFilterMessage;%1$@ has no %2$@, so this filter is done.;%1$@ döneminde %2$@ bulunmadığı için bu filtre tamamlandı.;;;;
+monthReview.backToMonth;Back to %@;%@ ayına dön;;;;
+monthReview.backToYear;Back to %@;%@ yılına dön;;;;
+monthReview.completeTitle;%@ is done;%@ tamamlandı;;;;
+monthReview.completeMessagePhotos;;;You reviewed %lld photo.;You reviewed all %lld photos.;%lld fotoğrafı incelediniz.;%lld fotoğrafın tümünü incelediniz.
+monthReview.completeMessageVideos;;;You reviewed %lld video.;You reviewed all %lld videos.;%lld videoyu incelediniz.;%lld videonun tümünü incelediniz.
+monthReview.filterCompleteTitle;Nothing left in %@;%@ filtresinde öge kalmadı;;;;
+monthReview.filterCompleteMessage;;;You reviewed the %lld item in this filter.;You reviewed all %lld items in this filter.;Bu filtredeki %lld ögeyi incelediniz.;Bu filtredeki %lld ögenin tümünü incelediniz.
+filterName.similar;similar photos;benzer fotoğraf;;;;
+filterName.screenshots;screenshots;ekran görüntüsü;;;;
+filterName.largePhotos;large photos;büyük fotoğraf;;;;
+filterName.largeVideos;large videos;büyük video;;;;
+filterName.eyesClosed;closed-eye photos;gözü kapalı fotoğraf;;;;
+filterName.screenRecordings;screen recordings;ekran kaydı;;;;
+filterName.slowMotion;slow-motion videos;ağır çekim video;;;;
+filterName.timeLapse;time-lapse videos;hızlandırılmış video;;;;
+filterName.photos;photos;fotoğraf;;;;
+filterName.videos;videos;video;;;;
+nextSteps.keepGoing;Keep going in %@;%@ ayında devam et;;;;
+similarPhotos.noneTitle;Every photo is one of a kind;Her fotoğraf benzersiz;;;;
+similarPhotos.comparedCount;;;%lld photo;%lld photos;%lld fotoğraf;%lld fotoğraf
+similarPhotos.noneMessage;We compared %1$@ in %2$@ and found no similar sets.;%2$@ içindeki %1$@ karşılaştırıldı, benzer set bulunamadı.;;;;
+similarPhotos.noneMessageLibrary;We compared %@ in your library and found no similar sets.;Kütüphanenizdeki %@ karşılaştırıldı, benzer set bulunamadı.;;;;
+similarPhotos.noneMessageLibraryUncounted;We compared the photos in your library and found no similar sets.;Kütüphanenizdeki fotoğraflar karşılaştırıldı, benzer set bulunamadı.;;;;
+deleteBin.emptyHint;Swipe left on a photo to put it here. Nothing is deleted until you empty the bin.;Buraya koymak için bir fotoğrafı sola kaydırın. Çöp kutusunu boşaltana kadar hiçbir şey silinmez.;;;;
+deleteBin.cleanedMessage;;;%lld item went to Recently Deleted. You can restore it there for 30 days.;%lld items went to Recently Deleted. You can restore them there for 30 days.;%lld öge Son Silinenler klasörüne taşındı. 30 gün boyunca oradan geri yükleyebilirsiniz.;%lld öge Son Silinenler klasörüne taşındı. 30 gün boyunca oradan geri yükleyebilirsiniz.
+deleteBin.youFreed;You freed;Açılan alan;;;;
+deleteBin.reviewAnother;Review another month;Başka bir ayı incele;;;;
+deleteBin.reviewMonth;Review %@;%@ ayını incele;;;;
+deleteBin.reviewPhotos;Review photos;Fotoğrafları incele;;;;
+deleteBin.done;Done;Bitti;;;;
+reviewSplit.accessibility;%1$lld delete, %2$lld keep, %3$lld store;%1$lld sil, %2$lld tut, %3$lld depola;;;;

@@ -70,7 +70,8 @@ extension MonthReviewViewController {
                 self?.statsLabel.alpha = 1
                 self?.statsPill.alpha = 1
                 self?.bottomControlsStack.alpha = 1
-                self?.historyBadge.alpha = (self?.historyManager.undoCount ?? 0) > 0 ? 1.0 : 0.0
+                guard let self, !self.isShowingEndState else { return }
+                self.historyBadge.alpha = self.historyManager.undoCount > 0 ? 1.0 : 0.0
             }
         ) { [weak self] _ in
             self?.skeletonDuoEdges = []

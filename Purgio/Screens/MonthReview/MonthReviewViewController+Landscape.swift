@@ -34,7 +34,7 @@ extension MonthReviewViewController {
     /// Sideways (grips, pills) and in the table layout (the base's tray) the controls are white cards,
     /// so the screen gets the grouped background.
     var screenBackgroundColor: UIColor {
-        isLandscapeDeckActive || isTableLayoutActive ? .mainBackground : .systemBackground
+        isLandscapeDeckActive || isTableLayoutActive || isShowingEndState ? .mainBackground : .systemBackground
     }
 
     /// The cards that make up the deck's layout. While the top card flies off it's left out, so
@@ -402,6 +402,8 @@ extension MonthReviewViewController {
 
     /// The global bin button follows the slot after the fold. Sent again only when it moves.
     private func sendBinSlotIfNeeded() {
+        // An end state has its own slot, or no bin at all (+EndStates)
+        guard !isShowingEndState else { return }
         guard navigationController?.topViewController === self, view.window != nil else { return }
         let slot = view.convert(binSlotGuide.layoutFrame, to: nil)
         guard slot.width > 0, slot.height > 0, slot != lastSentBinSlot else { return }
@@ -412,7 +414,7 @@ extension MonthReviewViewController {
     // MARK: - Grips
 
     func performGripAction(_ direction: SwipeDirection) {
-        guard !isLoadingPhotos, !isAnimatingSwipe, currentIndex < reviewAssets.count,
+        guard !isShowingEndState, !isLoadingPhotos, !isAnimatingSwipe, currentIndex < reviewAssets.count,
               cardStack.last(where: { !$0.isHidden }) != nil else { return }
         completeSwipe(direction: direction)
     }

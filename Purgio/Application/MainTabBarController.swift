@@ -45,6 +45,9 @@ protocol FloatingBinButtonController: AnyObject {
     func showBinButton()
     func hideBinButton()
     func setBinButtonPlacement(_ placement: BinButtonPlacement)
+    /// Hides the button while a screen's own bottom row takes its place (the empty and
+    /// finished states). Every push, pop and tab switch turns it off again.
+    func setBinButtonSuppressed(_ isSuppressed: Bool)
 }
 
 class MainTabBarController: UITabBarController, UINavigationControllerDelegate {
@@ -58,6 +61,7 @@ class MainTabBarController: UITabBarController, UINavigationControllerDelegate {
     private var binButtonAlignedWithTabBarConstraint: NSLayoutConstraint?
     private var isDeleteBinEditing = false
     private var binButtonPlacement: BinButtonPlacement = .standard
+    private var isBinButtonSuppressed = false
     private var binButtonStandardBottomConstraint: NSLayoutConstraint?
     private var binSlotLeadingConstraint: NSLayoutConstraint?
     private var binSlotWidthConstraint: NSLayoutConstraint?
@@ -191,6 +195,10 @@ class MainTabBarController: UITabBarController, UINavigationControllerDelegate {
         {
             shouldHide = false
         }
+        // An empty or finished state has its own bottom row where the button would float
+        if isBinButtonSuppressed {
+            shouldHide = true
+        }
 
         let targetAlpha: CGFloat = shouldHide ? 0 : 1
 
@@ -236,6 +244,7 @@ extension MainTabBarController: UITabBarControllerDelegate {
     ) -> Bool {
         guard viewController !== selectedViewController else { return true }
         setBinButtonPlacement(.standard)
+        isBinButtonSuppressed = false
         customTapHandler = nil
         currentMonthContext = nil
         binButton.setMode(.count(deleteBinStore.count))
@@ -251,6 +260,8 @@ extension MainTabBarController: UITabBarControllerDelegate {
         _ navigationController: UINavigationController, willShow viewController: UIViewController, animated: Bool
     ) {
         isTransitioning = animated
+        // The screen coming on top decides again (an end state suppresses it once it shows)
+        isBinButtonSuppressed = false
         updateVisibility(immediate: true)
         // A screen that uses a slot sets it again once it's on top
         setBinButtonPlacement(.standard)
@@ -505,6 +516,12 @@ extension MainTabBarController: FloatingBinButtonController {
         if wasInSlot != isBinButtonInSlot, view.window != nil {
             UIView.animate(withDuration: 0.25) { self.view.layoutIfNeeded() }
         }
+    }
+
+    func setBinButtonSuppressed(_ isSuppressed: Bool) {
+        guard isSuppressed != isBinButtonSuppressed else { return }
+        isBinButtonSuppressed = isSuppressed
+        updateVisibility(immediate: true)
     }
 
     func hideBinButton() {

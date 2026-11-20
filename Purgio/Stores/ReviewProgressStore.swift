@@ -117,6 +117,12 @@ final class ReviewProgressStore {
         saveProgress(forMonthKey: monthKey, mediaType: mediaType, currentIndex: totalCount, reviewedCount: totalCount, deletedCount: deletedCount, keptCount: keptCount, storedCount: storedCount, originalTotalCount: originalTotalCount)
     }
     
+    /// The one "complete" test: a known total, all of it reviewed.
+    func isComplete(monthKey: String, mediaType: PHAssetMediaType = .image) -> Bool {
+        let progress = getProgress(forMonthKey: monthKey, mediaType: mediaType)
+        return progress.originalTotalCount > 0 && progress.reviewedCount >= progress.originalTotalCount
+    }
+
     func resetProgress(forMonthKey monthKey: String, mediaType: PHAssetMediaType = .image) {
         saveProgress(forMonthKey: monthKey, mediaType: mediaType, currentIndex: 0, reviewedCount: 0, deletedCount: 0, keptCount: 0, storedCount: 0, originalTotalCount: 0)
     }

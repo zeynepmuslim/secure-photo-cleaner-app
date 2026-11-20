@@ -26,6 +26,13 @@ final class DateFormatterManager {
         return formatter
     }()
 
+    /// January (standalone month name)
+    private lazy var monthNameFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "LLLL"
+        return formatter
+    }()
+
     /// 01.2026
     private lazy var monthShortFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -72,6 +79,12 @@ final class DateFormatterManager {
     func displayMonth(fromMonthKey monthKey: String) -> String {
         guard let date = date(fromMonthKey: monthKey) else { return monthKey }
         return monthDisplayFormatter.string(from: date)
+    }
+
+    /// 2026-01 → January; nil for keys that aren't months (year sessions)
+    func monthName(fromMonthKey monthKey: String) -> String? {
+        guard let date = date(fromMonthKey: monthKey) else { return nil }
+        return monthNameFormatter.string(from: date)
     }
 
     /// 2026-01 → 01.2026

@@ -15,6 +15,9 @@ enum CommonStrings {
     static let delete = NSLocalizedString("common.delete", comment: "Delete button title")
     static let ok     = NSLocalizedString("common.ok", comment: "OK button title")
     static let help   = NSLocalizedString("common.help", comment: "Help button title")
+    // Shared by the month hub and the finished month's split (keys kept from the hub)
+    static let keep   = NSLocalizedString("filterCards.keep", comment: "Keep action label")
+    static let store  = NSLocalizedString("filterCards.store", comment: "Store action label")
 }
 
 // MARK: - General Constants
@@ -28,6 +31,8 @@ enum GeneralConstants {
         static let medium: CGFloat = 16
         /// Screen content edges (Home, Month Review, Delete Bin edit buttons).
         static let content: CGFloat = 20
+        /// Cards' inner padding and Settings rows.
+        static let cardInner: CGFloat = 18
     }
 
     enum CornerRadius {
@@ -101,6 +106,12 @@ enum GeneralConstants {
         static let columnSpacing: CGFloat = 12
         /// Between items packed in a single legend row (Home's card).
         static let packedItemSpacing: CGFloat = 16
+    }
+
+    /// Where a bottom row holds the global bin in a slot beside its primary button.
+    enum BinSlot {
+        /// Phones and the Duo's cover display (the month hub, MonthReview's month-complete state).
+        static let compactWidth: CGFloat = 96
     }
 
     enum BulkYear {

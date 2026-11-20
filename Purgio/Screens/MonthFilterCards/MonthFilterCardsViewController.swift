@@ -10,13 +10,6 @@ import UIKit
 
 private enum Strings {
     static let yearDetails = NSLocalizedString("filterCards.yearDetails", comment: "Year details bar button title")
-    static let similarTitle = NSLocalizedString("filterCards.similarTitle", comment: "Similar & Duplicated filter title")
-    static let largestTitle = NSLocalizedString("filterCards.largestTitle", comment: "Largest first filter title")
-    static let screenshotsTitle = NSLocalizedString("filterCards.screenshotsTitle", comment: "Screenshots filter title")
-    static let eyesClosedTitle = NSLocalizedString("filterCards.eyesClosedTitle", comment: "Eyes closed filter title")
-    static let screenRecTitle = NSLocalizedString("filterCards.screenRecTitle", comment: "Screen recordings filter title")
-    static let slowMotionTitle = NSLocalizedString("filterCards.slowMotionTitle", comment: "Slow motion filter title")
-    static let timeLapseTitle = NSLocalizedString("filterCards.timeLapseTitle", comment: "Time-lapse filter title")
     static let continueReview = NSLocalizedString("filterCards.continue", comment: "Continue button before the items are counted")
     static let allCaughtUp = NSLocalizedString("filterCards.allCaughtUp", comment: "Continue button once the session is complete")
     static func continueLeft(_ count: Int) -> String {
@@ -24,14 +17,11 @@ private enum Strings {
             NSLocalizedString("filterCards.continueLeft", comment: "Continue button with the number of items left"),
             count)
     }
-    static func allPhotosTitle(isVideo: Bool) -> String {
-        isVideo
-            ? NSLocalizedString("filterCards.allVideosTitle", comment: "All videos filter title")
-            : NSLocalizedString("filterCards.allPhotosTitle", comment: "All photos filter title")
-    }
 }
 
 final class MonthFilterCardsViewController: UIViewController {
+    private typealias FilterType = MonthFilterStatusStore.FilterType
+
     private enum Layout {
         static let topPadding: CGFloat = 16
         /// Between the cards, the rows and the bottom row
@@ -45,7 +35,7 @@ final class MonthFilterCardsViewController: UIViewController {
         /// The All Photos row's height as a share of a tile row's
         static let allPhotosRowShare: CGFloat = 0.6
         /// The global bin's slot beside Continue: room for the icon and a count
-        static let binSlotWidth: CGFloat = 96
+        static let binSlotWidth = GeneralConstants.BinSlot.compactWidth
         /// The same slot where the row is wide (the inner display upright, the list's detail pane)
         static let wideBinSlotWidth: CGFloat = 132
     }
@@ -354,9 +344,20 @@ final class MonthFilterCardsViewController: UIViewController {
 
     /// The four filter cards in reading order (two rows of two in the grid).
     private var filterCards: [FilterCard] {
-        mediaType == .video
-            ? [slowMotionCard, largestCard, timeLapseCard, screenRecordingsCard]
-            : [similarCard, largestCard, eyesClosedCard, screenshotsCard]
+        FilterType.hubOrder(for: mediaType).filter { $0 != .allContent }.map { card(for: $0) }
+    }
+
+    private func card(for filter: FilterType) -> FilterCard {
+        switch filter {
+        case .allContent: return allPhotosCard
+        case .similar: return similarCard
+        case .largeFiles: return largestCard
+        case .screenshots: return screenshotsCard
+        case .eyesClosed: return eyesClosedCard
+        case .screenRecordings: return screenRecordingsCard
+        case .slowMotion: return slowMotionCard
+        case .timeLapse: return timeLapseCard
+        }
     }
 
     /// Splits the screen at the fold when one crosses the view (inactive included, so the
@@ -613,78 +614,17 @@ final class MonthFilterCardsViewController: UIViewController {
         binController?.setBinButtonPlacement(.slot(slot, showsTitle: foldSplitAxis == .horizontal))
     }
     
+    /// Icons, titles and tints come from the shared filter model (FilterType+Route).
     private func configureCards() {
-        // Similar & Duplicated Card (photos only)
-        similarCard.configure(
-            icon: "photo.on.rectangle.angled",
-            title: Strings.similarTitle,
-            tintColor: FilterCard.CardColor.similar,
-            style: .tile
-        )
-        similarCard.addTarget(self, action: #selector(similarCardTapped), for: .touchUpInside)
-
-        // Largest First Card
-        largestCard.configure(
-            icon: "doc.text.magnifyingglass",
-            title: Strings.largestTitle,
-            tintColor: mediaType == .image ? FilterCard.CardColor.largestPhoto : FilterCard.CardColor.largestVideo,
-            style: .tile
-        )
-        largestCard.addTarget(self, action: #selector(largestCardTapped), for: .touchUpInside)
-
-        // Screenshots Card (photos only)
-        screenshotsCard.configure(
-            icon: "camera.viewfinder",
-            title: Strings.screenshotsTitle,
-            tintColor: FilterCard.CardColor.screenshots,
-            style: .tile
-        )
-        screenshotsCard.addTarget(self, action: #selector(screenshotsCardTapped), for: .touchUpInside)
-
-        // Eyes Closed Card (photos only)
-        eyesClosedCard.configure(
-            icon: "eye.slash.fill",
-            title: Strings.eyesClosedTitle,
-            tintColor: FilterCard.CardColor.eyesClosed,
-            style: .tile
-        )
-        eyesClosedCard.addTarget(self, action: #selector(eyesClosedCardTapped), for: .touchUpInside)
-
-        // Screen Recordings Card (videos only)
-        screenRecordingsCard.configure(
-            icon: "record.circle",
-            title: Strings.screenRecTitle,
-            tintColor: FilterCard.CardColor.screenRecordings,
-            style: .tile
-        )
-        screenRecordingsCard.addTarget(self, action: #selector(screenRecordingsCardTapped), for: .touchUpInside)
-
-        // Slow Motion Card (videos only)
-        slowMotionCard.configure(
-            icon: "speedometer",
-            title: Strings.slowMotionTitle,
-            tintColor: FilterCard.CardColor.slowMotion,
-            style: .tile
-        )
-        slowMotionCard.addTarget(self, action: #selector(slowMotionCardTapped), for: .touchUpInside)
-
-        // Time-lapse Card (videos only)
-        timeLapseCard.configure(
-            icon: "clock.arrow.circlepath",
-            title: Strings.timeLapseTitle,
-            tintColor: FilterCard.CardColor.timeLapse,
-            style: .tile
-        )
-        timeLapseCard.addTarget(self, action: #selector(timeLapseCardTapped), for: .touchUpInside)
-
-        // All Photos/Videos Card
-        allPhotosCard.configure(
-            icon: mediaType == .video ? "video" : "photo.on.rectangle",
-            title: Strings.allPhotosTitle(isVideo: mediaType == .video),
-            tintColor: mediaType == .video ? FilterCard.CardColor.allVideos : FilterCard.CardColor.allPhotos,
-            style: .row
-        )
-        allPhotosCard.addTarget(self, action: #selector(allPhotosCardTapped), for: .touchUpInside)
+        for filter in FilterType.hubOrder(for: mediaType) {
+            let card = card(for: filter)
+            card.configure(
+                icon: filter.cardIcon(mediaType: mediaType),
+                title: filter.cardTitle(mediaType: mediaType),
+                tintColor: filter.cardTint(mediaType: mediaType),
+                style: filter == .allContent ? .row : .tile)
+            card.addTarget(self, action: #selector(filterCardTapped(_:)), for: .touchUpInside)
+        }
     }
 
     private func configureGlobalBinButton() {
@@ -907,52 +847,12 @@ final class MonthFilterCardsViewController: UIViewController {
     }
 
     // MARK: - Card Status
+
+    /// The status rules live in FilterType+Route, shared with the end states' "Keep going" list.
     private func updateCardStatuses() {
-        let progress = ReviewProgressStore.shared.getProgress(forMonthKey: monthKey, mediaType: mediaType)
-        let isMainComplete = progress.originalTotalCount > 0 && progress.reviewedCount >= progress.originalTotalCount
-
-        if isMainComplete {
-            (filterCards + [allPhotosCard]).forEach {
-                $0.setProgress(deleted: 0, kept: 0, stored: 0, total: 0, reviewed: 0, isFinished: true)
-            }
-            return
+        for filter in FilterType.hubOrder(for: mediaType) {
+            filter.applyStatus(to: card(for: filter), monthKey: monthKey, mediaType: mediaType)
         }
-
-        applyStatus(to: allPhotosCard, filter: .allContent, progressKey: monthKey)
-        applyStatus(to: largestCard,   filter: .largeFiles,  progressKey: monthKey)
-
-        if mediaType == .image {
-            applyStatus(to: screenshotsCard, filter: .screenshots)
-            applyStatus(to: eyesClosedCard,  filter: .eyesClosed)
-            applyStatus(to: similarCard,     filter: .similar)
-        } else {
-            applyStatus(to: screenRecordingsCard, filter: .screenRecordings)
-            applyStatus(to: slowMotionCard,       filter: .slowMotion)
-            applyStatus(to: timeLapseCard,        filter: .timeLapse)
-        }
-    }
-
-    /// A card's capsule and status come from its own progress record; the finished flag wins.
-    private func applyStatus(to card: FilterCard, filter: MonthFilterStatusStore.FilterType, progressKey: String? = nil) {
-        let key = progressKey ?? "\(monthKey)_\(filter.rawValue)"
-        let progress = ReviewProgressStore.shared.getProgress(
-            forMonthKey: key, mediaType: mediaType)
-        card.setProgress(
-            deleted: progress.deletedCount,
-            kept: progress.keptCount,
-            stored: progress.storedCount,
-            total: progress.originalTotalCount,
-            reviewed: progress.reviewedCount,
-            isFinished: MonthFilterStatusStore.shared.isFilterFinished(monthKey: monthKey, filter: filter))
-    }
-
-    private func isFilterComplete(_ filter: MonthFilterStatusStore.FilterType) -> Bool {
-        let progress = ReviewProgressStore.shared.getProgress(forMonthKey: monthKey, mediaType: mediaType)
-        let isMainComplete = progress.originalTotalCount > 0 && progress.reviewedCount >= progress.originalTotalCount
-        if isMainComplete { return true }
-
-        // Check individual filter status
-        return MonthFilterStatusStore.shared.isFilterFinished(monthKey: monthKey, filter: filter)
     }
 
     // MARK: - Year Info Button
@@ -1101,98 +1001,24 @@ final class MonthFilterCardsViewController: UIViewController {
         navigationController?.pushViewController(binVC, animated: true)
     }
 
-    @objc private func similarCardTapped() {
-        guard !isFilterComplete(.similar) else { return }
-        HapticFeedbackManager.shared.impact(intensity: .medium)
-        let similarVC = SimilarPhotosViewController(
-            assets: preloadedYearAssets,
-            monthTitle: monthTitle, monthKey: monthKey, mediaType: mediaType)
-        navigationController?.pushViewController(similarVC, animated: true)
-    }
-
-    @objc private func largestCardTapped() {
-        guard !isFilterComplete(.largeFiles) else { return }
-        HapticFeedbackManager.shared.impact(intensity: .medium)
-        if let yearAssets = preloadedYearAssets {
-            let loadingVC = ProcessingLoadingViewController(
-                monthTitle: monthTitle, monthKey: monthKey,
-                assets: yearAssets, mediaType: mediaType, config: .largeFiles())
-            navigationController?.pushViewController(loadingVC, animated: true)
-        } else {
-            let loadingVC = ProcessingLoadingViewController(
-                monthTitle: monthTitle, monthKey: monthKey, mediaType: mediaType, config: .largeFiles())
-            navigationController?.pushViewController(loadingVC, animated: true)
+    @objc private func filterCardTapped(_ sender: FilterCard) {
+        guard let filter = FilterType.hubOrder(for: mediaType).first(where: { card(for: $0) === sender }) else {
+            return
         }
-    }
-
-    @objc private func screenshotsCardTapped() {
-        guard !isFilterComplete(.screenshots) else { return }
-        HapticFeedbackManager.shared.impact(intensity: .medium)
-        let screenshotsVC = MonthReviewViewController(
-            monthTitle: monthTitle, monthKey: monthKey, mediaType: mediaType, filterContext: .screenshots)
-        if let yearAssets = preloadedYearAssets {
-            screenshotsVC.setSortedAssets(yearAssets)
-        }
-        navigationController?.pushViewController(screenshotsVC, animated: true)
-    }
-
-    @objc private func eyesClosedCardTapped() {
-        guard !isFilterComplete(.eyesClosed) else { return }
-        HapticFeedbackManager.shared.impact(intensity: .medium)
-        if let yearAssets = preloadedYearAssets {
-            let loadingVC = ProcessingLoadingViewController(
-                monthTitle: monthTitle, monthKey: monthKey,
-                assets: yearAssets, mediaType: mediaType, config: .eyesClosed())
-            navigationController?.pushViewController(loadingVC, animated: true)
-        } else {
-            let loadingVC = ProcessingLoadingViewController(
-                monthTitle: monthTitle, monthKey: monthKey, mediaType: mediaType, config: .eyesClosed())
-            navigationController?.pushViewController(loadingVC, animated: true)
-        }
-    }
-
-    @objc private func screenRecordingsCardTapped() {
-        guard !isFilterComplete(.screenRecordings) else { return }
-        HapticFeedbackManager.shared.impact(intensity: .medium)
-        let recordingsVC = MonthReviewViewController(
-            monthTitle: monthTitle, monthKey: monthKey, mediaType: mediaType, filterContext: .screenRecordings)
-        if let yearAssets = preloadedYearAssets {
-            recordingsVC.setSortedAssets(yearAssets)
-        }
-        navigationController?.pushViewController(recordingsVC, animated: true)
-    }
-
-    @objc private func slowMotionCardTapped() {
-        guard !isFilterComplete(.slowMotion) else { return }
-        HapticFeedbackManager.shared.impact(intensity: .medium)
-        let slowMotionVC = MonthReviewViewController(
-            monthTitle: monthTitle, monthKey: monthKey, mediaType: mediaType, filterContext: .slowMotion)
-        if let yearAssets = preloadedYearAssets {
-            slowMotionVC.setSortedAssets(yearAssets)
-        }
-        navigationController?.pushViewController(slowMotionVC, animated: true)
-    }
-
-    @objc private func timeLapseCardTapped() {
-        guard !isFilterComplete(.timeLapse) else { return }
-        HapticFeedbackManager.shared.impact(intensity: .medium)
-        let timeLapseVC = MonthReviewViewController(
-            monthTitle: monthTitle, monthKey: monthKey, mediaType: mediaType, filterContext: .timeLapse)
-        if let yearAssets = preloadedYearAssets {
-            timeLapseVC.setSortedAssets(yearAssets)
-        }
-        navigationController?.pushViewController(timeLapseVC, animated: true)
+        open(filter)
     }
 
     @objc private func allPhotosCardTapped() {
-        guard !isFilterComplete(.allContent) else { return }
+        open(.allContent)
+    }
+
+    /// A complete card does nothing. The route itself is shared (FilterType+Route).
+    private func open(_ filter: FilterType) {
+        guard !filter.isComplete(monthKey: monthKey, mediaType: mediaType) else { return }
         HapticFeedbackManager.shared.impact(intensity: .medium)
-        let reviewVC = MonthReviewViewController(
-            monthTitle: monthTitle, monthKey: monthKey, mediaType: mediaType, filterContext: .none)
-        if let yearAssets = preloadedYearAssets {
-            reviewVC.setSortedAssets(yearAssets)
-        }
-        navigationController?.pushViewController(reviewVC, animated: true)
+        let destination = filter.makeViewController(
+            monthTitle: monthTitle, monthKey: monthKey, mediaType: mediaType, yearAssets: preloadedYearAssets)
+        navigationController?.pushViewController(destination, animated: true)
     }
 }
 

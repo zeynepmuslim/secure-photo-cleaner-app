@@ -14,8 +14,6 @@ CSV="Localization/translations.csv"
 # Remove a key from here once it gets a CSV row. Never allowlist a key shown in the shipping UI.
 ALLOWLIST=(
   filterCards.delete           # MonthStatItemView previews
-  monthReview.noResultsMessage # EmptyStateView previews
-  monthReview.noResultsTitle   # EmptyStateView previews
   similarPhotos.gotIt          # DynamicGlassButton previews
 )
 

@@ -29,8 +29,8 @@ private enum Strings {
             state.left, state.percent, state.reviewed, state.total, state.deleted, state.kept, state.stored)
     }
     static let delete = CommonStrings.delete
-    static let keep = NSLocalizedString("filterCards.keep", comment: "Keep action label")
-    static let store = NSLocalizedString("filterCards.store", comment: "Store action label")
+    static let keep = CommonStrings.keep
+    static let store = CommonStrings.store
     /// Shown while a session has no total yet
     static let placeholder = "–"
     static let placeholderFraction = "– / –"

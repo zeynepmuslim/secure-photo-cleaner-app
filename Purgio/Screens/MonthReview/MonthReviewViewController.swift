@@ -81,6 +81,11 @@ final class MonthReviewViewController: UIViewController {
     let loadingIndicator = UIActivityIndicatorView(style: .large)
 
     lazy var emptyStateView = EmptyStateView()
+    /// An empty or finished state covers the deck (+EndStates); the deck's own controls stay out.
+    var isShowingEndState = false
+    /// The finished month's bottom row holds the global bin in a slot beside its primary button.
+    var endStateUsesBinSlot = false
+    var nextMonthTask: Task<Void, Never>?
 
     var skeletonStack: SkeletonStackView?
     var skeletonStatsView: SkeletonStatsView?
@@ -326,9 +331,12 @@ final class MonthReviewViewController: UIViewController {
         }
 
         // The tab bar controller resets the bin button's placement on every push and pop
-        if isLandscapeDeckActive {
+        if isLandscapeDeckActive || isShowingEndState {
             lastSentBinSlot = nil
             view.setNeedsLayout()
+        }
+        if isShowingEndState {
+            applyEndStateBinButton()
         }
     }
 
@@ -343,6 +351,7 @@ final class MonthReviewViewController: UIViewController {
         if usesFannedDeckLayout {
             applyCardSizing()
         }
+        updateEndStateLayout(railEdge: railEdge)
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -376,6 +385,7 @@ final class MonthReviewViewController: UIViewController {
         saveProgress()
 
         loadingTask?.cancel()
+        nextMonthTask?.cancel()
 
         for (_, requestID) in imageRequestIDs {
             imageCache.cancelRequest(requestID)

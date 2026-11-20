@@ -13,8 +13,23 @@ private enum Strings {
     static let scanningMessage = NSLocalizedString("similarPhotos.scanningMessage", comment: "Scanning for similar photos progress message")
     static let similarPhotosTitle = NSLocalizedString("similarPhotos.title", comment: "Similar photos screen title")
     static let cancel = CommonStrings.cancel
-    static let noSimilarTitle = NSLocalizedString("similarPhotos.noSimilarTitle", comment: "No similar photos found title")
-    static let noSimilarMessage = NSLocalizedString("similarPhotos.noSimilarMessage", comment: "No similar photos found message")
+    static let noneTitle = NSLocalizedString("similarPhotos.noneTitle", comment: "No similar photos found: every photo is one of a kind")
+    static let noneMessageLibraryUncounted = NSLocalizedString("similarPhotos.noneMessageLibraryUncounted", comment: "No similar photos found in the whole library, count unknown")
+    private static func comparedCount(_ count: Int) -> String {
+        String.localizedStringWithFormat(
+            NSLocalizedString("similarPhotos.comparedCount", comment: "How many photos a scan compared, e.g. '92 photos'"),
+            count)
+    }
+    static func noneMessage(count: Int, month: String) -> String {
+        String(
+            format: NSLocalizedString("similarPhotos.noneMessage", comment: "No similar photos found: compared count ('92 photos'), month"),
+            comparedCount(count), month)
+    }
+    static func noneMessageLibrary(count: Int) -> String {
+        String(
+            format: NSLocalizedString("similarPhotos.noneMessageLibrary", comment: "No similar photos found in the whole library: compared count ('92 photos')"),
+            comparedCount(count))
+    }
     static let scanAgain = NSLocalizedString("similarPhotos.scanAgain", comment: "Scan again button")
     static let tryAnotherMonth = NSLocalizedString("similarPhotos.tryAnotherMonth", comment: "Try another month button")
     static let photosAccessDenied = NSLocalizedString("similarPhotos.photosAccessDenied", comment: "Photos access denied message")
@@ -101,7 +116,13 @@ class SimilarPhotosViewController: UIViewController {
         return label
     }()
 
-    private let emptyStateView = EmptyStateView()
+    private let emptyStateView: EmptyStateView = {
+        let view = EmptyStateView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.isHidden = true
+        return view
+    }()
+    private var isShowingEmptyState = false
 
     private let photoLibraryService = PhotoLibraryService.shared
 
@@ -512,6 +533,11 @@ class SimilarPhotosViewController: UIViewController {
         super.viewWillAppear(animated)
     }
 
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        emptyStateView.update(railEdge: DuoLayout.railEdge(tabBarController, in: view))
+    }
+
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         exitStoreModeOnAllCells()
@@ -526,6 +552,11 @@ class SimilarPhotosViewController: UIViewController {
         // Reconfigure bin button in case it was reset during navigation
         if !similarGroups.isEmpty {
             configureGlobalBinButton()
+        }
+        // Every push and pop lets the bin show again; the empty state has its own bottom row
+        if isShowingEmptyState {
+            binController?.setBinButtonSuppressed(true)
+            return
         }
 
         guard similarGroups.isEmpty else { return }
@@ -570,6 +601,7 @@ class SimilarPhotosViewController: UIViewController {
         view.addSubview(tableView)
         view.addSubview(activityIndicator)
         view.addSubview(statusLabel)
+        view.addSubview(emptyStateView)
 
         tableView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 80, right: 0)
         tableView.scrollIndicatorInsets = UIEdgeInsets(top: 0, left: 0, bottom: 80, right: 0)
@@ -583,6 +615,13 @@ class SimilarPhotosViewController: UIViewController {
             tableView.trailingAnchor.constraint(
                 equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -GeneralConstants.EdgePadding.medium),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            // Sides from the safe area; top and bottom from the view, so its bottom row can
+            // rest on Home's rail baseline
+            emptyStateView.topAnchor.constraint(equalTo: view.topAnchor),
+            emptyStateView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            emptyStateView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            emptyStateView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
             activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -50),
@@ -624,6 +663,7 @@ class SimilarPhotosViewController: UIViewController {
     }
 
     private func startScan() {
+        hideEmptyState()
         showSkeletonLoading()
         tableView.isHidden = true
 
@@ -724,6 +764,8 @@ class SimilarPhotosViewController: UIViewController {
         }
     }
 
+    /// Nothing similar: the stamp, how much was compared, the month's other open filters,
+    /// Continue and "Scan again" (board "Empty & finished states · A + B").
     private func showEmptyState() {
         hideSkeletonLoading()
 
@@ -731,42 +773,81 @@ class SimilarPhotosViewController: UIViewController {
             MonthFilterStatusStore.shared.markFilterFinished(monthKey: monthKey, filter: .similar)
         }
 
-        let showTryAnother = navigationSource == .dashboard || navigationSource == .luckyPicker
-
-        if showTryAnother {
-            emptyStateView.configure(
-                icon: "photo.stack",
-                iconColor: .systemGreen,
-                title: Strings.noSimilarTitle,
-                message: Strings.noSimilarMessage,
-                actionTitle: Strings.tryAnotherMonth,
-                onAction: { [weak self] in self?.tryAnotherMonth() }
-            )
-        } else {
-            emptyStateView.configure(
-                icon: "photo.stack",
-                iconColor: .systemGreen,
-                title: Strings.noSimilarTitle,
-                message: Strings.noSimilarMessage,
-                actionTitle: Strings.scanAgain,
-                onAction: { [weak self] in self?.startScan() }
-            )
+        var accessory: UIView?
+        var continueTitle: String?
+        if let monthKey, let monthTitle {
+            let nextSteps = MonthNextStepsView()
+            let shortName = DateFormatterManager.shared.monthName(fromMonthKey: monthKey) ?? monthTitle
+            if nextSteps.configure(
+                monthTitle: shortName, monthKey: monthKey, mediaType: mediaType, excluding: .similar) {
+                nextSteps.onSelect = { [weak self] filter in self?.openFilter(filter) }
+                accessory = nextSteps
+            }
+            // Continue resumes the month's All Photos deck; a complete month has nothing to continue
+            continueTitle = MonthFilterStatusStore.FilterType.continueTitle(monthKey: monthKey, mediaType: mediaType)
         }
 
-        emptyStateView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(emptyStateView)
+        let showTryAnother = navigationSource == .dashboard || navigationSource == .luckyPicker
+        emptyStateView.configure(
+            hero: .stamp,
+            title: Strings.noneTitle,
+            message: emptyStateMessage(),
+            accessory: accessory,
+            actionTitle: continueTitle,
+            actionIcon: "play.fill",
+            onAction: { [weak self] in self?.openFilter(.allContent) },
+            secondaryTitle: showTryAnother ? Strings.tryAnotherMonth : Strings.scanAgain,
+            onSecondary: { [weak self] in
+                if showTryAnother {
+                    self?.tryAnotherMonth()
+                } else {
+                    self?.startScan()
+                }
+            })
 
-        NSLayoutConstraint.activate([
-            emptyStateView.topAnchor.constraint(equalTo: view.topAnchor),
-            emptyStateView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            emptyStateView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            emptyStateView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        ])
-
+        isShowingEmptyState = true
+        emptyStateView.isHidden = false
+        emptyStateView.update(railEdge: DuoLayout.railEdge(tabBarController, in: view))
         emptyStateView.show(animated: true)
+        // Its bottom row sits where the bin would float
+        binController?.setBinButtonSuppressed(true)
+
         activityIndicator.stopAnimating()
         statusLabel.isHidden = true
         tableView.isHidden = true
+    }
+
+    private func hideEmptyState() {
+        guard isShowingEmptyState else { return }
+        isShowingEmptyState = false
+        emptyStateView.hide(animated: false)
+        emptyStateView.isHidden = true
+        binController?.setBinButtonSuppressed(false)
+    }
+
+    /// "We compared 92 photos in August 2025…"; a whole-library scan counts the library's photos.
+    private func emptyStateMessage() -> String {
+        if let monthTitle {
+            return Strings.noneMessage(count: assets?.count ?? 0, month: monthTitle)
+        }
+        if let count = assets?.count {
+            return Strings.noneMessageLibrary(count: count)
+        }
+        if let buckets = photoLibraryService.getCachedMonthBuckets(mediaType: mediaType) {
+            return Strings.noneMessageLibrary(count: buckets.reduce(0) { $0 + $1.totalCount })
+        }
+        return Strings.noneMessageLibraryUncounted
+    }
+
+    /// Opens another of the month's filters in place of this screen (FilterType+Route).
+    private func openFilter(_ filter: MonthFilterStatusStore.FilterType) {
+        guard let monthKey, let monthTitle else { return }
+        let destination = filter.makeViewController(
+            monthTitle: monthTitle, monthKey: monthKey, mediaType: mediaType,
+            // A year session's screens share its preloaded assets
+            yearAssets: monthKey.hasPrefix("year-") ? assets : nil,
+            navigationSource: navigationSource)
+        replaceInNavigationStack(with: destination)
     }
 
     private func tryAnotherMonth() {
@@ -798,11 +879,7 @@ class SimilarPhotosViewController: UIViewController {
         )
         newVC.navigationSource = navigationSource
 
-        guard let nav = navigationController else { return }
-        var vcs = nav.viewControllers
-        vcs.removeLast()
-        vcs.append(newVC)
-        nav.setViewControllers(vcs, animated: true)
+        replaceInNavigationStack(with: newVC)
     }
 
     private func showPermissionError() {

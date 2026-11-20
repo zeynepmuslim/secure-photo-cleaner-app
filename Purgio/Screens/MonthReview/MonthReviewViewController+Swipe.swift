@@ -17,7 +17,7 @@ extension MonthReviewViewController {
     }
 
     @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
-        guard !isLoadingPhotos else { return }
+        guard !isLoadingPhotos, !isShowingEndState else { return }
         guard !isAnimatingSwipe else { return }
 
         guard let topCard = cardStack.last(where: { !$0.isHidden }) else { return }

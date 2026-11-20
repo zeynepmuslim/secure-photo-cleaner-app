@@ -9,7 +9,7 @@ import UIKit
 
 /// A vertical capsule that shows a month's review state: a dashed outline before it is
 /// started, a bottom-up fill split by choice (delete, keep, store, then what's left) while in
-/// progress, and a green capsule stamped with a check once everything is reviewed.
+/// progress, and the stamp (`ReviewStampView`) once everything is reviewed.
 /// 12×40 by default; at any other size the gaps, the outline and the check scale with its width.
 final class ReviewCapsuleView: UIView {
 
@@ -23,12 +23,6 @@ final class ReviewCapsuleView: UIView {
         static let outlineDashPattern: [NSNumber] = [3, 2.5]
         /// The finished capsule is this much narrower than the slot
         static let finishedWidthInset: CGFloat = 2
-        static let checkBoxSize: CGFloat = 22
-        /// The check is drawn in a 24-unit box: "M5 12.5 l4.5 4.5 L19 7"
-        static let checkUnitBox: CGFloat = 24
-        static let checkOutlineStroke: CGFloat = 7.5
-        static let checkCoreStroke: CGFloat = 3.6
-        static let checkRotation: CGFloat = -8 * .pi / 180
     }
 
     private enum Mode {
@@ -50,6 +44,12 @@ final class ReviewCapsuleView: UIView {
     var usesSingleProgressColor = false {
         didSet { if usesSingleProgressColor != oldValue { applyColors() } }
     }
+    /// The finished stamp's check border (`ReviewStampView.checkBorderColor`); nil is its default
+    var stampCheckBorderColor: UIColor? {
+        get { stampView.checkBorderColor }
+        set { stampView.checkBorderColor = newValue }
+    }
+
     /// Bottom-up: deleted, kept, stored, left
     private var segmentValues: [CGFloat] = [0, 0, 0, 0]
 
@@ -73,15 +73,8 @@ final class ReviewCapsuleView: UIView {
         return layer
     }()
 
-    private let finishedCapsuleLayer: CALayer = {
-        let layer = CALayer()
-        layer.cornerCurve = .continuous
-        return layer
-    }()
-
-    private let checkContainerLayer = CALayer()
-    private let checkOutlineLayer = ReviewCapsuleView.makeCheckLayer(stroke: Layout.checkOutlineStroke)
-    private let checkCoreLayer = ReviewCapsuleView.makeCheckLayer(stroke: Layout.checkCoreStroke)
+    /// The finished state: the shared stamp, sized to this capsule in `layoutSubviews`
+    private let stampView = ReviewStampView()
 
     private var segmentLayers: [CALayer] { [deletedLayer, keptLayer, storedLayer, leftLayer] }
 
@@ -114,10 +107,7 @@ final class ReviewCapsuleView: UIView {
         layer.addSublayer(segmentsContainerLayer)
         segmentLayers.forEach { segmentsContainerLayer.addSublayer($0) }
         layer.addSublayer(outlineLayer)
-        layer.addSublayer(finishedCapsuleLayer)
-        layer.addSublayer(checkContainerLayer)
-        checkContainerLayer.addSublayer(checkOutlineLayer)
-        checkContainerLayer.addSublayer(checkCoreLayer)
+        addSubview(stampView)
 
         applyColors()
         applyMode()
@@ -127,24 +117,6 @@ final class ReviewCapsuleView: UIView {
                 self.applyColors()
             }
         }
-    }
-
-    private static func makeCheckLayer(stroke: CGFloat) -> CAShapeLayer {
-        let scale = Layout.checkBoxSize / Layout.checkUnitBox
-        let path = UIBezierPath()
-        path.move(to: CGPoint(x: 5, y: 12.5))
-        path.addLine(to: CGPoint(x: 9.5, y: 17))
-        path.addLine(to: CGPoint(x: 19, y: 7))
-        path.apply(CGAffineTransform(scaleX: scale, y: scale))
-
-        let layer = CAShapeLayer()
-        layer.path = path.cgPath
-        layer.fillColor = UIColor.clear.cgColor
-        layer.lineWidth = stroke * scale
-        layer.lineCap = .round
-        layer.lineJoin = .round
-        layer.frame = CGRect(x: 0, y: 0, width: Layout.checkBoxSize, height: Layout.checkBoxSize)
-        return layer
     }
 
     // MARK: - Configure
@@ -197,8 +169,7 @@ final class ReviewCapsuleView: UIView {
         CATransaction.setDisableActions(true)
         segmentsContainerLayer.isHidden = mode != .inProgress
         outlineLayer.isHidden = mode != .notStarted
-        finishedCapsuleLayer.isHidden = mode != .finished
-        checkContainerLayer.isHidden = mode != .finished
+        stampView.isHidden = mode != .finished
         CATransaction.commit()
     }
 
@@ -225,18 +196,11 @@ final class ReviewCapsuleView: UIView {
         }
         outlineLayer.path = UIBezierPath(roundedRect: outlineRect, cornerRadius: outlineRect.width / 2).cgPath
 
-        let finishedWidth = max(0, bounds.width - Layout.finishedWidthInset * sizeScale)
-        finishedCapsuleLayer.frame = CGRect(
-            x: (bounds.width - finishedWidth) / 2, y: 0, width: finishedWidth, height: bounds.height)
-        finishedCapsuleLayer.cornerRadius = finishedWidth / 2
-
-        // Bounds and position, not frame: the layer is rotated (and scaled with the capsule)
-        checkContainerLayer.bounds = CGRect(x: 0, y: 0, width: Layout.checkBoxSize, height: Layout.checkBoxSize)
-        checkContainerLayer.position = CGPoint(x: bounds.midX, y: bounds.midY)
-        checkContainerLayer.setAffineTransform(
-            CGAffineTransform(rotationAngle: Layout.checkRotation).scaledBy(x: sizeScale, y: sizeScale))
-
         CATransaction.commit()
+
+        // The stamp keeps its check at 2.2× the finished capsule's width (22pt at the standard 12)
+        stampView.frame = bounds
+        stampView.capsuleWidth = max(0, bounds.width - Layout.finishedWidthInset * sizeScale)
     }
 
     private func layoutSegments() {
@@ -287,9 +251,6 @@ final class ReviewCapsuleView: UIView {
         storedLayer.backgroundColor = ThemeManager.Colors.statusYellow.resolvedColor(with: traitCollection).cgColor
         leftLayer.backgroundColor = UIColor.systemGray5.resolvedColor(with: traitCollection).cgColor
         outlineLayer.strokeColor = UIColor.systemGray3.resolvedColor(with: traitCollection).cgColor
-        finishedCapsuleLayer.backgroundColor = green
-        checkOutlineLayer.strokeColor = green
-        checkCoreLayer.strokeColor = UIColor.white.cgColor
         CATransaction.commit()
     }
 

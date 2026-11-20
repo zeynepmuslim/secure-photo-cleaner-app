@@ -161,6 +161,8 @@ extension MonthReviewViewController {
     /// device folds or unfolds under it, never on every layout pass. Other items (the filter
     /// progress ring) stay where they are.
     func setTableLayoutBarItemVisible(_ isVisible: Bool) {
+        // An empty or finished state has no base controls to pick between (+EndStates)
+        let isVisible = isVisible && !isShowingEndState
         var items = navigationItem.rightBarButtonItems ?? []
         if isVisible {
             let item = tableLayoutBarItem ?? .tableLayoutItem(

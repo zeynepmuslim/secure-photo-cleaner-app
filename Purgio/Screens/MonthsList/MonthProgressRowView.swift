@@ -50,10 +50,6 @@ final class MonthProgressRowView: UIView {
         static let textSpacing: CGFloat = 3
         static let textToValue: CGFloat = 10
         static let subtitleFontSize: CGFloat = 13
-        static let chipFontSize: CGFloat = 12
-        static let chipIconPointSize: CGFloat = 12
-        static let chipSpacing: CGFloat = 10
-        static let chipLineSpacing: CGFloat = 3
         static let numberFontSize: CGFloat = 20
         static let captionFontSize: CGFloat = 12
         static let pillHeight: CGFloat = 26
@@ -379,54 +375,9 @@ final class MonthProgressRowView: UIView {
 
     // MARK: - Chips
 
-    /// "trash 20  checkmark 38  archivebox 5" as one wrapping text: a chip's icon and count stay
-    /// together, and a line only breaks between chips, so a count is never truncated.
     private func chipsText(for counts: ChipCounts) -> NSAttributedString {
-        var chips: [(systemName: String, color: UIColor, count: Int)] = [
-            ("trash.fill", ThemeManager.Colors.statusRed, counts.deleted),
-            ("checkmark.circle.fill", ThemeManager.Colors.statusGreen, counts.kept),
-            ("archivebox.fill", ThemeManager.Colors.statusYellow, counts.stored)
-        ].filter { $0.count > 0 }
-        if chips.isEmpty {
-            chips = [("trash.fill", ThemeManager.Colors.statusRed, 0)]
-        }
-
-        let font = UIFont.monospacedDigitSystemFont(ofSize: Layout.chipFontSize, weight: .regular)
-        let paragraph = NSMutableParagraphStyle()
-        paragraph.lineSpacing = Layout.chipLineSpacing
-        paragraph.lineBreakMode = .byWordWrapping
-        let textAttributes: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .foregroundColor: UIColor.textSecondary,
-            .paragraphStyle: paragraph
-        ]
-        let spaceWidth = (" " as NSString).size(withAttributes: [.font: font]).width
-        var gapAttributes = textAttributes
-        gapAttributes[.kern] = Layout.chipSpacing - spaceWidth
-
-        let symbolConfig = UIImage.SymbolConfiguration(pointSize: Layout.chipIconPointSize, weight: .semibold)
-        let result = NSMutableAttributedString()
-        for (index, chip) in chips.enumerated() {
-            if index > 0 {
-                result.append(NSAttributedString(string: " ", attributes: gapAttributes))
-            }
-            if let image = UIImage(systemName: chip.systemName, withConfiguration: symbolConfig)?
-                .withTintColor(chip.color.resolvedColor(with: traitCollection), renderingMode: .alwaysOriginal)
-            {
-                let attachment = NSTextAttachment()
-                attachment.image = image
-                attachment.bounds = CGRect(
-                    x: 0, y: (font.capHeight - image.size.height) / 2,
-                    width: image.size.width, height: image.size.height)
-                let icon = NSMutableAttributedString(attachment: attachment)
-                icon.addAttributes(textAttributes, range: NSRange(location: 0, length: icon.length))
-                result.append(icon)
-                // No-break space: the icon stays with its count
-                result.append(NSAttributedString(string: "\u{00A0}", attributes: textAttributes))
-            }
-            result.append(NSAttributedString(string: chip.count.compactFormatted, attributes: textAttributes))
-        }
-        return result
+        .reviewChips(
+            deleted: counts.deleted, kept: counts.kept, stored: counts.stored, traitCollection: traitCollection)
     }
 
     private func refreshChips() {

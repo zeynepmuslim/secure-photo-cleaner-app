@@ -1539,6 +1539,91 @@
         }
       }
     },
+    "filterCards.leftCaption": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Left"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaldı"
+          }
+        }
+      }
+    },
+    "filterCards.notStarted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not started"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Başlanmadı"
+          }
+        }
+      }
+    },
+    "filterCards.overviewAccessibility": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld left, %2$lld%% reviewed, %3$lld of %4$lld, %5$lld delete, %6$lld keep, %7$lld store"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld kaldı, %%%2$lld incelendi, %4$lld içinden %3$lld, %5$lld sil, %6$lld tut, %7$lld depola"
+          }
+        }
+      }
+    },
+    "filterCards.percent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld%%"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%%%lld"
+          }
+        }
+      }
+    },
+    "filterCards.percentReviewed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld%% reviewed"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%%%lld incelendi"
+          }
+        }
+      }
+    },
     "filterCards.reviewed": {
       "extractionState": "manual",
       "localizations": {
@@ -1552,6 +1637,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "İncelendi"
+          }
+        }
+      }
+    },
+    "filterCards.reviewedFraction": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld / %2$lld"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld / %2$lld"
           }
         }
       }

@@ -19,6 +19,17 @@ extension Int {
     }
 }
 
+extension Int {
+    /// This count as a rounded percent of `total`, the one figure every progress text shows.
+    /// While some but not all of it is done it stays within 1…99, so "0%" never means started
+    /// and "100%" never comes with items left.
+    func roundedPercent(of total: Int) -> Int {
+        guard total > 0, self > 0 else { return 0 }
+        guard self < total else { return 100 }
+        return Swift.min(99, Swift.max(1, Int((Double(self) * 100 / Double(total)).rounded())))
+    }
+}
+
 extension Int64 {
     func formattedBytes(allowedUnits: ByteCountFormatter.Units = [.useKB, .useMB, .useGB]) -> String {
         let formatter = Self.byteFormatter

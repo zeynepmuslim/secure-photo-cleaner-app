@@ -91,6 +91,12 @@ filterCards.yearDetails;Year Details;Yıl Detayları;;;;
 filterCards.continue;Continue;Devam et;;;;
 filterCards.continueLeft;;;Continue · %lld left;Continue · %lld left;Devam et · %lld kaldı;Devam et · %lld kaldı
 filterCards.allCaughtUp;All caught up;Hepsi tamamlandı;;;;
+filterCards.percentReviewed;%lld%% reviewed;%%%lld incelendi;;;;
+filterCards.notStarted;Not started;Başlanmadı;;;;
+filterCards.leftCaption;Left;Kaldı;;;;
+filterCards.percent;%lld%%;%%%lld;;;;
+filterCards.reviewedFraction;%1$lld / %2$lld;%1$lld / %2$lld;;;;
+filterCards.overviewAccessibility;%1$lld left, %2$lld%% reviewed, %3$lld of %4$lld, %5$lld delete, %6$lld keep, %7$lld store;%1$lld kaldı, %%%2$lld incelendi, %4$lld içinden %3$lld, %5$lld sil, %6$lld tut, %7$lld depola;;;;
 decisionRing.reviewed;reviewed;incelendi;;;;
 decisionRing.notCounted;Not counted yet;Henüz sayılmadı;;;;
 decisionRing.accessibility;%1$lld delete, %2$lld keep, %3$lld store, %4$lld left;%1$lld sil, %2$lld tut, %3$lld depola, %4$lld kaldı;;;;

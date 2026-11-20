@@ -65,7 +65,6 @@ final class HomeViewController: UIViewController {
         card.configure(
             icon: "photo.fill",
             title: Strings.photosTitle,
-            subtitle: "",
             tintColor: .photo100
         )
         card.allowsTallVariant = true
@@ -77,7 +76,6 @@ final class HomeViewController: UIViewController {
         card.configure(
             icon: "video.fill",
             title: Strings.videosTitle,
-            subtitle: "",
             tintColor: .video100
         )
         card.allowsTallVariant = true

@@ -26,7 +26,7 @@ enum BinButtonPlacement: Equatable {
     /// Floating at the trailing bottom (wide on Delete Bin).
     case standard
     /// A slot a screen lays out in its own bottom row, in window coordinates
-    /// (MonthReview held sideways and MonthFilterCards on the iPhone Duo's inner display).
+    /// (MonthReview held sideways on the iPhone Duo's inner display, and MonthFilterCards' bottom row).
     /// `showsTitle` puts "Bin" before the count, for a slot wide enough to hold it.
     case slot(CGRect, showsTitle: Bool = false)
 }

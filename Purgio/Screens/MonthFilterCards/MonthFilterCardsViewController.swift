@@ -9,25 +9,14 @@ import Photos
 import UIKit
 
 private enum Strings {
-    static let reviewed = NSLocalizedString("filterCards.reviewed", comment: "Reviewed progress label")
     static let yearDetails = NSLocalizedString("filterCards.yearDetails", comment: "Year details bar button title")
-    static let delete = CommonStrings.delete
-    static let keep = NSLocalizedString("filterCards.keep", comment: "Keep action label")
-    static let store = NSLocalizedString("filterCards.store", comment: "Store action label")
     static let similarTitle = NSLocalizedString("filterCards.similarTitle", comment: "Similar & Duplicated filter title")
-    static let similarSubtitle = NSLocalizedString("filterCards.similarSubtitle", comment: "Similar photos filter description")
     static let largestTitle = NSLocalizedString("filterCards.largestTitle", comment: "Largest first filter title")
     static let screenshotsTitle = NSLocalizedString("filterCards.screenshotsTitle", comment: "Screenshots filter title")
-    static let screenshotsSubtitle = NSLocalizedString("filterCards.screenshotsSubtitle", comment: "Screenshots filter description")
     static let eyesClosedTitle = NSLocalizedString("filterCards.eyesClosedTitle", comment: "Eyes closed filter title")
-    static let eyesClosedSubtitle = NSLocalizedString("filterCards.eyesClosedSubtitle", comment: "Eyes closed filter description")
     static let screenRecTitle = NSLocalizedString("filterCards.screenRecTitle", comment: "Screen recordings filter title")
-    static let screenRecSubtitle = NSLocalizedString("filterCards.screenRecSubtitle", comment: "Screen recordings filter description")
     static let slowMotionTitle = NSLocalizedString("filterCards.slowMotionTitle", comment: "Slow motion filter title")
-    static let slowMotionSubtitle = NSLocalizedString("filterCards.slowMotionSubtitle", comment: "Slow motion filter description")
     static let timeLapseTitle = NSLocalizedString("filterCards.timeLapseTitle", comment: "Time-lapse filter title")
-    static let timeLapseSubtitle = NSLocalizedString("filterCards.timeLapseSubtitle", comment: "Time-lapse filter description")
-    static let finished = NSLocalizedString("filterCards.finished", comment: "Finished state label")
     static let continueReview = NSLocalizedString("filterCards.continue", comment: "Continue button before the items are counted")
     static let allCaughtUp = NSLocalizedString("filterCards.allCaughtUp", comment: "Continue button once the session is complete")
     static func continueLeft(_ count: Int) -> String {
@@ -35,78 +24,42 @@ private enum Strings {
             NSLocalizedString("filterCards.continueLeft", comment: "Continue button with the number of items left"),
             count)
     }
-    static func largestSubtitle(isVideo: Bool) -> String {
-        isVideo
-            ? NSLocalizedString("filterCards.largestSubtitleVideos", comment: "Largest videos filter description")
-            : NSLocalizedString("filterCards.largestSubtitlePhotos", comment: "Largest photos filter description")
-    }
     static func allPhotosTitle(isVideo: Bool) -> String {
         isVideo
             ? NSLocalizedString("filterCards.allVideosTitle", comment: "All videos filter title")
             : NSLocalizedString("filterCards.allPhotosTitle", comment: "All photos filter title")
     }
-    static func allPhotosSubtitle(isVideo: Bool) -> String {
-        isVideo
-            ? NSLocalizedString("filterCards.allVideosSubtitle", comment: "All videos filter description")
-            : NSLocalizedString("filterCards.allPhotosSubtitle", comment: "All photos filter description")
-    }
 }
 
 final class MonthFilterCardsViewController: UIViewController {
-    private let statsContainerView: UIView = {
-        let view = UIView()
-        view.backgroundColor = .cardBackground
-        view.layer.cornerRadius = 16
-        view.layer.cornerCurve = .continuous
-        view.translatesAutoresizingMaskIntoConstraints = false
-        return view
-    }()
+    private enum Layout {
+        static let topPadding: CGFloat = 16
+        /// Between the cards, the rows and the bottom row
+        static let cardSpacing: CGFloat = 10
+        /// The same gaps when the column is short (iPhone SE)
+        static let compactCardSpacing: CGFloat = 8
+        /// Below this tile height (at the regular gaps) the column counts as short
+        static let comfortableTileHeight: CGFloat = 140
+        /// Under this tile height at the regular sizes, the overview card goes compact (iPhone SE)
+        static let regularOverviewMinimumTileHeight: CGFloat = 110
+        /// The All Photos row's height as a share of a tile row's
+        static let allPhotosRowShare: CGFloat = 0.6
+        /// The global bin's slot beside Continue: room for the icon and a count
+        static let binSlotWidth: CGFloat = 96
+        /// The same slot where the row is wide (the inner display upright, the list's detail pane)
+        static let wideBinSlotWidth: CGFloat = 132
+    }
 
-    private let progressRingView: CircularProgressView = {
-        let view = CircularProgressView()
-        view.translatesAutoresizingMaskIntoConstraints = false
-        return view
-    }()
+    /// The one-column overview card (phones, the Duo's cover display, Split View, embedded):
+    /// the month's split capsule, the number left and the percent reviewed over the counts.
+    private let summaryCardView = ProgressSummaryCardView()
 
-    private let progressLabel: UILabel = {
-        let label = UILabel()
-        label.font = ThemeManager.Fonts.titleFont(size: 16, weight: .bold)
-        label.textColor = .textPrimary
-        label.textAlignment = .center
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
-    }()
-
-    private let progressImageView: UIImageView = {
-        let imageView = UIImageView()
-        let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .bold)
-        imageView.image = UIImage(systemName: "checkmark", withConfiguration: config)
-        imageView.tintColor = .systemGreen
-        imageView.contentMode = .scaleAspectFit
-        imageView.isHidden = true
-        imageView.translatesAutoresizingMaskIntoConstraints = false
-        return imageView
-    }()
-
-    private let statsStackView: UIStackView = {
-        let stack = UIStackView()
-        stack.axis = .horizontal
-        stack.distribution = .fillEqually
-        stack.spacing = 8
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        return stack
-    }()
-
-    private let reviewedStatView = MonthStatItemView()
-    private let deletedStatView = MonthStatItemView()
-    private let keptStatView = MonthStatItemView()
-    private let storedStatView = MonthStatItemView()
-
+    /// The two tile rows, then All Photos (All Photos first on the upright inner display).
     private let cardsContainerStack: UIStackView = {
         let stack = UIStackView()
         stack.axis = .vertical
-        stack.spacing = 12
-        stack.distribution = .fillEqually
+        stack.spacing = Layout.cardSpacing
+        stack.distribution = .fill
         stack.translatesAutoresizingMaskIntoConstraints = false
         return stack
     }()
@@ -114,7 +67,7 @@ final class MonthFilterCardsViewController: UIViewController {
     private let topRowStack: UIStackView = {
         let stack = UIStackView()
         stack.axis = .horizontal
-        stack.spacing = 12
+        stack.spacing = Layout.cardSpacing
         stack.distribution = .fillEqually
         return stack
     }()
@@ -122,17 +75,22 @@ final class MonthFilterCardsViewController: UIViewController {
     private let middleRowStack: UIStackView = {
         let stack = UIStackView()
         stack.axis = .horizontal
-        stack.spacing = 12
+        stack.spacing = Layout.cardSpacing
         stack.distribution = .fillEqually
         return stack
     }()
 
-    // Stats card above the cards grid. On the iPhone Duo inner display it splits at the
-    // fold like Home: overview (stats + All Photos) on one side, the four filters on the other.
+    /// The tile rows share the height equally and All Photos takes a share of one; rebuilt with
+    /// the content, since they tie views that move between stacks.
+    private var cardHeightConstraints: [NSLayoutConstraint] = []
+    private var appliedAllPhotosRowShare: CGFloat?
+
+    // One column: the overview card, the cards and the bottom row. On the iPhone Duo inner
+    // display it splits at the fold like Home: the overview on one side, the cards on the other.
     private let contentStack: UIStackView = {
         let stack = UIStackView()
         stack.axis = .vertical
-        stack.spacing = 12
+        stack.spacing = Layout.cardSpacing
         stack.translatesAutoresizingMaskIntoConstraints = false
         return stack
     }()
@@ -140,19 +98,20 @@ final class MonthFilterCardsViewController: UIViewController {
     private let overviewStack: UIStackView = {
         let stack = UIStackView()
         stack.axis = .vertical
-        stack.spacing = 12
+        stack.spacing = Layout.cardSpacing
         return stack
     }()
 
+    /// Held sideways: All Photos and the four filters, one per row.
     private let filtersStack: UIStackView = {
         let stack = UIStackView()
         stack.axis = .vertical
-        stack.spacing = 12
+        stack.spacing = Layout.cardSpacing
         stack.distribution = .fillEqually
         return stack
     }()
 
-    /// The inner display's progress card (board P1): the ring split by choice and the counts.
+    /// The inner display's progress card: the big split capsule, the number left and the counts.
     private let progressOverviewView: ProgressOverviewView = {
         let view = ProgressOverviewView()
         view.translatesAutoresizingMaskIntoConstraints = false
@@ -160,18 +119,18 @@ final class MonthFilterCardsViewController: UIViewController {
         return view
     }()
 
-    /// The inner display's resume pill under the overview: "Continue · 8 left".
+    /// The resume pill: "Continue · 8 left".
     private let continueButton: DynamicGlassButton = {
         let button = DynamicGlassButton()
         button.setContentHuggingPriority(.required, for: .vertical)
         return button
     }()
-    /// The upright inner display's bottom row (board TP2): Continue, then the global bin's slot.
+    /// The bottom row: Continue, then the global bin's slot.
     private let bottomRowStack: UIStackView = {
         let stack = UIStackView()
         stack.axis = .horizontal
         stack.alignment = .fill
-        stack.spacing = 12
+        stack.spacing = Layout.cardSpacing
         return stack
     }()
 
@@ -180,7 +139,7 @@ final class MonthFilterCardsViewController: UIViewController {
     private let filtersColumnStack: UIStackView = {
         let stack = UIStackView()
         stack.axis = .vertical
-        stack.spacing = 12
+        stack.spacing = Layout.cardSpacing
         return stack
     }()
 
@@ -192,7 +151,7 @@ final class MonthFilterCardsViewController: UIViewController {
         return view
     }()
     private var lastSentBinSlot: CGRect?
-    /// Upright the slot is a fixed width beside Continue; sideways it spans the filters column.
+    /// A fixed width beside Continue; sideways (inactive) the slot spans the filters column.
     private var binSlotWidthConstraint: NSLayoutConstraint?
 
     private enum EmbeddedHeader {
@@ -269,10 +228,10 @@ final class MonthFilterCardsViewController: UIViewController {
     private let monthTitle: String
     private let monthKey: String
     private let mediaType: PHAssetMediaType
-    private let horizontalPadding: CGFloat = 16
-    private let cardSpacing: CGFloat = 12
-    /// The global bin button's width in the upright bottom row: room for the icon and a count.
-    private let binSlotWidth: CGFloat = 132
+    /// Gaps between the cards: `Layout.cardSpacing`, or the compact value in a short column
+    private var appliedCardSpacing = Layout.cardSpacing
+    /// The cards one per line instead of tiles: sideways, and in the short embedded pane
+    private var usesRowCards = false
     private var duoEdges: [DuoEdgeConstraints] = []
     private var binCountTask: Task<Void, Never>?
     private var preloadedYearAssets: [PHAsset]?
@@ -382,20 +341,6 @@ final class MonthFilterCardsViewController: UIViewController {
     }
 
     private func setupUI() {
-        reviewedStatView.configure(title: Strings.reviewed, color: .systemGray)
-        deletedStatView.configure(title: Strings.delete, color: .systemRed)
-        keptStatView.configure(title: Strings.keep, color: .systemGreen)
-        storedStatView.configure(title: Strings.store, color: .systemYellow)
-
-        statsContainerView.addSubview(progressRingView)
-        statsContainerView.addSubview(progressLabel)
-        statsContainerView.addSubview(progressImageView)
-        statsContainerView.addSubview(statsStackView)
-
-        [reviewedStatView, deletedStatView, keptStatView, storedStatView].forEach {
-            statsStackView.addArrangedSubview($0)
-        }
-
         configureCards()
         continueButton.addTarget(self, action: #selector(allPhotosCardTapped), for: .touchUpInside)
 
@@ -442,7 +387,7 @@ final class MonthFilterCardsViewController: UIViewController {
         // Fully open, the groups keep the regular card spacing, centered on the fold line.
         // Folded, they clear the whole region.
         let isFolded = FoldRegion.activeFold(in: view) != nil
-        let spacing = isFolded ? max(cardSpacing, foldLength) : cardSpacing
+        let spacing = isFolded ? max(Layout.cardSpacing, foldLength) : Layout.cardSpacing
         let overviewEdge = foldCenter - spacing / 2
         if overviewEdgeToFoldConstraint?.constant != overviewEdge {
             overviewEdgeToFoldConstraint?.constant = overviewEdge
@@ -454,13 +399,74 @@ final class MonthFilterCardsViewController: UIViewController {
     }
 
     /// Embedded above the fold (the upright inner display) the pane is wider than tall and too
-    /// short for the stats card as well as the cards. The selected row on the base shows its
-    /// progress, so the cards take that room; the header still names the month.
+    /// short for the overview card and tiles. The selected row on the base shows its progress,
+    /// so the cards take that room, one per line; the header still names the month.
     private func updateEmbeddedDensity() {
         guard view.bounds.height > 0 else { return }
         let isShortPane = view.bounds.width > view.bounds.height
-        guard statsContainerView.isHidden != isShortPane else { return }
-        statsContainerView.isHidden = isShortPane
+        if summaryCardView.isHidden != isShortPane {
+            summaryCardView.isHidden = isShortPane
+        }
+        if usesRowCards != isShortPane {
+            usesRowCards = isShortPane
+            applyCardStyles()
+        }
+    }
+
+    /// The screen picks each card's style: tiles in the 2×2 grid over the All Photos row, and
+    /// every card as a row where they're one per line or the pane is short.
+    private func applyCardStyles() {
+        filterCards.forEach { $0.setStyle(usesRowCards ? .row : .tile) }
+        allPhotosCard.setStyle(.row)
+        // Rows share the height equally; under tiles All Photos takes a share of a tile row
+        updateCardHeightConstraints(allPhotosRowShare: usesRowCards ? 1 : Layout.allPhotosRowShare)
+    }
+
+    private func updateCardHeightConstraints(allPhotosRowShare share: CGFloat) {
+        let inGrid = topRowStack.superview === cardsContainerStack && allPhotosCard.superview === cardsContainerStack
+        guard inGrid else {
+            NSLayoutConstraint.deactivate(cardHeightConstraints)
+            cardHeightConstraints = []
+            appliedAllPhotosRowShare = nil
+            return
+        }
+        guard appliedAllPhotosRowShare != share else { return }
+        appliedAllPhotosRowShare = share
+        NSLayoutConstraint.deactivate(cardHeightConstraints)
+        cardHeightConstraints = [
+            middleRowStack.heightAnchor.constraint(equalTo: topRowStack.heightAnchor),
+            allPhotosCard.heightAnchor.constraint(equalTo: topRowStack.heightAnchor, multiplier: share)
+        ]
+        NSLayoutConstraint.activate(cardHeightConstraints)
+    }
+
+    /// A short column (iPhone SE) tightens its gaps. Decided after layout from the column's own
+    /// height: how tall a tile row would be at the regular gaps.
+    private func updateCardSpacing() {
+        var spacing = Layout.cardSpacing
+        if foldSplitAxis == nil, !isEmbedded {
+            let height = contentStack.bounds.height
+            // The overview card's regular height, not its current one, so going compact
+            // doesn't change the answer
+            let summaryHeight = ProgressSummaryCardView.regularHeight
+            guard height > 0 else { return }
+            // Overview, two tile rows, All Photos and the bottom row: four gaps
+            let cardsHeight = height - summaryHeight - 4 * Layout.cardSpacing - GeneralConstants.ButtonSize.large
+            let tileHeight = cardsHeight / (2 + Layout.allPhotosRowShare)
+            if tileHeight < Layout.comfortableTileHeight {
+                spacing = Layout.compactCardSpacing
+            }
+            // The cards get the room the overview gives up
+            let isCompact = tileHeight < Layout.regularOverviewMinimumTileHeight
+            if summaryCardView.isCompact != isCompact {
+                summaryCardView.isCompact = isCompact
+            }
+        }
+        guard spacing != appliedCardSpacing else { return }
+        appliedCardSpacing = spacing
+        [contentStack, cardsContainerStack, topRowStack, middleRowStack, bottomRowStack].forEach {
+            $0.spacing = spacing
+        }
     }
 
     private func rebuildContent(splitAlong axis: NSLayoutConstraint.Axis?) {
@@ -468,11 +474,17 @@ final class MonthFilterCardsViewController: UIViewController {
         foldSplitAxis = axis
         overviewEdgeToFoldConstraint?.isActive = false
         overviewEdgeToFoldConstraint = nil
+        NSLayoutConstraint.deactivate(cardHeightConstraints)
+        cardHeightConstraints = []
+        appliedAllPhotosRowShare = nil
         [contentStack, overviewStack, filtersStack, filtersColumnStack, cardsContainerStack, topRowStack,
          middleRowStack, bottomRowStack]
             .flatMap { $0.arrangedSubviews }
             .forEach { $0.removeFromSuperview() }
-        binSlotWidthConstraint?.isActive = axis == .vertical
+
+        // Sideways the slot spans the filters column instead
+        binSlotWidthConstraint?.isActive = axis != .horizontal
+        binSlotWidthConstraint?.constant = axis == nil && !isEmbedded ? Layout.binSlotWidth : Layout.wideBinSlotWidth
 
         let cards = filterCards
         let fillGridRows = { [topRowStack, middleRowStack] in
@@ -481,37 +493,35 @@ final class MonthFilterCardsViewController: UIViewController {
             middleRowStack.addArrangedSubview(cards[2])
             middleRowStack.addArrangedSubview(cards[3])
         }
+        contentStack.spacing = appliedCardSpacing
 
         guard let axis = axis else {
+            // One column filling the height: the overview, the tile rows, All Photos, and
+            // Continue with the bin's slot along the bottom, so the bin covers no card
             fillGridRows()
             contentStack.axis = .vertical
-            contentStack.spacing = cardSpacing
             cardsContainerStack.addArrangedSubview(topRowStack)
             cardsContainerStack.addArrangedSubview(middleRowStack)
             cardsContainerStack.addArrangedSubview(allPhotosCard)
+            bottomRowStack.addArrangedSubview(continueButton)
+            bottomRowStack.addArrangedSubview(binSlotView)
             if isEmbedded {
-                // The list's detail pane: its own header, and Continue with the bin's slot
-                // along the bottom (board TP2's bottom row), so the bin covers no card
-                binSlotWidthConstraint?.isActive = true
-                bottomRowStack.addArrangedSubview(continueButton)
-                bottomRowStack.addArrangedSubview(binSlotView)
+                // The list's detail pane names its month in a header of its own
                 contentStack.addArrangedSubview(embeddedHeaderStack)
-                contentStack.addArrangedSubview(statsContainerView)
-                contentStack.addArrangedSubview(cardsContainerStack)
-                contentStack.addArrangedSubview(bottomRowStack)
-            } else {
-                contentStack.addArrangedSubview(statsContainerView)
-                contentStack.addArrangedSubview(cardsContainerStack)
             }
+            contentStack.addArrangedSubview(summaryCardView)
+            contentStack.addArrangedSubview(cardsContainerStack)
+            contentStack.addArrangedSubview(bottomRowStack)
+            usesRowCards = isEmbedded && summaryCardView.isHidden
+            applyCardStyles()
             return
         }
 
         contentStack.axis = axis
-        contentStack.spacing = cardSpacing
         contentStack.addArrangedSubview(overviewStack)
         if axis == .horizontal {
-            // Held sideways (board P1): the progress card fills the column, Continue below it.
-            // Side by side each half is too narrow for two cards with subtitles: one per row,
+            // Held sideways: the progress card fills the column, Continue below it.
+            // Side by side each half is too narrow for two tiles: one card per row,
             // All Photos first, and the bin's slot as wide as Continue under them
             overviewStack.addArrangedSubview(progressOverviewView)
             overviewStack.addArrangedSubview(continueButton)
@@ -520,18 +530,20 @@ final class MonthFilterCardsViewController: UIViewController {
             filtersColumnStack.addArrangedSubview(binSlotView)
             contentStack.addArrangedSubview(filtersColumnStack)
         } else {
-            // Upright (board TP2): the progress card above the fold, All Photos over the filter
-            // tiles on the base, and Continue with the global bin's slot along the bottom
+            // Upright: the progress card above the fold, All Photos over the filter tiles on
+            // the base, and Continue with the global bin's slot along the bottom
             overviewStack.addArrangedSubview(progressOverviewView)
             fillGridRows()
-            filtersStack.addArrangedSubview(allPhotosCard)
-            filtersStack.addArrangedSubview(topRowStack)
-            filtersStack.addArrangedSubview(middleRowStack)
+            cardsContainerStack.addArrangedSubview(allPhotosCard)
+            cardsContainerStack.addArrangedSubview(topRowStack)
+            cardsContainerStack.addArrangedSubview(middleRowStack)
             bottomRowStack.addArrangedSubview(continueButton)
             bottomRowStack.addArrangedSubview(binSlotView)
-            contentStack.addArrangedSubview(filtersStack)
+            contentStack.addArrangedSubview(cardsContainerStack)
             contentStack.addArrangedSubview(bottomRowStack)
         }
+        usesRowCards = axis == .horizontal
+        applyCardStyles()
 
         let edgeToFold = axis == .horizontal
             ? overviewStack.trailingAnchor.constraint(equalTo: view.leadingAnchor)
@@ -550,42 +562,23 @@ final class MonthFilterCardsViewController: UIViewController {
 
     private func setupConstraint() {
         let safeArea = view.safeAreaLayoutGuide
-        let statsHeight: CGFloat = 80
-        let bottomPadding: CGFloat = 16
 
-        // Side and bottom edges follow Home's vertical-rail padding on iPhone Duo
+        // Side and bottom edges follow Home's vertical-rail padding on iPhone Duo; the bottom
+        // row (Continue and the bin's slot) sits on Home's baseline
         let contentEdges = DuoEdgeConstraints(
-            item: contentStack, in: view, standardLeading: horizontalPadding, standardTrailing: horizontalPadding,
-            standardBottom: bottomPadding)
+            item: contentStack, in: view,
+            standardLeading: GeneralConstants.EdgePadding.content,
+            standardTrailing: GeneralConstants.EdgePadding.content,
+            standardBottom: GeneralConstants.Spacer.buttonBottom)
         duoEdges = [contentEdges]
         NSLayoutConstraint.activate(contentEdges.initialConstraints)
 
         NSLayoutConstraint.activate([
-            contentStack.topAnchor.constraint(equalTo: safeArea.topAnchor, constant: 16),
-            statsContainerView.heightAnchor.constraint(equalToConstant: statsHeight),
-
-            progressRingView.leadingAnchor.constraint(equalTo: statsContainerView.leadingAnchor, constant: 16),
-            progressRingView.centerYAnchor.constraint(equalTo: statsContainerView.centerYAnchor),
-            progressRingView.widthAnchor.constraint(equalToConstant: 56),
-            progressRingView.heightAnchor.constraint(equalToConstant: 56),
-
-            progressLabel.centerXAnchor.constraint(equalTo: progressRingView.centerXAnchor),
-            progressLabel.centerYAnchor.constraint(equalTo: progressRingView.centerYAnchor),
-
-            progressImageView.centerXAnchor.constraint(equalTo: progressRingView.centerXAnchor),
-            progressImageView.centerYAnchor.constraint(equalTo: progressRingView.centerYAnchor),
-            progressImageView.widthAnchor.constraint(equalToConstant: 24),
-            progressImageView.heightAnchor.constraint(equalToConstant: 24),
-
-            statsStackView.leadingAnchor.constraint(equalTo: progressRingView.trailingAnchor, constant: 16),
-            statsStackView.trailingAnchor.constraint(equalTo: statsContainerView.trailingAnchor, constant: -12),
-            statsStackView.centerYAnchor.constraint(equalTo: statsContainerView.centerYAnchor),
-            statsStackView.heightAnchor.constraint(equalToConstant: 50),
-
+            contentStack.topAnchor.constraint(equalTo: safeArea.topAnchor, constant: Layout.topPadding),
             continueButton.heightAnchor.constraint(equalToConstant: GeneralConstants.ButtonSize.large),
             binSlotView.heightAnchor.constraint(equalToConstant: GeneralConstants.ButtonSize.large)
         ])
-        binSlotWidthConstraint = binSlotView.widthAnchor.constraint(equalToConstant: binSlotWidth)
+        binSlotWidthConstraint = binSlotView.widthAnchor.constraint(equalToConstant: Layout.binSlotWidth)
         updateFoldSplit()
     }
 
@@ -594,15 +587,16 @@ final class MonthFilterCardsViewController: UIViewController {
         updateFoldSplit()
         let railEdge = DuoLayout.railEdge(tabBarController, in: view)
         duoEdges.forEach { $0.update(railEdge: railEdge) }
+        updateCardSpacing()
         updateCardCorners()
         updateBinSlot()
     }
 
-    /// On the inner display the global bin sits in a slot: upright in the bottom row beside
-    /// Continue, sideways full width under the filters, level with Continue. The slot is sent
-    /// again only when it moves (folding, the rail).
+    /// The global bin sits in a slot: in the bottom row beside Continue, or sideways full width
+    /// under the filters, level with Continue. The slot is sent again only when it moves
+    /// (folding, the rail, a size change).
     private func updateBinSlot() {
-        guard foldSplitAxis != nil || isEmbedded, binSlotView.window != nil else {
+        guard binSlotView.window != nil else {
             if lastSentBinSlot != nil {
                 lastSentBinSlot = nil
                 binController?.setBinButtonPlacement(.standard)
@@ -624,8 +618,8 @@ final class MonthFilterCardsViewController: UIViewController {
         similarCard.configure(
             icon: "photo.on.rectangle.angled",
             title: Strings.similarTitle,
-            subtitle: Strings.similarSubtitle,
-            tintColor: FilterCard.CardColor.similar
+            tintColor: FilterCard.CardColor.similar,
+            style: .tile
         )
         similarCard.addTarget(self, action: #selector(similarCardTapped), for: .touchUpInside)
 
@@ -633,8 +627,8 @@ final class MonthFilterCardsViewController: UIViewController {
         largestCard.configure(
             icon: "doc.text.magnifyingglass",
             title: Strings.largestTitle,
-            subtitle: Strings.largestSubtitle(isVideo: mediaType == .video),
-            tintColor: mediaType == .image ? FilterCard.CardColor.largestPhoto : FilterCard.CardColor.largestVideo
+            tintColor: mediaType == .image ? FilterCard.CardColor.largestPhoto : FilterCard.CardColor.largestVideo,
+            style: .tile
         )
         largestCard.addTarget(self, action: #selector(largestCardTapped), for: .touchUpInside)
 
@@ -642,8 +636,8 @@ final class MonthFilterCardsViewController: UIViewController {
         screenshotsCard.configure(
             icon: "camera.viewfinder",
             title: Strings.screenshotsTitle,
-            subtitle: Strings.screenshotsSubtitle,
-            tintColor: FilterCard.CardColor.screenshots
+            tintColor: FilterCard.CardColor.screenshots,
+            style: .tile
         )
         screenshotsCard.addTarget(self, action: #selector(screenshotsCardTapped), for: .touchUpInside)
 
@@ -651,8 +645,8 @@ final class MonthFilterCardsViewController: UIViewController {
         eyesClosedCard.configure(
             icon: "eye.slash.fill",
             title: Strings.eyesClosedTitle,
-            subtitle: Strings.eyesClosedSubtitle,
-            tintColor: FilterCard.CardColor.eyesClosed
+            tintColor: FilterCard.CardColor.eyesClosed,
+            style: .tile
         )
         eyesClosedCard.addTarget(self, action: #selector(eyesClosedCardTapped), for: .touchUpInside)
 
@@ -660,8 +654,8 @@ final class MonthFilterCardsViewController: UIViewController {
         screenRecordingsCard.configure(
             icon: "record.circle",
             title: Strings.screenRecTitle,
-            subtitle: Strings.screenRecSubtitle,
-            tintColor: FilterCard.CardColor.screenRecordings
+            tintColor: FilterCard.CardColor.screenRecordings,
+            style: .tile
         )
         screenRecordingsCard.addTarget(self, action: #selector(screenRecordingsCardTapped), for: .touchUpInside)
 
@@ -669,8 +663,8 @@ final class MonthFilterCardsViewController: UIViewController {
         slowMotionCard.configure(
             icon: "speedometer",
             title: Strings.slowMotionTitle,
-            subtitle: Strings.slowMotionSubtitle,
-            tintColor: FilterCard.CardColor.slowMotion
+            tintColor: FilterCard.CardColor.slowMotion,
+            style: .tile
         )
         slowMotionCard.addTarget(self, action: #selector(slowMotionCardTapped), for: .touchUpInside)
 
@@ -678,8 +672,8 @@ final class MonthFilterCardsViewController: UIViewController {
         timeLapseCard.configure(
             icon: "clock.arrow.circlepath",
             title: Strings.timeLapseTitle,
-            subtitle: Strings.timeLapseSubtitle,
-            tintColor: FilterCard.CardColor.timeLapse
+            tintColor: FilterCard.CardColor.timeLapse,
+            style: .tile
         )
         timeLapseCard.addTarget(self, action: #selector(timeLapseCardTapped), for: .touchUpInside)
 
@@ -687,8 +681,8 @@ final class MonthFilterCardsViewController: UIViewController {
         allPhotosCard.configure(
             icon: mediaType == .video ? "video" : "photo.on.rectangle",
             title: Strings.allPhotosTitle(isVideo: mediaType == .video),
-            subtitle: Strings.allPhotosSubtitle(isVideo: mediaType == .video),
-            tintColor: mediaType == .video ? FilterCard.CardColor.allVideos : FilterCard.CardColor.allPhotos
+            tintColor: mediaType == .video ? FilterCard.CardColor.allVideos : FilterCard.CardColor.allPhotos,
+            style: .row
         )
         allPhotosCard.addTarget(self, action: #selector(allPhotosCardTapped), for: .touchUpInside)
     }
@@ -734,6 +728,7 @@ final class MonthFilterCardsViewController: UIViewController {
 //        #endif
         // Before the early return below, so a year key still waiting for its preload shows "–"
         updateProgressOverview(progress)
+        updateCardStatuses()
 
         if progress.originalTotalCount == 0 {
             // Year keys can't be parsed as dates, skip the fetch fallback and wait for preloadYearAssets() to complete
@@ -774,50 +769,10 @@ final class MonthFilterCardsViewController: UIViewController {
                 }
             }
         }
-
-        let totalCount = progress.originalTotalCount > 0 ? progress.originalTotalCount : 1 // 1 is for division protection
-
-        let rawPercentage =
-            progress.originalTotalCount > 0
-            ? Double(progress.reviewedCount) / Double(totalCount)
-            : 0.0
-
-        let percentage = min(1.0, max(0.0, rawPercentage))
-
-        progressRingView.setProgress(CGFloat(percentage), animated: true)
-
-        if percentage >= 1.0 {
-            progressLabel.isHidden = true
-            progressImageView.isHidden = false
-        } else {
-            progressLabel.isHidden = false
-            progressImageView.isHidden = true
-            progressLabel.text = "\(Int(percentage * 100))%"
-        }
-
-        let displayReviewed = min(progress.reviewedCount, totalCount)
-        let displayDeleted = min(progress.deletedCount, displayReviewed)
-        let displayKept = min(progress.keptCount, displayReviewed - displayDeleted)
-        let displayStored = min(progress.storedCount, displayReviewed - displayDeleted - displayKept)
-        reviewedStatView.setValue("\(displayReviewed.compactFormatted)/\(totalCount.compactFormatted)")
-        deletedStatView.setValue(displayDeleted)
-        keptStatView.setValue(displayKept)
-        storedStatView.setValue(displayStored)
-
-        //#if DEBUG
-        //        if progress.originalTotalCount > 0 && progress.reviewedCount > progress.originalTotalCount {
-        //            print("[MonthFilterCards][Stats][WARN] reviewedCount exceeds totalCount -> label can be >100% style (\(progress.reviewedCount)/\(totalCount)) | monthKey=\(monthKey) mediaType=\(mediaTypeDebugName)")
-        //        }
-        //        if progress.deletedCount + progress.keptCount + progress.storedCount > progress.reviewedCount {
-        //            print("[MonthFilterCards][Stats][WARN] actionSum exceeds reviewedCount | actionSum=\(progress.deletedCount + progress.keptCount + progress.storedCount) reviewed=\(progress.reviewedCount) monthKey=\(monthKey) mediaType=\(mediaTypeDebugName)")
-        //        }
-        //        print("[MonthFilterCards][Stats] label values | reviewedLabel=\(progress.reviewedCount)/\(totalCount) deleted=\(progress.deletedCount) kept=\(progress.keptCount) stored=\(progress.storedCount) percentage=\(Int(percentage * 100))% monthKey=\(monthKey) mediaType=\(mediaTypeDebugName)")
-        //#endif
-
-        updateCardStatuses()
     }
 
-    /// Feeds the inner display's progress card and Continue pill, clamped the way the stats card is.
+    /// Feeds the overview cards and the Continue pill: reviewed never passes the total, and
+    /// delete + keep + store never pass reviewed. A total of 0 (a year before its preload) shows "–".
     private func updateProgressOverview(
         _ progress: (
             currentIndex: Int, reviewedCount: Int, deletedCount: Int, keptCount: Int, storedCount: Int,
@@ -832,6 +787,7 @@ final class MonthFilterCardsViewController: UIViewController {
         let state = ProgressOverviewState(
             reviewed: reviewed, total: total, deleted: deleted, kept: kept, stored: stored,
             isVideo: mediaType == .video)
+        summaryCardView.update(with: state)
         progressOverviewView.update(with: state)
         updateContinueButton(for: state)
     }
@@ -956,16 +912,8 @@ final class MonthFilterCardsViewController: UIViewController {
         let isMainComplete = progress.originalTotalCount > 0 && progress.reviewedCount >= progress.originalTotalCount
 
         if isMainComplete {
-            allPhotosCard.setStatus(.complete)
-            largestCard.setStatus(.complete)
-            if mediaType == .image {
-                screenshotsCard.setStatus(.complete)
-                eyesClosedCard.setStatus(.complete)
-                similarCard.setStatus(.complete)
-            } else {
-                screenRecordingsCard.setStatus(.complete)
-                slowMotionCard.setStatus(.complete)
-                timeLapseCard.setStatus(.complete)
+            (filterCards + [allPhotosCard]).forEach {
+                $0.setProgress(deleted: 0, kept: 0, stored: 0, total: 0, reviewed: 0, isFinished: true)
             }
             return
         }
@@ -984,21 +932,18 @@ final class MonthFilterCardsViewController: UIViewController {
         }
     }
 
+    /// A card's capsule and status come from its own progress record; the finished flag wins.
     private func applyStatus(to card: FilterCard, filter: MonthFilterStatusStore.FilterType, progressKey: String? = nil) {
         let key = progressKey ?? "\(monthKey)_\(filter.rawValue)"
         let progress = ReviewProgressStore.shared.getProgress(
             forMonthKey: key, mediaType: mediaType)
-        if MonthFilterStatusStore.shared.isFilterFinished(monthKey: monthKey, filter: filter) {
-            card.setStatus(.complete)
-        } else if progress.originalTotalCount == 0 || progress.reviewedCount == 0 {
-            card.setStatus(.notStarted)
-        } else if progress.reviewedCount >= progress.originalTotalCount {
-            card.setStatus(.complete)
-        } else {
-            let percent = Int(
-                (Double(progress.reviewedCount) / Double(progress.originalTotalCount)) * 100)
-            card.setStatus(.inProgress(percent: percent))
-        }
+        card.setProgress(
+            deleted: progress.deletedCount,
+            kept: progress.keptCount,
+            stored: progress.storedCount,
+            total: progress.originalTotalCount,
+            reviewed: progress.reviewedCount,
+            isFinished: MonthFilterStatusStore.shared.isFilterFinished(monthKey: monthKey, filter: filter))
     }
 
     private func isFilterComplete(_ filter: MonthFilterStatusStore.FilterType) -> Bool {

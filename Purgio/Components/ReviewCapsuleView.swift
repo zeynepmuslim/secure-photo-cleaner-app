@@ -7,13 +7,16 @@
 
 import UIKit
 
-/// A small vertical capsule that shows a month's review state: a dashed outline before it is
+/// A vertical capsule that shows a month's review state: a dashed outline before it is
 /// started, a bottom-up fill split by choice (delete, keep, store, then what's left) while in
 /// progress, and a green capsule stamped with a check once everything is reviewed.
+/// 12×40 by default; at any other size the gaps, the outline and the check scale with its width.
 final class ReviewCapsuleView: UIView {
 
     private enum Layout {
         static let size = CGSize(width: 12, height: 40)
+        /// The outline stops growing at this scale, so a large capsule's dashes stay fine
+        static let maximumOutlineScale: CGFloat = 2
         static let segmentGap: CGFloat = 1
         static let minimumSegmentHeight: CGFloat = 3
         static let outlineWidth: CGFloat = 1.5
@@ -36,6 +39,17 @@ final class ReviewCapsuleView: UIView {
     }
 
     private var mode: Mode = .empty
+
+    /// true: with a total, the capsule always shows the split fill, all gray before it's started
+    /// and the full delete / keep / store split once finished (no stamp); the dashed outline
+    /// only while there's no total. Set it before `configure`.
+    var alwaysShowsSplit = false
+
+    /// true: in progress, the fill is one ink segment for everything reviewed over what's left,
+    /// instead of the delete / keep / store split. Set it before `configure`.
+    var usesSingleProgressColor = false {
+        didSet { if usesSingleProgressColor != oldValue { applyColors() } }
+    }
     /// Bottom-up: deleted, kept, stored, left
     private var segmentValues: [CGFloat] = [0, 0, 0, 0]
 
@@ -71,6 +85,10 @@ final class ReviewCapsuleView: UIView {
 
     private var segmentLayers: [CALayer] { [deletedLayer, keptLayer, storedLayer, leftLayer] }
 
+    /// How much larger than the standard 12pt-wide capsule this one is
+    private var sizeScale: CGFloat { bounds.width / Layout.size.width }
+    private var segmentGap: CGFloat { max(Layout.segmentGap, (Layout.segmentGap * sizeScale).rounded()) }
+
     // MARK: - Init
 
     override init(frame: CGRect) {
@@ -100,7 +118,6 @@ final class ReviewCapsuleView: UIView {
         layer.addSublayer(checkContainerLayer)
         checkContainerLayer.addSublayer(checkOutlineLayer)
         checkContainerLayer.addSublayer(checkCoreLayer)
-        checkContainerLayer.setAffineTransform(CGAffineTransform(rotationAngle: Layout.checkRotation))
 
         applyColors()
         applyMode()
@@ -136,21 +153,32 @@ final class ReviewCapsuleView: UIView {
     /// and not started while `reviewed` is 0. The three counts are scaled down when they add up to
     /// more than `reviewed`.
     func configure(deleted: Int, kept: Int, stored: Int, total: Int, reviewed: Int) {
-        if total > 0 && reviewed >= total {
+        let isFinished = total > 0 && reviewed >= total
+        if alwaysShowsSplit && total <= 0 {
+            mode = .notStarted
+        } else if !alwaysShowsSplit && isFinished {
             mode = .finished
-        } else if reviewed <= 0 {
+        } else if !alwaysShowsSplit && reviewed <= 0 {
             mode = .notStarted
         } else {
             mode = .inProgress
             var counts = [CGFloat(max(0, deleted)), CGFloat(max(0, kept)), CGFloat(max(0, stored))]
             let decided = counts.reduce(0, +)
-            let reviewedValue = CGFloat(reviewed)
+            let reviewedValue = CGFloat(max(0, reviewed))
             if decided > reviewedValue, decided > 0 {
                 counts = counts.map { $0 * reviewedValue / decided }
+            }
+            if usesSingleProgressColor {
+                // One segment for everything reviewed, in the first layer
+                counts = [reviewedValue, 0, 0]
             }
             // With no total yet, what's reviewed is all there is to show
             let left = max(0, CGFloat(total) - reviewedValue)
             segmentValues = counts + [left]
+            if segmentValues.reduce(0, +) <= 0 {
+                // Everything reviewed with no decision recorded: one plain segment, never nothing
+                segmentValues = [0, 0, 0, 1]
+            }
         }
         applyMode()
         setNeedsLayout()
@@ -187,18 +215,26 @@ final class ReviewCapsuleView: UIView {
         segmentsContainerLayer.cornerRadius = bounds.width / 2
         layoutSegments()
 
-        let outlineRect = bounds.insetBy(dx: Layout.outlineWidth / 2, dy: Layout.outlineWidth / 2)
+        let outlineScale = min(sizeScale, Layout.maximumOutlineScale)
+        let outlineWidth = Layout.outlineWidth * outlineScale
+        let outlineRect = bounds.insetBy(dx: outlineWidth / 2, dy: outlineWidth / 2)
         outlineLayer.frame = bounds
+        outlineLayer.lineWidth = outlineWidth
+        outlineLayer.lineDashPattern = Layout.outlineDashPattern.map {
+            NSNumber(value: Double(CGFloat(truncating: $0) * outlineScale))
+        }
         outlineLayer.path = UIBezierPath(roundedRect: outlineRect, cornerRadius: outlineRect.width / 2).cgPath
 
-        let finishedWidth = max(0, bounds.width - Layout.finishedWidthInset)
+        let finishedWidth = max(0, bounds.width - Layout.finishedWidthInset * sizeScale)
         finishedCapsuleLayer.frame = CGRect(
             x: (bounds.width - finishedWidth) / 2, y: 0, width: finishedWidth, height: bounds.height)
         finishedCapsuleLayer.cornerRadius = finishedWidth / 2
 
-        // Bounds and position, not frame: the layer is rotated
+        // Bounds and position, not frame: the layer is rotated (and scaled with the capsule)
         checkContainerLayer.bounds = CGRect(x: 0, y: 0, width: Layout.checkBoxSize, height: Layout.checkBoxSize)
         checkContainerLayer.position = CGPoint(x: bounds.midX, y: bounds.midY)
+        checkContainerLayer.setAffineTransform(
+            CGAffineTransform(rotationAngle: Layout.checkRotation).scaledBy(x: sizeScale, y: sizeScale))
 
         CATransaction.commit()
     }
@@ -211,7 +247,7 @@ final class ReviewCapsuleView: UIView {
             segment.isHidden = height <= 0
             guard height > 0 else { continue }
             segment.frame = CGRect(x: 0, y: bottom - height, width: bounds.width, height: height)
-            bottom -= height + Layout.segmentGap
+            bottom -= height + segmentGap
         }
     }
 
@@ -222,15 +258,16 @@ final class ReviewCapsuleView: UIView {
         let visibleCount = segmentValues.filter { $0 > 0 }.count
         guard sum > 0, visibleCount > 0 else { return segmentValues.map { _ in 0 } }
 
-        let available = max(0, barHeight - Layout.segmentGap * CGFloat(visibleCount - 1))
+        let available = max(0, barHeight - segmentGap * CGFloat(visibleCount - 1))
+        let minimumHeight = Layout.minimumSegmentHeight * sizeScale
         var heights = segmentValues.map { available * $0 / sum }
         guard let largestIndex = heights.indices.max(by: { heights[$0] < heights[$1] }) else { return heights }
 
         var deficit: CGFloat = 0
         for index in heights.indices where index != largestIndex {
-            if segmentValues[index] > 0 && heights[index] < Layout.minimumSegmentHeight {
-                deficit += Layout.minimumSegmentHeight - heights[index]
-                heights[index] = Layout.minimumSegmentHeight
+            if segmentValues[index] > 0 && heights[index] < minimumHeight {
+                deficit += minimumHeight - heights[index]
+                heights[index] = minimumHeight
             }
         }
         heights[largestIndex] = max(0, heights[largestIndex] - deficit)
@@ -244,7 +281,8 @@ final class ReviewCapsuleView: UIView {
 
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        deletedLayer.backgroundColor = ThemeManager.Colors.statusRed.resolvedColor(with: traitCollection).cgColor
+        let firstColor = usesSingleProgressColor ? UIColor.label : ThemeManager.Colors.statusRed
+        deletedLayer.backgroundColor = firstColor.resolvedColor(with: traitCollection).cgColor
         keptLayer.backgroundColor = green
         storedLayer.backgroundColor = ThemeManager.Colors.statusYellow.resolvedColor(with: traitCollection).cgColor
         leftLayer.backgroundColor = UIColor.systemGray5.resolvedColor(with: traitCollection).cgColor

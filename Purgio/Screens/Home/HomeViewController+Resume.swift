@@ -79,11 +79,12 @@ extension HomeViewController {
             let year: Int
             let month: Int
             if let (y, m) = monthParts(of: key) {
-                let bucket = buckets.first { $0.key == key }
-                let total = progress.originalTotalCount > 0 ? progress.originalTotalCount : (bucket?.totalCount ?? 0)
+                // A record outlives its month once every item is deleted: nothing left to resume
+                guard let bucket = buckets.first(where: { $0.key == key }), bucket.totalCount > 0 else { continue }
+                let total = progress.originalTotalCount > 0 ? progress.originalTotalCount : bucket.totalCount
                 item = HomeResumeItem(
                     key: key, mediaType: mediaType,
-                    title: bucket?.title ?? DateFormatterManager.shared.displayMonth(fromMonthKey: key),
+                    title: bucket.title,
                     isYear: false,
                     deleted: progress.deletedCount, kept: progress.keptCount, stored: progress.storedCount,
                     total: total, reviewed: progress.reviewedCount, yearMonths: [])
@@ -98,6 +99,7 @@ extension HomeViewController {
                         mediaType: mediaType)
                 }
                 let liveCount = yearMonths.reduce(0) { $0 + $1.currentPhotoCount }
+                guard liveCount > 0 else { continue }
                 let total = progress.originalTotalCount > 0 ? progress.originalTotalCount : liveCount
                 item = HomeResumeItem(
                     key: key, mediaType: mediaType, title: String(y), isYear: true,

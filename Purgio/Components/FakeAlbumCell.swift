@@ -51,6 +51,8 @@ final class FakeAlbumCell: UICollectionViewCell {
         label.textAlignment = .left
         label.textColor = .white
         label.numberOfLines = 1
+        label.adjustsFontSizeToFitWidth = true
+        label.minimumScaleFactor = 0.75
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()

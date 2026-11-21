@@ -33,12 +33,7 @@ private enum Strings {
     static let namePhotos = NSLocalizedString("filterName.photos", comment: "Filter name inside a sentence: photos")
     static let nameVideos = NSLocalizedString("filterName.videos", comment: "Filter name inside a sentence: videos")
 
-    static let continueReview = NSLocalizedString("filterCards.continue", comment: "Continue button before the items are counted")
-    static func continueLeft(_ count: Int) -> String {
-        String.localizedStringWithFormat(
-            NSLocalizedString("filterCards.continueLeft", comment: "Continue button with the number of items left"),
-            count)
-    }
+    static let continueReview = NSLocalizedString("filterCards.continue", comment: "Continue button")
 }
 
 /// What a month's filter looks like, how far along it is and which screen reviews it. The month
@@ -138,13 +133,10 @@ extension MonthFilterStatusStore.FilterType {
     }
 
     /// The end states' Continue, which resumes the month's All Photos deck: nil once the month is
-    /// complete, "Continue" before its total is known, else "Continue · N left".
+    /// complete, else "Continue" (the "Keep going" list shows how far along the month is).
     static func continueTitle(monthKey: String, mediaType: PHAssetMediaType) -> String? {
-        let store = ReviewProgressStore.shared
-        guard !store.isComplete(monthKey: monthKey, mediaType: mediaType) else { return nil }
-        let main = store.getProgress(forMonthKey: monthKey, mediaType: mediaType)
-        guard main.originalTotalCount > 0 else { return Strings.continueReview }
-        return Strings.continueLeft(main.originalTotalCount - main.reviewedCount)
+        guard !ReviewProgressStore.shared.isComplete(monthKey: monthKey, mediaType: mediaType) else { return nil }
+        return Strings.continueReview
     }
 
     // MARK: - Route

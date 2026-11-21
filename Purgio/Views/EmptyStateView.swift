@@ -8,7 +8,7 @@
 import UIKit
 
 /// The app's empty and finished states. Two shapes:
-/// - `configure(icon:iconColor:title:message:…)`: a small centered stack (MonthsList).
+/// - `configure(icon:iconColor:title:message:…)`: a small centered stack (previews only today).
 /// - `configure(hero:title:message:accessory:…)`: the board layout "Empty & finished states":
 ///   a hero (the done stamp, or a thin symbol), the title and the message centered above an
 ///   actions column that rests on Home's baseline: an optional accessory, the ink primary
@@ -46,20 +46,47 @@ final class EmptyStateView: UIView {
         /// Under this much room for the message group the hero and its gaps shrink (iPhone SE)
         static let regularMessageMinimumHeight: CGFloat = 280
         static let messageToActions: CGFloat = 16
+        /// Fully open sideways: the hero group and the actions are one centered group
+        static let groupMaximumWidth: CGFloat = 440
+        static let groupSpacing: CGFloat = 28
+        /// Fully open upright: the least room between the hero group and the actions
+        static let uprightMessageToActions: CGFloat = 20
+        static let modeSpringDuration: TimeInterval = 0.4
+        static let modeSpringDamping: CGFloat = 0.75
+        static let modeSpringVelocity: CGFloat = 0.8
         static let actionsSpacing: CGFloat = 12
         static let primaryToSlot: CGFloat = 10
         static let primaryFontSize: CGFloat = 16
         static let primaryIconSize: CGFloat = 14
     }
 
-    /// How the board layout is arranged around the iPhone Duo fold.
-    private enum Arrangement {
-        /// One column: the message group above the actions.
-        case single
-        /// A vertical fold: the message group before it, the actions after it.
-        case sideBySide
-        /// A horizontal fold: the message group above it, the actions below it.
-        case stacked
+    /// How the board layout is arranged, picked on every layout pass from the iPhone Duo fold.
+    private enum LayoutMode {
+        /// No splitting fold (phones, the cover display, Split View): the hero group centered
+        /// above the actions on the baseline.
+        case column
+        /// Fully open at a vertical fold: one centered group, the hero group over the actions.
+        /// The only layout that may cross the fold line, which isn't a gap there.
+        case openSideways
+        /// Fully open at a horizontal fold: the hero group centered on the whole height, the
+        /// actions on the baseline.
+        case openUpright
+        /// Partly folded at a vertical fold: the hero group in the leading half, the actions in
+        /// the trailing half.
+        case book
+        /// Partly folded at a horizontal fold: the hero group in the raised half, the actions on
+        /// the baseline.
+        case table
+
+        /// The fold the mode is laid out around; a change of it (rotation, cover ↔ inner) is the
+        /// system's transition, not a fold.
+        var foldAxis: NSLayoutConstraint.Axis? {
+            switch self {
+            case .column: return nil
+            case .openSideways, .book: return .vertical
+            case .openUpright, .table: return .horizontal
+            }
+        }
     }
 
     private let iconImageView: UIImageView = {
@@ -136,6 +163,9 @@ final class EmptyStateView: UIView {
 
     /// The room the message group is centered in.
     private let messageGuide = UILayoutGuide()
+
+    /// Fully open sideways: the hero group and the actions as one centered group.
+    private let groupGuide = UILayoutGuide()
 
     private let messageStack: UIStackView = {
         let stack = UIStackView()
@@ -255,20 +285,22 @@ final class EmptyStateView: UIView {
     private var primaryTitle: String?
     private var primaryIcon: String?
     private var boardEdges: DuoEdgeConstraints?
-    private var arrangement: Arrangement?
-    private var arrangementConstraints: [Arrangement: [NSLayoutConstraint]] = [:]
+    private var appliedMode: LayoutMode?
+    private var modeConstraints: [LayoutMode: [NSLayoutConstraint]] = [:]
     private var stampWidthConstraint: NSLayoutConstraint?
     private var stampHeightConstraint: NSLayoutConstraint?
     private var trailingSlotWidthConstraint: NSLayoutConstraint?
-    /// Distances from this view's leading (side by side) or top (stacked) edge to the fold gap
-    private var messageEndAtFoldConstraints: [Arrangement: NSLayoutConstraint] = [:]
-    private var actionsStartAtFoldConstraints: [Arrangement: NSLayoutConstraint] = [:]
-    /// Fully open at a horizontal fold the two halves read as one screen, so the message group
-    /// rests on the fold gap instead of centering in the upper half (which left a wide empty band)
-    private var messageRestsOnFoldConstraint: NSLayoutConstraint?
-    /// Centers the message group in its room; off while it rests on the fold, or the two pull
-    /// the stack taller and spread the title and message apart
-    private var messageCenteredConstraint: NSLayoutConstraint?
+    /// Book: distances from this view's leading edge to the fold region's two sides
+    private var bookMessageEndConstraint: NSLayoutConstraint?
+    private var bookActionsStartConstraint: NSLayoutConstraint?
+    /// Table: distances from this view's top edge to the fold region's two sides
+    private var tableMessageEndConstraint: NSLayoutConstraint?
+    private var tableActionsStartConstraint: NSLayoutConstraint?
+
+    /// Runs when the layout mode changed and the new layout is in place, inside the fold spring
+    /// when there is one. A host with a bin slot sends `trailingSlotFrameInWindow` again here, so
+    /// the bin moves with the row.
+    var onLayoutModeChange: (() -> Void)?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -431,6 +463,7 @@ final class EmptyStateView: UIView {
 
         addSubview(boardView)
         boardView.addLayoutGuide(messageGuide)
+        boardView.addLayoutGuide(groupGuide)
         boardView.addSubview(messageStack)
         boardView.addSubview(actionsStack)
 
@@ -454,15 +487,18 @@ final class EmptyStateView: UIView {
         let slotWidth = trailingSlotView.widthAnchor.constraint(equalToConstant: trailingSlotWidth ?? 0)
         trailingSlotWidthConstraint = slotWidth
 
-        let centered = messageStack.centerYAnchor.constraint(equalTo: messageGuide.centerYAnchor)
-        centered.priority = .defaultHigh
-        messageCenteredConstraint = centered
         let widthCap = messageStack.widthAnchor.constraint(lessThanOrEqualToConstant: Layout.messageMaximumWidth)
 
+        // The actions column hugs its content in every mode. An accessory that can grow (a month
+        // card's row only centers its content) otherwise filled the room the table pose leaves
+        // between the fold and the baseline.
+        let actionsHug = actionsStack.heightAnchor.constraint(equalToConstant: 0)
+        actionsHug.priority = .fittingSizeLevel
+
         NSLayoutConstraint.activate(edges.initialConstraints + [
+            actionsHug,
             boardView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
 
-            centered,
             messageStack.centerXAnchor.constraint(equalTo: messageGuide.centerXAnchor),
             messageStack.topAnchor.constraint(greaterThanOrEqualTo: messageGuide.topAnchor),
             messageStack.bottomAnchor.constraint(lessThanOrEqualTo: messageGuide.bottomAnchor),
@@ -479,27 +515,76 @@ final class EmptyStateView: UIView {
             quietButton.heightAnchor.constraint(equalToConstant: GeneralConstants.ButtonSize.medium)
         ])
 
-        // One column: the message group above the actions
-        arrangementConstraints[.single] = [
+        // Each mode has its own centering constraint, so a set never shares one with another
+        func centeredInRoom() -> NSLayoutConstraint {
+            let constraint = messageStack.centerYAnchor.constraint(equalTo: messageGuide.centerYAnchor)
+            constraint.priority = .defaultHigh
+            return constraint
+        }
+
+        // One column: the hero group centered above the actions
+        modeConstraints[.column] = [
             messageGuide.topAnchor.constraint(equalTo: boardView.topAnchor),
             messageGuide.leadingAnchor.constraint(equalTo: boardView.leadingAnchor),
             messageGuide.trailingAnchor.constraint(equalTo: boardView.trailingAnchor),
             messageGuide.bottomAnchor.constraint(equalTo: actionsStack.topAnchor, constant: -Layout.messageToActions),
+            centeredInRoom(),
             actionsStack.leadingAnchor.constraint(equalTo: boardView.leadingAnchor),
             actionsStack.trailingAnchor.constraint(equalTo: boardView.trailingAnchor),
             actionsStack.bottomAnchor.constraint(equalTo: boardView.bottomAnchor)
         ]
 
-        // A vertical fold: the message group before it, the actions after it
+        // Fully open sideways: one group, the hero group right above the actions, centered in
+        // the content area. The room hugs the hero group, so the two sit 28pt apart.
+        let groupWidth = groupGuide.widthAnchor.constraint(equalToConstant: Layout.groupMaximumWidth)
+        groupWidth.priority = .defaultHigh
+        modeConstraints[.openSideways] = [
+            groupWidth,
+            groupGuide.widthAnchor.constraint(lessThanOrEqualTo: boardView.widthAnchor),
+            groupGuide.centerXAnchor.constraint(equalTo: boardView.centerXAnchor),
+            groupGuide.centerYAnchor.constraint(equalTo: boardView.centerYAnchor),
+            groupGuide.topAnchor.constraint(greaterThanOrEqualTo: boardView.topAnchor),
+            groupGuide.bottomAnchor.constraint(lessThanOrEqualTo: boardView.bottomAnchor),
+            messageGuide.topAnchor.constraint(equalTo: groupGuide.topAnchor),
+            messageGuide.leadingAnchor.constraint(equalTo: groupGuide.leadingAnchor),
+            messageGuide.trailingAnchor.constraint(equalTo: groupGuide.trailingAnchor),
+            messageGuide.bottomAnchor.constraint(equalTo: actionsStack.topAnchor, constant: -Layout.groupSpacing),
+            messageStack.topAnchor.constraint(equalTo: messageGuide.topAnchor),
+            messageStack.bottomAnchor.constraint(equalTo: messageGuide.bottomAnchor),
+            actionsStack.leadingAnchor.constraint(equalTo: groupGuide.leadingAnchor),
+            actionsStack.trailingAnchor.constraint(equalTo: groupGuide.trailingAnchor),
+            actionsStack.bottomAnchor.constraint(equalTo: groupGuide.bottomAnchor)
+        ]
+
+        // Fully open upright: the hero group centers in the room the actions leave above them,
+        // not on the device, so a tall actions column never crowds it
+        // Just below the message's compression resistance: with a very tall actions column the
+        // group rests on it whole instead of centering and squeezing its message out
+        let centeredInUprightRoom = messageStack.centerYAnchor.constraint(equalTo: messageGuide.centerYAnchor)
+        centeredInUprightRoom.priority = UILayoutPriority(rawValue: UILayoutPriority.defaultHigh.rawValue - 1)
+        modeConstraints[.openUpright] = [
+            messageGuide.topAnchor.constraint(equalTo: boardView.topAnchor),
+            messageGuide.leadingAnchor.constraint(equalTo: boardView.leadingAnchor),
+            messageGuide.trailingAnchor.constraint(equalTo: boardView.trailingAnchor),
+            messageGuide.bottomAnchor.constraint(
+                equalTo: actionsStack.topAnchor, constant: -Layout.uprightMessageToActions),
+            centeredInUprightRoom,
+            actionsStack.leadingAnchor.constraint(equalTo: boardView.leadingAnchor),
+            actionsStack.trailingAnchor.constraint(equalTo: boardView.trailingAnchor),
+            actionsStack.bottomAnchor.constraint(equalTo: boardView.bottomAnchor)
+        ]
+
+        // Book: the hero group before the fold, the actions after it
         let messageEndsBeforeFold = messageGuide.trailingAnchor.constraint(equalTo: leadingAnchor)
         let actionsStartAfterFold = actionsStack.leadingAnchor.constraint(equalTo: leadingAnchor)
-        messageEndAtFoldConstraints[.sideBySide] = messageEndsBeforeFold
-        actionsStartAtFoldConstraints[.sideBySide] = actionsStartAfterFold
-        arrangementConstraints[.sideBySide] = [
+        bookMessageEndConstraint = messageEndsBeforeFold
+        bookActionsStartConstraint = actionsStartAfterFold
+        modeConstraints[.book] = [
             messageGuide.topAnchor.constraint(equalTo: boardView.topAnchor),
             messageGuide.bottomAnchor.constraint(equalTo: boardView.bottomAnchor),
             messageGuide.leadingAnchor.constraint(equalTo: boardView.leadingAnchor),
             messageEndsBeforeFold,
+            centeredInRoom(),
             actionsStartAfterFold,
             actionsStack.trailingAnchor.constraint(equalTo: boardView.trailingAnchor),
             // Each half centers its own group, so the two read as one row across the fold
@@ -509,25 +594,25 @@ final class EmptyStateView: UIView {
             actionsStack.bottomAnchor.constraint(lessThanOrEqualTo: boardView.bottomAnchor)
         ]
 
-        // A horizontal fold: the message group above it, the actions below it
+        // Table: the hero group centered in the raised half, the actions on the baseline
         let messageEndsAboveFold = messageGuide.bottomAnchor.constraint(equalTo: topAnchor)
         let actionsStartBelowFold = actionsStack.topAnchor.constraint(greaterThanOrEqualTo: topAnchor)
-        messageEndAtFoldConstraints[.stacked] = messageEndsAboveFold
-        actionsStartAtFoldConstraints[.stacked] = actionsStartBelowFold
-        arrangementConstraints[.stacked] = [
+        tableMessageEndConstraint = messageEndsAboveFold
+        tableActionsStartConstraint = actionsStartBelowFold
+        modeConstraints[.table] = [
             messageGuide.topAnchor.constraint(equalTo: boardView.topAnchor),
             messageGuide.leadingAnchor.constraint(equalTo: boardView.leadingAnchor),
             messageGuide.trailingAnchor.constraint(equalTo: boardView.trailingAnchor),
             messageEndsAboveFold,
+            centeredInRoom(),
             actionsStartBelowFold,
             actionsStack.leadingAnchor.constraint(equalTo: boardView.leadingAnchor),
             actionsStack.trailingAnchor.constraint(equalTo: boardView.trailingAnchor),
             actionsStack.bottomAnchor.constraint(equalTo: boardView.bottomAnchor)
         ]
 
-        messageRestsOnFoldConstraint = messageStack.bottomAnchor.constraint(equalTo: messageGuide.bottomAnchor)
-
-        applyArrangement(.single)
+        // The fold is read on the first layout pass; until then the column holds the layout
+        NSLayoutConstraint.activate(modeConstraints[.column] ?? [])
 
         if #available(iOS 17.0, *) {
             registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (self: EmptyStateView, _: UITraitCollection) in
@@ -547,7 +632,7 @@ final class EmptyStateView: UIView {
 
     override func layoutSubviews() {
         if hasBuiltBoard, !boardView.isHidden {
-            updateFoldArrangement()
+            updateLayoutMode()
         }
         super.layoutSubviews()
         if hasBuiltBoard, !boardView.isHidden {
@@ -555,71 +640,89 @@ final class EmptyStateView: UIView {
         }
     }
 
-    /// Nothing tappable goes on the iPhone Duo fold: where it divides this view, the message
-    /// group and the actions take a side each. Read on every layout pass (inactive included, so
-    /// folding only moves the gap).
-    private func updateFoldArrangement() {
-        var fold = FoldRegion.splittingFold(in: self)
-        // A horizontal fold only splits the inner display (regular width)
-        if let candidate = fold, candidate.width >= candidate.height,
-           traitCollection.horizontalSizeClass != .regular {
-            fold = nil
-        }
-        guard let fold else {
-            applyArrangement(.single)
-            setMessageRestsOnFold(false)
-            return
-        }
-        let isVertical = fold.height > fold.width
-        let target: Arrangement = isVertical ? .sideBySide : .stacked
-        applyArrangement(target)
-
-        let foldStart = isVertical ? fold.minX : fold.minY
-        let foldLength = isVertical ? fold.width : fold.height
-        // Fully open the gap is centered on the fold line; folded it clears the whole region
+    /// The mode for what this view sees right now, and the fold it's laid out around.
+    private func currentMode() -> (mode: LayoutMode, fold: CGRect?) {
+        guard let fold = FoldRegion.splittingFold(in: self) else { return (.column, nil) }
         let isFolded = FoldRegion.activeFold(in: self) != nil
-        // Partly folded the raised half is its own screen and the group centers in it
-        setMessageRestsOnFold(!isVertical && !isFolded)
-        let gap = isFolded ? max(GeneralConstants.Spacer.foldGap, foldLength) : GeneralConstants.Spacer.foldGap
-        var gapStart = foldStart + foldLength / 2 - gap / 2
-        // The fold is in physical coordinates; the side-by-side constraints measure from leading
-        if isVertical, effectiveUserInterfaceLayoutDirection == .rightToLeft {
-            gapStart = bounds.width - gapStart - gap
+        if fold.height > fold.width {
+            return (isFolded ? .book : .openSideways, fold)
         }
-        if let messageEnd = messageEndAtFoldConstraints[target], messageEnd.constant != gapStart {
-            messageEnd.constant = gapStart
-        }
-        if let actionsStart = actionsStartAtFoldConstraints[target], actionsStart.constant != gapStart + gap {
-            actionsStart.constant = gapStart + gap
-        }
+        // A horizontal fold only splits the inner display (regular width)
+        guard traitCollection.horizontalSizeClass == .regular else { return (.column, nil) }
+        return (isFolded ? .table : .openUpright, fold)
     }
 
-    private func setMessageRestsOnFold(_ rests: Bool) {
-        guard let constraint = messageRestsOnFoldConstraint, constraint.isActive != rests else { return }
-        // Deactivate before activating, so the two never hold at once
-        if rests {
-            messageCenteredConstraint?.isActive = false
-            constraint.isActive = true
+    /// Picks the mode on every layout pass and swaps its constraint set only when it changes.
+    /// Folding and unfolding (open sideways ↔ book, open upright ↔ table) spring the hero group
+    /// and the actions to their new places, each as one piece; a change of axis (rotation,
+    /// cover ↔ inner display) is the system's own transition and isn't animated here.
+    private func updateLayoutMode() {
+        let (mode, fold) = currentMode()
+        // The fold region moves while the hinge does; its distances follow on every pass
+        if let fold {
+            updateFoldConstants(for: mode, fold: fold)
+        }
+        guard mode != appliedMode else { return }
+
+        let previous = appliedMode
+        let animated = previous != nil && window != nil
+        let crossesAxis = previous?.foldAxis != mode.foldAxis
+        appliedMode = mode
+        NSLayoutConstraint.deactivate(modeConstraints.values.flatMap { $0 }.filter { $0.isActive })
+        NSLayoutConstraint.activate(modeConstraints[mode] ?? [])
+
+        if !animated || crossesAxis {
+            UIView.performWithoutAnimation {
+                layoutIfNeeded()
+                onLayoutModeChange?()
+            }
         } else {
-            constraint.isActive = false
-            messageCenteredConstraint?.isActive = true
+            UIView.animate(
+                withDuration: Layout.modeSpringDuration, delay: 0,
+                usingSpringWithDamping: Layout.modeSpringDamping,
+                initialSpringVelocity: Layout.modeSpringVelocity,
+                options: [.beginFromCurrentState, .allowUserInteraction]
+            ) {
+                self.layoutIfNeeded()
+                self.onLayoutModeChange?()
+            }
         }
     }
 
-    private func applyArrangement(_ target: Arrangement) {
-        guard target != arrangement else { return }
-        if let arrangement {
-            NSLayoutConstraint.deactivate(arrangementConstraints[arrangement] ?? [])
+    /// Nothing tappable goes on the fold while the device is partly folded: both groups clear
+    /// the whole fold region.
+    private func updateFoldConstants(for mode: LayoutMode, fold: CGRect) {
+        switch mode {
+        case .book:
+            // The fold is in physical coordinates; the constraints measure from leading
+            let isRightToLeft = effectiveUserInterfaceLayoutDirection == .rightToLeft
+            let start = isRightToLeft ? bounds.width - fold.maxX : fold.minX
+            setConstant(start, of: bookMessageEndConstraint)
+            setConstant(start + fold.width, of: bookActionsStartConstraint)
+        case .table:
+            setConstant(fold.minY - GeneralConstants.Spacer.foldGap, of: tableMessageEndConstraint)
+            setConstant(fold.maxY + GeneralConstants.Spacer.foldGap, of: tableActionsStartConstraint)
+        case .column, .openSideways, .openUpright:
+            break
         }
-        arrangement = target
-        NSLayoutConstraint.activate(arrangementConstraints[target] ?? [])
     }
 
-    /// A short column (iPhone SE) keeps the order and scrolls nothing: the hero and its gaps
-    /// shrink. Decided after layout from the room the message group has, which doesn't depend
-    /// on the hero's own size.
+    private func setConstant(_ constant: CGFloat, of constraint: NSLayoutConstraint?) {
+        guard let constraint, constraint.constant != constant else { return }
+        constraint.constant = constant
+    }
+
+    /// A short column (iPhone SE, the cover display) keeps the order and scrolls nothing: the
+    /// hero and its gaps shrink. Decided after layout from the room the hero group has, which
+    /// doesn't depend on the hero's own size, and never animated.
     private func updateHeroSizeForHeight() {
-        let available = messageGuide.layoutFrame.height
+        let available: CGFloat
+        if appliedMode == .openSideways {
+            // The room hugs the hero group there, so measure what the actions leave of the board
+            available = boardView.bounds.height - actionsStack.bounds.height - Layout.groupSpacing
+        } else {
+            available = messageGuide.layoutFrame.height
+        }
         guard available > 0 else { return }
         let isCompact = available < Layout.regularMessageMinimumHeight
         guard isCompact != isCompactHero else { return }

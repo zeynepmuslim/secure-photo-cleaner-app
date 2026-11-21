@@ -1,6 +1,200 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "accessCard.allowFullAccess": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow full access"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tam erişime izin ver"
+          }
+        }
+      }
+    },
+    "accessCard.fullMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Purgio sees your whole library. Nothing ever leaves your iPhone."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Purgio tüm kütüphanenizi görür. Hiçbir şey iPhone'unuzdan çıkmaz."
+          }
+        }
+      }
+    },
+    "accessCard.fullTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full access"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tam erişim"
+          }
+        }
+      }
+    },
+    "accessCard.limitedMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Purgio sees the %lld item you picked. Full access shows every month; nothing ever leaves your iPhone."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Purgio sees the %lld items you picked. Full access shows every month; nothing ever leaves your iPhone."
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Purgio seçtiğiniz %lld öğeyi görüyor. Tam erişim tüm ayları gösterir; hiçbir şey iPhone'unuzdan çıkmaz."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Purgio seçtiğiniz %lld öğeyi görüyor. Tam erişim tüm ayları gösterir; hiçbir şey iPhone'unuzdan çıkmaz."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "accessCard.limitedNoneMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Purgio sees no items yet. Full access shows every month; nothing ever leaves your iPhone."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Purgio henüz hiçbir öğe görmüyor. Tam erişim tüm ayları gösterir; hiçbir şey iPhone'unuzdan çıkmaz."
+          }
+        }
+      }
+    },
+    "accessCard.limitedTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limited access"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sınırlı erişim"
+          }
+        }
+      }
+    },
+    "accessCard.notAskedMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You choose: the whole library or only some items. Nothing ever leaves your iPhone."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seçim sizin: tüm kütüphane ya da yalnızca bazı öğeler. Hiçbir şey iPhone'unuzdan çıkmaz."
+          }
+        }
+      }
+    },
+    "accessCard.notAskedTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not allowed yet"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henüz izin verilmedi"
+          }
+        }
+      }
+    },
+    "accessCard.offMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selected items only is enough to start. Nothing ever leaves your iPhone."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Başlamak için yalnızca seçili öğeler yeterli. Hiçbir şey iPhone'unuzdan çıkmaz."
+          }
+        }
+      }
+    },
+    "accessCard.offTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Access off"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erişim kapalı"
+          }
+        }
+      }
+    },
     "analytics.and": {
       "extractionState": "manual",
       "localizations": {
@@ -1518,47 +1712,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Devam et"
-          }
-        }
-      }
-    },
-    "filterCards.continueLeft": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Continue · %lld left"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Continue · %lld left"
-                }
-              }
-            }
-          }
-        },
-        "tr": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Devam et · %lld kaldı"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Devam et · %lld kaldı"
-                }
-              }
-            }
           }
         }
       }
@@ -3972,23 +4125,6 @@
         }
       }
     },
-    "monthsList.accessDenied": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Photo access is denied. Please enable it in Settings to use the app."
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fotoğraf erişimi reddedildi. Uygulamayı kullanmak için lütfen Ayarlar'dan etkinleştirin."
-          }
-        }
-      }
-    },
     "monthsList.allYears": {
       "extractionState": "manual",
       "localizations": {
@@ -4006,19 +4142,19 @@
         }
       }
     },
-    "monthsList.allowAccessMessage": {
+    "monthsList.allowAccess": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "To help you clean up your photo library, we need access to your photos."
+            "value": "Allow access"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fotoğraf kütüphanenizi temizlemenize yardımcı olmak için fotoğraflarınıza erişim izni gerekiyor."
+            "value": "Erişime izin ver"
           }
         }
       }
@@ -4040,6 +4176,142 @@
         }
       }
     },
+    "monthsList.askPhotosMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Purgio groups your photos by month so you can clean them up one swipe at a time."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Purgio fotoğraflarınızı aya göre gruplar; böylece onları tek tek kaydırarak temizleyebilirsiniz."
+          }
+        }
+      }
+    },
+    "monthsList.askTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Let Purgio see your library"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Purgio kütüphanenizi görsün"
+          }
+        }
+      }
+    },
+    "monthsList.askVideosMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Purgio groups your videos by month so you can clean them up one swipe at a time."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Purgio videolarınızı aya göre gruplar; böylece onları tek tek kaydırarak temizleyebilirsiniz."
+          }
+        }
+      }
+    },
+    "monthsList.deniedPhotosMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn access on in Settings to review your photos."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğraflarınızı incelemek için Ayarlar'dan erişimi açın."
+          }
+        }
+      }
+    },
+    "monthsList.deniedTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Purgio can't see your library"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Purgio kütüphanenizi göremiyor"
+          }
+        }
+      }
+    },
+    "monthsList.deniedVideosMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn access on in Settings to review your videos."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Videolarınızı incelemek için Ayarlar'dan erişimi açın."
+          }
+        }
+      }
+    },
+    "monthsList.emptyLibraryMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your library has no photos or videos. Come back once you've taken some."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kütüphanenizde fotoğraf veya video yok. Biraz çektikten sonra tekrar gelin."
+          }
+        }
+      }
+    },
+    "monthsList.emptyLibraryTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing to clean yet"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henüz temizlenecek bir şey yok"
+          }
+        }
+      }
+    },
     "monthsList.filter": {
       "extractionState": "manual",
       "localizations": {
@@ -4057,70 +4329,155 @@
         }
       }
     },
-    "monthsList.limitedAccessPhotos": {
+    "monthsList.limitedNoPhotosMessage": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your photo access is limited. Select more photos to start reviewing by month."
+            "value": "None of the items you picked are photos."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fotoğraf erişiminiz sınırlı. Aylara göre incelemeye başlamak için daha fazla fotoğraf seçin."
+            "value": "Seçtiğiniz öğelerin hiçbiri fotoğraf değil."
           }
         }
       }
     },
-    "monthsList.limitedAccessVideos": {
+    "monthsList.limitedNoPhotosTitle": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your photo access is limited. Select more videos to start reviewing by month."
+            "value": "No photos selected"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fotoğraf erişiminiz sınırlı. Aylara göre incelemeye başlamak için daha fazla video seçin."
+            "value": "Seçili fotoğraf yok"
           }
         }
       }
     },
-    "monthsList.noContentPhotos": {
+    "monthsList.limitedNoVideosMessage": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Take some photos or import them to your library to get started!"
+            "value": "None of the items you picked are videos."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Başlamak için fotoğraf çekin veya kütüphanenize aktarın!"
+            "value": "Seçtiğiniz öğelerin hiçbiri video değil."
           }
         }
       }
     },
-    "monthsList.noContentVideos": {
+    "monthsList.limitedNoVideosTitle": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Take some videos or import them to your library to get started!"
+            "value": "No videos selected"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Başlamak için video çekin veya kütüphanenize aktarın!"
+            "value": "Seçili video yok"
+          }
+        }
+      }
+    },
+    "monthsList.limitedNothingMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose items to review, or let Purgio see your whole library."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İncelenecek öğeleri seçin ya da Purgio'nun tüm kütüphanenizi görmesine izin verin."
+          }
+        }
+      }
+    },
+    "monthsList.limitedNothingTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing selected yet"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henüz bir şey seçilmedi"
+          }
+        }
+      }
+    },
+    "monthsList.meanwhileInPhotos": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meanwhile in Photos"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu arada Fotoğraflar'da"
+          }
+        }
+      }
+    },
+    "monthsList.meanwhileInVideos": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meanwhile in Videos"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu arada Videolar'da"
+          }
+        }
+      }
+    },
+    "monthsList.noPhotosMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photos you take or save show up here, one card per month."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çektiğiniz veya kaydettiğiniz fotoğraflar burada, her ay için bir kart olarak görünür."
           }
         }
       }
@@ -4131,13 +4488,30 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No Photos Yet"
+            "value": "No photos yet"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Henüz Fotoğraf Yok"
+            "value": "Henüz fotoğraf yok"
+          }
+        }
+      }
+    },
+    "monthsList.noVideosMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Videos you record or save show up here, one card per month."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çektiğiniz veya kaydettiğiniz videolar burada, her ay için bir kart olarak görünür."
           }
         }
       }
@@ -4148,13 +4522,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No Videos Yet"
+            "value": "No videos yet"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Henüz Video Yok"
+            "value": "Henüz video yok"
           }
         }
       }
@@ -4227,6 +4601,40 @@
         }
       }
     },
+    "monthsList.reviewPhotos": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review photos"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğrafları incele"
+          }
+        }
+      }
+    },
+    "monthsList.reviewVideos": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review videos"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Videoları incele"
+          }
+        }
+      }
+    },
     "monthsList.selectPhotos": {
       "extractionState": "manual",
       "localizations": {
@@ -4240,6 +4648,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fotoğraf Seç"
+          }
+        }
+      }
+    },
+    "monthsList.selectPhotosAndVideos": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select photos & videos"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğraf ve video seç"
           }
         }
       }

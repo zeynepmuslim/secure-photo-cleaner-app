@@ -10,13 +10,8 @@ import UIKit
 
 private enum Strings {
     static let yearDetails = NSLocalizedString("filterCards.yearDetails", comment: "Year details bar button title")
-    static let continueReview = NSLocalizedString("filterCards.continue", comment: "Continue button before the items are counted")
+    static let continueReview = NSLocalizedString("filterCards.continue", comment: "Continue button")
     static let allCaughtUp = NSLocalizedString("filterCards.allCaughtUp", comment: "Continue button once the session is complete")
-    static func continueLeft(_ count: Int) -> String {
-        String.localizedStringWithFormat(
-            NSLocalizedString("filterCards.continueLeft", comment: "Continue button with the number of items left"),
-            count)
-    }
 }
 
 final class MonthFilterCardsViewController: UIViewController {
@@ -34,10 +29,6 @@ final class MonthFilterCardsViewController: UIViewController {
         static let regularOverviewMinimumTileHeight: CGFloat = 110
         /// The All Photos row's height as a share of a tile row's
         static let allPhotosRowShare: CGFloat = 0.6
-        /// The global bin's slot beside Continue: room for the icon and a count
-        static let binSlotWidth = GeneralConstants.BinSlot.compactWidth
-        /// The same slot where the row is wide (the inner display upright, the list's detail pane)
-        static let wideBinSlotWidth: CGFloat = 132
     }
 
     /// The one-column overview card (phones, the Duo's cover display, Split View, embedded):
@@ -143,6 +134,8 @@ final class MonthFilterCardsViewController: UIViewController {
     private var lastSentBinSlot: CGRect?
     /// A fixed width beside Continue; sideways (inactive) the slot spans the filters column.
     private var binSlotWidthConstraint: NSLayoutConstraint?
+    /// The count the bin was last configured with; the bottom row's slot hugs it.
+    private var binSlotCount = 0
 
     private enum EmbeddedHeader {
         static let titleFontSize: CGFloat = 22
@@ -228,7 +221,7 @@ final class MonthFilterCardsViewController: UIViewController {
     private var yearSection: YearSection?
     /// Shown as MonthsList's detail pane on the iPhone Duo inner display: one column with a
     /// header and a bottom row (Continue + the global bin's slot), never split at the fold.
-    private let isEmbedded: Bool
+    let isEmbedded: Bool
     /// Set by the months list before it swaps this embedded hub for another month's: the new
     /// hub's bin slot is in the same place, so disappearing leaves the bin where it is
     var keepsBinPlacementOnDisappear = false
@@ -485,7 +478,7 @@ final class MonthFilterCardsViewController: UIViewController {
 
         // Sideways the slot spans the filters column instead
         binSlotWidthConstraint?.isActive = axis != .horizontal
-        binSlotWidthConstraint?.constant = axis == nil && !isEmbedded ? Layout.binSlotWidth : Layout.wideBinSlotWidth
+        updateBinSlotWidth()
 
         let cards = filterCards
         let fillGridRows = { [topRowStack, middleRowStack] in
@@ -579,7 +572,8 @@ final class MonthFilterCardsViewController: UIViewController {
             continueButton.heightAnchor.constraint(equalToConstant: GeneralConstants.ButtonSize.large),
             binSlotView.heightAnchor.constraint(equalToConstant: GeneralConstants.ButtonSize.large)
         ])
-        binSlotWidthConstraint = binSlotView.widthAnchor.constraint(equalToConstant: Layout.binSlotWidth)
+        binSlotWidthConstraint = binSlotView.widthAnchor.constraint(
+            equalToConstant: FloatingBinButton.slotWidth(forCount: binSlotCount))
         updateFoldSplit()
     }
 
@@ -627,9 +621,20 @@ final class MonthFilterCardsViewController: UIViewController {
         }
     }
 
+    /// In the bottom row the slot is as wide as the bin's icon and count ("99+" at most), and
+    /// Continue takes the rest. Sideways the slot spans the filters column instead.
+    private func updateBinSlotWidth() {
+        let width = FloatingBinButton.slotWidth(forCount: binSlotCount)
+        guard let constraint = binSlotWidthConstraint, constraint.constant != width else { return }
+        constraint.constant = width
+        view.setNeedsLayout()
+    }
+
     private func configureGlobalBinButton() {
         binCountTask?.cancel()
         let binIds = DeleteBinStore.shared.loadAssetIds()
+        binSlotCount = binIds.count
+        updateBinSlotWidth()
 
         binController?.configureBinButton(
             mode: .count(binIds.count),
@@ -650,6 +655,8 @@ final class MonthFilterCardsViewController: UIViewController {
             await MainActor.run { [weak self] in
                 guard let self = self else { return }
                 if count != binIds.count {
+                    self.binSlotCount = count
+                    self.updateBinSlotWidth()
                     self.binController?.configureBinButton(
                         mode: .count(count),
                         monthKey: self.monthKey,
@@ -734,10 +741,9 @@ final class MonthFilterCardsViewController: UIViewController {
 
     private func updateContinueButton(for state: ProgressOverviewState) {
         let title: String
+        // The overview card already shows what's left, so the pill only says what it does
         if state.isComplete {
             title = Strings.allCaughtUp
-        } else if state.isCounted {
-            title = Strings.continueLeft(state.left)
         } else {
             title = Strings.continueReview
         }

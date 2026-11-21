@@ -87,3 +87,11 @@ extension UIImage {
         }
     }
 }
+
+extension UIImage {
+    /// The first of these SF Symbol names this iOS has; the last one when none resolves.
+    /// For symbols newer than iOS 15: `availableSymbolName("photo.stack", "photo.on.rectangle.angled")`.
+    static func availableSymbolName(_ candidates: String...) -> String {
+        candidates.first { UIImage(systemName: $0) != nil } ?? candidates.last ?? ""
+    }
+}

@@ -256,8 +256,8 @@ extension HomeViewController {
     func handleResumeSelection(_ item: HomeResumeItem) {
         HapticFeedbackManager.shared.impact(intensity: .medium)
         let yearSection = item.isYear ? YearSection(year: item.title, months: item.yearMonths) : nil
-        let viewController = MonthFilterCardsViewController(
-            monthTitle: item.title, monthKey: item.key, mediaType: item.mediaType, yearSection: yearSection)
-        navigateOnTab(index: item.mediaType == .video ? 2 : 1, pushing: viewController)
+        MonthsListViewController.openHub(
+            in: tabBarController, mediaType: item.mediaType, title: item.title, key: item.key,
+            yearSection: yearSection)
     }
 }

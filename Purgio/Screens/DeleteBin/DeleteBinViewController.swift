@@ -35,12 +35,6 @@ private enum Strings {
             NSLocalizedString("deleteBin.cleanedMessage", comment: "After emptying the bin: how many items went to Recently Deleted"),
             count)
     }
-    static func toReview(count: Int, isVideo: Bool) -> String {
-        let format = isVideo
-            ? NSLocalizedString("monthCell.videosToReview", comment: "Not-started month subtitle for videos")
-            : NSLocalizedString("monthCell.photosToReview", comment: "Not-started month subtitle for photos")
-        return String.localizedStringWithFormat(format, count)
-    }
     static let successTitle = NSLocalizedString("deleteBin.successTitle", comment: "Success alert title")
     static let allDeletedMessage = NSLocalizedString("deleteBin.allDeletedMessage", comment: "All items deleted success message")
     static let errorTitle = NSLocalizedString("deleteBin.errorTitle", comment: "Error alert title")
@@ -911,15 +905,7 @@ final class DeleteBinViewController: UIViewController {
                 }
             }
         }
-        // A record can outlive its month (the library changed since); when the month buckets
-        // are known, the month has to be one of them
-        let newest = DashboardCardManager.shared.getInProgressMonths().first { info in
-            guard let buckets = photoLibraryService.getCachedMonthBuckets(mediaType: info.mediaType) else {
-                return true
-            }
-            return buckets.contains { $0.key == info.monthKey }
-        }
-        guard let newest else { return nil }
+        guard let newest = DashboardCardManager.shared.newestInProgressMonth() else { return nil }
         return ReviewTarget(
             key: newest.monthKey,
             title: DateFormatterManager.shared.displayMonth(fromMonthKey: newest.monthKey),
@@ -933,20 +919,10 @@ final class DeleteBinViewController: UIViewController {
 
     /// The month's row as on the months list, in a tappable card.
     private func makeMonthCard(for target: ReviewTarget) -> UIView? {
-        let progress = ReviewProgressStore.shared.getProgress(forMonthKey: target.key, mediaType: target.mediaType)
-        guard progress.originalTotalCount > 0 else { return nil }
-
         let card = MonthLinkCardView()
-        card.rowView.configure(
-            title: target.title,
-            deleted: progress.deletedCount,
-            kept: progress.keptCount,
-            stored: progress.storedCount,
-            total: progress.originalTotalCount,
-            reviewed: progress.reviewedCount,
-            notStartedSubtitle: Strings.toReview(
-                count: progress.originalTotalCount, isVideo: target.mediaType == .video))
-        card.accessibilityLabel = card.rowView.accessibilitySummary
+        guard card.configure(title: target.title, monthKey: target.key, mediaType: target.mediaType) else {
+            return nil
+        }
         card.onTap = { [weak self] in self?.openHub(for: target) }
         return card
     }
@@ -990,27 +966,14 @@ final class DeleteBinViewController: UIViewController {
 
     /// The month's hub on its own tab (Photos 1, Videos 2), with the months list under it.
     private func openHub(for target: ReviewTarget) {
-        let index = target.mediaType == .video ? 2 : 1
-        guard let tabBarController,
-              let destination = tabBarController.viewControllers?[index] as? UINavigationController,
-              !destination.viewControllers.isEmpty else { return }
         HapticFeedbackManager.shared.impact(intensity: .medium)
-        let hub = MonthFilterCardsViewController(
-            monthTitle: target.title, monthKey: target.key, mediaType: target.mediaType)
-
-        if destination === navigationController {
-            destination.popToRootViewController(animated: false)
-            destination.pushViewController(hub, animated: true)
-        } else {
-            // Leave this tab's stack clean, then push the hub on the month's tab (as Home's navigateOnTab)
+        // Leave this tab's stack clean when the month's tab is another one
+        let index = target.mediaType == .video ? 2 : 1
+        if tabBarController?.viewControllers?[index] !== navigationController {
             navigationController?.popToRootViewController(animated: false)
-            binController?.setBinButtonSuppressed(false)
-            tabBarController.selectedIndex = index
-            destination.popToRootViewController(animated: false)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                destination.pushViewController(hub, animated: true)
-            }
         }
+        MonthsListViewController.openHub(
+            in: tabBarController, mediaType: target.mediaType, title: target.title, key: target.key)
     }
 
     /// The Photos tab's months list.

@@ -91,9 +91,7 @@ extension MonthReviewViewController {
                 title: Strings.noPhotosInMonth(monthTitle: monthTitle),
                 message: Strings.monthEmptyMessage,
                 actionTitle: Strings.backToMonths,
-                onAction: { [weak self] in
-                    self?.navigationController?.popViewController(animated: true)
-                })
+                onAction: { [weak self] in self?.backToMonths() })
         }
         endStateUsesBinSlot = false
         presentEndState()
@@ -174,6 +172,9 @@ extension MonthReviewViewController {
                 if showsTryAnother {
                     self.tryAnotherMonth()
                 } else {
+                    // With no hub under the deck (the Duo inner display shows it beside the
+                    // list), the pop lands on the list with this month as its detail
+                    self.monthsList?.selectDetail(key: self.monthKey)
                     self.navigationController?.popViewController(animated: true)
                 }
             })
@@ -192,9 +193,7 @@ extension MonthReviewViewController {
         }
         let total = filterContext == .none ? originalTotalCount : main.originalTotalCount
 
-        let backToMonths: () -> Void = { [weak self] in
-            self?.navigationController?.popViewController(animated: true)
-        }
+        let backToMonths: () -> Void = { [weak self] in self?.backToMonths() }
         emptyStateView.configure(
             hero: .stamp,
             title: Strings.completeTitle(shortSessionName),
@@ -224,6 +223,12 @@ extension MonthReviewViewController {
                 emptyStateView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
                 emptyStateView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
             ])
+            // A fold springs the bottom row to a new place; the bin in its slot goes along
+            emptyStateView.onLayoutModeChange = { [weak self] in
+                guard let self, self.endStateUsesBinSlot else { return }
+                self.sendEndStateBinSlotIfNeeded()
+                self.tabBarController?.view.layoutIfNeeded()
+            }
         }
         view.bringSubviewToFront(emptyStateView)
         emptyStateView.update(railEdge: DuoLayout.railEdge(tabBarController, in: view))
@@ -311,7 +316,47 @@ extension MonthReviewViewController {
             stack.removeLast()
         }
         stack.append(deck)
+        // Back from the new deck shows its month on the list (the detail on the Duo inner display)
+        monthsList?.selectDetail(key: key)
         navigationController.setViewControllers(stack, animated: true)
+    }
+
+    /// "Back to months" lands on the months list, not on the screen right under this deck
+    /// (the month's hub when the deck was opened from it). A deck pushed from Home (Lucky, the
+    /// dashboard) has no list under it, so it goes to its media type's tab, as Home's
+    /// `navigateOnTab` does.
+    private func backToMonths() {
+        guard let navigationController else { return }
+        // The list opens on this month (its detail on the Duo inner display)
+        monthsList?.selectDetail(key: monthKey)
+        if let list = navigationController.viewControllers.last(where: { $0 is MonthsListViewController }) {
+            navigationController.popToViewController(list, animated: true)
+            return
+        }
+        guard let tabBarController,
+              let destination = tabBarController.viewControllers?[monthsTabIndex] as? UINavigationController
+        else {
+            navigationController.popViewController(animated: true)
+            return
+        }
+        // Setting the index doesn't run the tab bar's own reset of the bin
+        binController?.setBinButtonPlacement(.standard)
+        binController?.setBinButtonSuppressed(false)
+        navigationController.popToRootViewController(animated: false)
+        tabBarController.selectedIndex = monthsTabIndex
+        destination.popToRootViewController(animated: false)
+    }
+
+    /// The Photos (1) or Videos (2) tab, fixed across screens.
+    private var monthsTabIndex: Int { mediaType == .video ? 2 : 1 }
+
+    /// This media type's months list: the one under this deck, else its tab's root.
+    private var monthsList: MonthsListViewController? {
+        if let list = navigationController?.viewControllers.first(where: { $0 is MonthsListViewController }) {
+            return list as? MonthsListViewController
+        }
+        let tab = tabBarController?.viewControllers?[monthsTabIndex] as? UINavigationController
+        return tab?.viewControllers.first as? MonthsListViewController
     }
 
     private func loadNextUnfinishedSession() {

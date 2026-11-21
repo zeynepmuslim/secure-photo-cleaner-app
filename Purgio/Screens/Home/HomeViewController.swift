@@ -650,14 +650,8 @@ final class HomeViewController: UIViewController {
 
     private func navigateToMonthReview(monthKey: String, mediaType: PHAssetMediaType) {
         let monthTitle = cardManager.formatMonthKey(monthKey)
-
-        let vc = MonthFilterCardsViewController(
-            monthTitle: monthTitle,
-            monthKey: monthKey,
-            mediaType: mediaType
-        )
-        let tabIndex = mediaType == .video ? 2 : 1
-        navigateOnTab(index: tabIndex, pushing: vc)
+        MonthsListViewController.openHub(
+            in: tabBarController, mediaType: mediaType, title: monthTitle, key: monthKey)
     }
 
     private func navigateToLuckyTarget(mediaType: PHAssetMediaType, monthKey: String, filterContext: FilterContext) {

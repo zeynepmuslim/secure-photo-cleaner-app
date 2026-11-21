@@ -5,10 +5,22 @@
 //  Created by ZeynepMüslim on 20.11.2026.
 //
 
+import Photos
 import UIKit
 
+// MARK: - Strings
+
+private enum Strings {
+    static func toReview(count: Int, isVideo: Bool) -> String {
+        let format = isVideo
+            ? NSLocalizedString("monthCell.videosToReview", comment: "Not-started month subtitle for videos")
+            : NSLocalizedString("monthCell.photosToReview", comment: "Not-started month subtitle for photos")
+        return String.localizedStringWithFormat(format, count)
+    }
+}
+
 /// A month's row as on the months list (`MonthProgressRowView`) in a tappable card with a
-/// chevron. The empty Delete Bin points back to a month with it.
+/// chevron. The empty Delete Bin and the months list's empty state point at a month with it.
 final class MonthLinkCardView: UIControl {
     private enum Layout {
         static let chevronPointSize: CGFloat = 12
@@ -74,6 +86,26 @@ final class MonthLinkCardView: UIControl {
         isAccessibilityElement = true
         accessibilityTraits = .button
         addTarget(self, action: #selector(handleTap), for: .touchUpInside)
+    }
+
+    /// Shows a month's stored progress, as its row on the months list does.
+    /// - Parameter liveTotal: the month's current item count, for a month with no record yet.
+    /// - Returns: false when the month has no total to show; the card is then left as it was.
+    @discardableResult
+    func configure(title: String, monthKey: String, mediaType: PHAssetMediaType, liveTotal: Int? = nil) -> Bool {
+        let progress = ReviewProgressStore.shared.getProgress(forMonthKey: monthKey, mediaType: mediaType)
+        let total = progress.originalTotalCount > 0 ? progress.originalTotalCount : (liveTotal ?? 0)
+        guard total > 0 else { return false }
+        rowView.configure(
+            title: title,
+            deleted: progress.deletedCount,
+            kept: progress.keptCount,
+            stored: progress.storedCount,
+            total: total,
+            reviewed: min(progress.reviewedCount, total),
+            notStartedSubtitle: Strings.toReview(count: total, isVideo: mediaType == .video))
+        accessibilityLabel = rowView.accessibilitySummary
+        return true
     }
 
     @objc private func handleTap() {

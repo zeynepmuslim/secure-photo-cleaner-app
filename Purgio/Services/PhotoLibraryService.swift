@@ -146,6 +146,18 @@ final class PhotoLibraryService: NSObject, PHPhotoLibraryChangeObserver {
         }
     }
 
+    /// How many assets of a media type the app can see (with limited access, the picked ones).
+    /// 0 without access; never touches PhotoKit while access is `.notDetermined`.
+    func assetCount(mediaType: PHAssetMediaType) async -> Int {
+        let status = authorizationStatus()
+        guard status == .authorized || status == .limited else { return 0 }
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                continuation.resume(returning: PHAsset.fetchAssets(with: mediaType, options: nil).count)
+            }
+        }
+    }
+
     func loadMonthBuckets(mediaType: PHAssetMediaType = .image) async -> [MonthBucket] {
         let status = authorizationStatus()
         if status != .authorized && status != .limited {

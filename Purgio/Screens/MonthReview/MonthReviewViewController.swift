@@ -369,7 +369,8 @@ final class MonthReviewViewController: UIViewController {
 
                 advanceToFirstUnprocessedIndex()
                 refreshStack()
-            } else if hasSetupUI && reviewAssets.isEmpty {
+            } else if hasSetupUI && reviewAssets.isEmpty && !isShowingEndState {
+                // An empty deck that already shows its end state has nothing to reload
                 loadPhotos()
             }
         }

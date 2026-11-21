@@ -65,12 +65,13 @@ extension MonthReviewViewController {
             animations: { [weak self] in
                 self?.skeletonStack?.alpha = 0
                 self?.skeletonStatsView?.alpha = 0
-                self?.cardContainerView.alpha = 1
-                self?.tableBaseContainerView.alpha = 1
-                self?.statsLabel.alpha = 1
-                self?.statsPill.alpha = 1
-                self?.bottomControlsStack.alpha = 1
+                // An end state already took the deck's place; it stays hidden under it
                 guard let self, !self.isShowingEndState else { return }
+                self.cardContainerView.alpha = 1
+                self.tableBaseContainerView.alpha = 1
+                self.statsLabel.alpha = 1
+                self.statsPill.alpha = 1
+                self.bottomControlsStack.alpha = 1
                 self.historyBadge.alpha = self.historyManager.undoCount > 0 ? 1.0 : 0.0
             }
         ) { [weak self] _ in

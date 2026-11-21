@@ -62,6 +62,9 @@ class MainTabBarController: UITabBarController, UINavigationControllerDelegate {
     private var isDeleteBinEditing = false
     private var binButtonPlacement: BinButtonPlacement = .standard
     private var isBinButtonSuppressed = false
+    /// The screen the last finished push or pop put on top, to tell a cancelled back swipe
+    /// (which shows that same screen again) from a real transition.
+    private weak var lastShownViewController: UIViewController?
     private var binButtonStandardBottomConstraint: NSLayoutConstraint?
     private var binSlotLeadingConstraint: NSLayoutConstraint?
     private var binSlotWidthConstraint: NSLayoutConstraint?
@@ -267,11 +270,16 @@ extension MainTabBarController: UITabBarControllerDelegate {
         _ navigationController: UINavigationController, willShow viewController: UIViewController, animated: Bool
     ) {
         isTransitioning = animated
-        // The screen coming on top decides again (an end state suppresses it once it shows)
-        isBinButtonSuppressed = false
-        updateVisibility(immediate: true)
-        // A screen that uses a slot sets it again once it's on top
-        setBinButtonPlacement(.standard)
+        // A cancelled back swipe shows the same screen again, after its viewDidAppear already
+        // set the bin up; resetting here would undo that (an end state's suppression or slot)
+        let isReshowingSameScreen = viewController === lastShownViewController
+        if !isReshowingSameScreen {
+            // The screen coming on top decides again (an end state suppresses it once it shows)
+            isBinButtonSuppressed = false
+            updateVisibility(immediate: true)
+            // A screen that uses a slot sets it again once it's on top
+            setBinButtonPlacement(.standard)
+        }
 
         if viewController is DeleteBinViewController {
             // Save the current mode before morphing to wide
@@ -285,6 +293,7 @@ extension MainTabBarController: UITabBarControllerDelegate {
         _ navigationController: UINavigationController, didShow viewController: UIViewController, animated: Bool
     ) {
         isTransitioning = false
+        lastShownViewController = viewController
 
         if !(viewController is DeleteBinViewController)
             && !(viewController is SimilarPhotosViewController) {
@@ -292,6 +301,23 @@ extension MainTabBarController: UITabBarControllerDelegate {
         }
 
         updateVisibility()
+        // A hub that arrives while the months list splits at the fold moves into its detail
+        DispatchQueue.main.async { [weak self] in self?.absorbPushedMonthHubs() }
+    }
+
+    /// The selected tab's months list folds any full-screen month hub in its stack into its
+    /// detail while it splits at the fold (the iPhone Duo inner display), on every layout pass
+    /// (unfolding with a hub on screen or under a deck) and after every push or pop. Mid
+    /// transition it tries again once the transition ends.
+    private func absorbPushedMonthHubs() {
+        guard let navigationController = selectedViewController as? UINavigationController,
+              let list = navigationController.viewControllers.first as? MonthsListViewController,
+              navigationController.viewControllers.count > 1,
+              !list.absorbPushedHubs(),
+              let coordinator = navigationController.transitionCoordinator else { return }
+        coordinator.animate(alongsideTransition: nil) { [weak self] _ in
+            self?.view.setNeedsLayout()
+        }
     }
 
     private func morphButtonToWide() {
@@ -345,6 +371,7 @@ extension MainTabBarController: UITabBarControllerDelegate {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        absorbPushedMonthHubs()
         if binButtonFixedWidthConstraint?.isActive == true, isDeleteBinEditing {
             binButtonFixedWidthConstraint?.constant = editModeHalfWidth
         }

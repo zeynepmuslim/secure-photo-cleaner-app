@@ -27,6 +27,28 @@ class FloatingBinButton: UIButton {
         static let imagePadding: CGFloat = 8
         /// Between icon and count in a screen's slot, where width is short.
         static let slotImagePadding: CGFloat = 6
+        /// A slot shows counts up to this, then "99+", so a slot sized to its count stays short.
+        static let slotCountCap = 99
+    }
+
+    /// Lays out a button for `slotWidth(forCount:)`; never shown.
+    private static let sizingButton: FloatingBinButton = {
+        let button = FloatingBinButton()
+        button.setFitsSlot(true)
+        return button
+    }()
+
+    /// The width a slot needs for the icon and this count ("99+" above 99), never narrower than
+    /// the standard slot (`BinSlot.compactWidth`), so a short count keeps room around it. A screen
+    /// that sizes its slot to the button (the month hub's bottom row) passes the count it configured.
+    static func slotWidth(forCount count: Int) -> CGFloat {
+        let button = sizingButton
+        button.updateCount(count, animated: false)
+        let fitting = button.systemLayoutSizeFitting(
+            CGSize(width: UIView.layoutFittingCompressedSize.width, height: GeneralConstants.ButtonSize.large),
+            withHorizontalFittingPriority: .fittingSizeLevel,
+            verticalFittingPriority: .required).width
+        return max(GeneralConstants.BinSlot.compactWidth, ceil(fitting))
     }
 
     enum DisplayMode: Equatable {
@@ -40,7 +62,7 @@ class FloatingBinButton: UIButton {
     /// Set while a screen's slot gives the button room for a title ("Bin · 14" instead of "14").
     private var showsTitle = false
     /// Set while the button sits in a screen's slot (as narrow as 96pt): tighter insets and a
-    /// count that stays on one line beside the icon.
+    /// count that stays on one line beside the icon ("99+" above 99).
     private var fitsSlot = false
     private(set) var currentMode: DisplayMode = .count(0)
 
@@ -109,7 +131,7 @@ class FloatingBinButton: UIButton {
         config.image = UIImage(
             systemName: "trash", withConfiguration: UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold))
 
-        config.attributedTitle = countTitle(count > 0 ? "+" + countText(count) : nil)
+        config.attributedTitle = countTitle(count > 0 ? "+" + (fitsSlot ? count.compactFormatted : "\(count)") : nil)
         applySlotMetrics(to: &config)
 
         if animated {
@@ -244,9 +266,10 @@ class FloatingBinButton: UIButton {
         config.titleLineBreakMode = fitsSlot ? .byTruncatingTail : .byWordWrapping
     }
 
-    /// The number as shown: compact ("1.2K") in a slot, where width is short.
+    /// The number as shown: "99+" above 99 in a slot, where width is short.
     private func countText(_ count: Int) -> String {
-        fitsSlot ? count.compactFormatted : "\(count)"
+        guard fitsSlot else { return "\(count)" }
+        return count > Layout.slotCountCap ? "\(Layout.slotCountCap)+" : "\(count)"
     }
 
     /// The count or increment text, with the title in front while `showsTitle` is on.

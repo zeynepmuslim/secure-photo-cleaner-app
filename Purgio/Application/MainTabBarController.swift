@@ -200,6 +200,7 @@ class MainTabBarController: UITabBarController, UINavigationControllerDelegate {
                 || topVC is MonthFilterCardsViewController
                 || topVC is DeleteBinViewController
                 || topVC is SimilarPhotosViewController
+                || topVC is ProcessingLoadingViewController
         {
             shouldHide = false
         }

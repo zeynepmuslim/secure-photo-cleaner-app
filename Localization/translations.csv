@@ -557,3 +557,22 @@ similarHelp.targetBin;Bin;Çöp Kutusu;;;;
 similarHelp.targetStored;Stored;Depolanan;;;;
 similarHelp.photoAccessibility;Photo %1$d, %2$@;Fotoğraf %1$d, %2$@;;;;
 similarHelp.targetAccessibility;%1$@, %2$d;%1$@, %2$d;;;;
+processing.itemCountPhotos;;;%lld photo;%lld photos;%lld fotoğraf;%lld fotoğraf
+processing.itemCountVideos;;;%lld video;%lld videos;%lld video;%lld video
+processing.scopeEyesClosed;Looking for closed eyes in %1$@ in %2$@;%2$@ içindeki %1$@ arasında kapalı göz aranıyor;;;;
+processing.scopeLargest;Sorting by size in %1$@ in %2$@;%2$@ içindeki %1$@ boyuta göre sıralanıyor;;;;
+processing.checkedCount;%1$lld / %2$lld checked;%1$lld / %2$lld kontrol edildi;;;;
+processing.checkedCountPending;– / %lld checked;– / %lld kontrol edildi;;;;
+processing.legendFound;Found;Bulunan;;;;
+processing.legendOverThreshold;Over %@;%@ üzeri;;;;
+processing.legendChecked;Checked;Kontrol edilen;;;;
+processing.legendLeft;Left;Kalan;;;;
+processing.timeLeftSeconds;;;About %lld s left;About %lld s left;Yaklaşık %lld sn kaldı;Yaklaşık %lld sn kaldı
+processing.timeLeftMinutes;;;About %lld min left;About %lld min left;Yaklaşık %lld dk kaldı;Yaklaşık %lld dk kaldı
+processing.timeLeftSecondsAccessibility;;;about %lld second left;about %lld seconds left;yaklaşık %lld saniye kaldı;yaklaşık %lld saniye kaldı
+processing.timeLeftMinutesAccessibility;;;about %lld minute left;about %lld minutes left;yaklaşık %lld dakika kaldı;yaklaşık %lld dakika kaldı
+processing.gettingReadyPhotos;Getting photos ready;Fotoğraflar hazırlanıyor;;;;
+processing.gettingReadyVideos;Getting videos ready;Videolar hazırlanıyor;;;;
+processing.openingPhoto;Opening the first photo…;İlk fotoğraf açılıyor…;;;;
+processing.openingVideo;Opening the first video…;İlk video açılıyor…;;;;
+processing.meterAccessibility;%1$@, %2$lld of %3$lld checked, %4$lld found, %5$@;%1$@, %3$lld öğeden %2$lld tanesi kontrol edildi, %4$lld bulundu, %5$@;;;;

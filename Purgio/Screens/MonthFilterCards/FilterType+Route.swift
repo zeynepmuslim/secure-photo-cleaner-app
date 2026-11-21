@@ -181,7 +181,7 @@ extension MonthFilterStatusStore.FilterType {
             similar.navigationSource = navigationSource
             return similar
         case .largeFiles, .eyesClosed:
-            let config: ProcessingConfig = self == .largeFiles ? .largeFiles() : .eyesClosed()
+            let config: ProcessingConfig = self == .largeFiles ? .largeFiles(mediaType: mediaType) : .eyesClosed()
             let loading: ProcessingLoadingViewController
             if let yearAssets {
                 loading = ProcessingLoadingViewController(

@@ -58,6 +58,8 @@ enum GeneralConstants {
         static let buttonBottom: CGFloat = 24
         /// Clearance between the iPhone Duo fold region and the content on either side of it.
         static let foldGap: CGFloat = 12
+        /// Gap between a bottom row's primary button and the bin's slot beside it.
+        static let bottomRowGap: CGFloat = 10
         /// Bottom clearance of a sheet's full-width primary button (the onboarding guide's Got It!).
         static let sheetButtonBottom: CGFloat = 34
         /// The same clearance on short sheets: SE, the Duo's cover display, the table pose.
@@ -112,6 +114,14 @@ enum GeneralConstants {
     enum BinSlot {
         /// Phones and the Duo's cover display (the month hub, MonthReview's month-complete state).
         static let compactWidth: CGFloat = 96
+    }
+
+    /// Largest First's loading screen counts the items over these sizes ("Over 20 MB"). They are
+    /// not a filter: the deck still shows every item, largest first.
+    /// Decimal, as `Int64.formattedBytes()` shows them.
+    enum LargeFile {
+        static let photoHighlightBytes: Int64 = 20 * 1000 * 1000
+        static let videoHighlightBytes: Int64 = 150 * 1000 * 1000
     }
 
     enum BulkYear {

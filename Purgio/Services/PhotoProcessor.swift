@@ -10,6 +10,10 @@ import Photos
 struct ProcessingProgress {
     let current: Int
     let total: Int
+    /// What the filter has turned up so far: photos with closed eyes, or items over
+    /// `GeneralConstants.LargeFile`'s size for their media type. 0 for pipelines that don't
+    /// look for anything.
+    var found: Int = 0
 }
 
 enum ProcessingResult {
@@ -70,6 +74,8 @@ actor PhotoProcessor {
             Task {
                 var reviewAssets: [ReviewAsset] = []
                 let total = assets.count
+                // Only feeds the loading screen's count; the result is still every item by size
+                var overThresholdCount = 0
 
                 for (index, asset) in assets.enumerated() {
                     if Task.isCancelled {
@@ -80,9 +86,15 @@ actor PhotoProcessor {
 
                     let metadata = asset.resourceMetadata()
                     reviewAssets.append(ReviewAsset(asset: asset, isCloudOnly: metadata.isCloudOnly, fileSize: metadata.fileSize))
+                    let highlightBytes = asset.mediaType == .video
+                        ? GeneralConstants.LargeFile.videoHighlightBytes
+                        : GeneralConstants.LargeFile.photoHighlightBytes
+                    if metadata.fileSize > highlightBytes {
+                        overThresholdCount += 1
+                    }
 
                     if (index + 1) % progressInterval == 0 || index == total - 1 {
-                        continuation.yield(.progress(ProcessingProgress(current: index + 1, total: total)))
+                        continuation.yield(.progress(ProcessingProgress(current: index + 1, total: total, found: overThresholdCount)))
                     }
                 }
 
@@ -129,7 +141,7 @@ actor PhotoProcessor {
                     }
 
                     if (index + 1) % progressInterval == 0 || index == total - 1 {
-                        continuation.yield(.progress(ProcessingProgress(current: index + 1, total: total)))
+                        continuation.yield(.progress(ProcessingProgress(current: index + 1, total: total, found: blinkingAssets.count)))
                     }
                 }
 

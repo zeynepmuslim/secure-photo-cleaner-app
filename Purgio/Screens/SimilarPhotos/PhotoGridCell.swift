@@ -11,56 +11,20 @@ import UIKit
 final class PhotoGridCell: UICollectionViewCell {
     static let reuseIdentifier = "PhotoGridCell"
 
-    var currentImage: UIImage? { imageView.image }
+    var currentImage: UIImage? { thumbnailView.image }
 
-    private let imageView: UIImageView = {
-        let imageView = UIImageView()
-        imageView.contentMode = .scaleAspectFill
-        imageView.clipsToBounds = true
-        imageView.layer.cornerRadius = 8
-        imageView.layer.cornerCurve = .continuous
-        imageView.translatesAutoresizingMaskIntoConstraints = false
-        return imageView
-    }()
-
-    private let imageOverlayView: UIView = {
-        let view = UIView()
-        view.layer.cornerRadius = 8
-        view.layer.cornerCurve = .continuous
-        view.clipsToBounds = true
+    /// The photo with its mark's border, badge and grayscale (shared with the help sheet's sample)
+    private let thumbnailView: SimilarPhotoThumbnailView = {
+        let view = SimilarPhotoThumbnailView()
         view.translatesAutoresizingMaskIntoConstraints = false
-        view.isHidden = true
         return view
-    }()
-
-    private let stateOverlayContainer: UIView = {
-        let view = UIView()
-        view.layer.cornerRadius = 12
-        view.layer.cornerCurve = .continuous
-        view.clipsToBounds = true
-        view.translatesAutoresizingMaskIntoConstraints = false
-        view.isHidden = true
-        return view
-    }()
-
-    private let stateIconView: UIImageView = {
-        let imageView = UIImageView()
-        imageView.tintColor = .white
-        imageView.contentMode = .scaleAspectFit
-        imageView.translatesAutoresizingMaskIntoConstraints = false
-        return imageView
     }()
 
     private var imageRequestID: PHImageRequestID = PHInvalidImageRequestID
     private var currentAssetId: String?
-    private var originalImage: UIImage?
-    private var currentState: SimilarGroupCell.PhotoState?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        layer.cornerRadius = 8
-        layer.cornerCurve = .continuous
-        clipsToBounds = true
         setupUI()
         setupConstraint()
     }
@@ -70,33 +34,15 @@ final class PhotoGridCell: UICollectionViewCell {
     }
 
     private func setupUI() {
-        contentView.addSubview(imageView)
-        contentView.addSubview(imageOverlayView)
-        contentView.addSubview(stateOverlayContainer)
-        stateOverlayContainer.addSubview(stateIconView)
+        contentView.addSubview(thumbnailView)
     }
 
     private func setupConstraint() {
         NSLayoutConstraint.activate([
-            imageView.topAnchor.constraint(equalTo: contentView.topAnchor),
-            imageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            imageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            imageView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
-
-            imageOverlayView.topAnchor.constraint(equalTo: imageView.topAnchor),
-            imageOverlayView.leadingAnchor.constraint(equalTo: imageView.leadingAnchor),
-            imageOverlayView.trailingAnchor.constraint(equalTo: imageView.trailingAnchor),
-            imageOverlayView.bottomAnchor.constraint(equalTo: imageView.bottomAnchor),
-
-            stateOverlayContainer.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 4),
-            stateOverlayContainer.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -4),
-            stateOverlayContainer.widthAnchor.constraint(equalToConstant: 24),
-            stateOverlayContainer.heightAnchor.constraint(equalToConstant: 24),
-
-            stateIconView.centerXAnchor.constraint(equalTo: stateOverlayContainer.centerXAnchor),
-            stateIconView.centerYAnchor.constraint(equalTo: stateOverlayContainer.centerYAnchor),
-            stateIconView.widthAnchor.constraint(equalToConstant: 20),
-            stateIconView.heightAnchor.constraint(equalToConstant: 20)
+            thumbnailView.topAnchor.constraint(equalTo: contentView.topAnchor),
+            thumbnailView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            thumbnailView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            thumbnailView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
         ])
     }
 
@@ -107,59 +53,30 @@ final class PhotoGridCell: UICollectionViewCell {
         }
 
         currentAssetId = asset.localIdentifier
+        thumbnailView.grayscaleCacheKey = asset.localIdentifier
 
         imageRequestID = ImageCacheService.shared.loadImage(
             for: asset,
             quality: .thumbnail,
             screenSize: CGSize(width: 200, height: 200),
-            allowNetworkAccess: SettingsStore.shared.allowInternetAccess
+            allowNetworkAccess: SettingsStore.shared.allowInternetAccess,
+            traitCollection: traitCollection
         ) { [weak self] image, _, _ in
             guard let self, self.currentAssetId == asset.localIdentifier else { return }
-            self.originalImage = image
-            if self.currentState == .delete {
-                self.imageView.image = image.flatMap { GrayscaleConverter.apply(to: $0) } ?? image
-            } else {
-                self.imageView.image = image
-            }
+            self.thumbnailView.image = image
         }
     }
 
-    func applyState(_ state: SimilarGroupCell.PhotoState) {
-        currentState = state
-        contentView.layer.borderColor = state.borderColor.cgColor
-        contentView.layer.borderWidth = 3
-        contentView.layer.cornerRadius = 8
-        contentView.layer.cornerCurve = .continuous
-
-        stateOverlayContainer.isHidden = false
-        stateOverlayContainer.backgroundColor = state.overlayColor
-        stateIconView.image = UIImage(systemName: state.overlayIcon)
-
-        switch state {
-        case .delete:
-            imageView.image = originalImage.flatMap { GrayscaleConverter.apply(to: $0) } ?? originalImage
-            imageOverlayView.isHidden = true
-        case .store:
-            imageView.image = originalImage
-            imageOverlayView.backgroundColor = UIColor.yellow.withAlphaComponent(0.25)
-            imageOverlayView.isHidden = false
-        case .keep:
-            imageView.image = originalImage
-            imageOverlayView.isHidden = true
-        }
+    func applyState(_ state: SimilarPhotoState) {
+        thumbnailView.applyState(state)
     }
 
     func startShake() {
-        guard layer.animation(forKey: "wiggle") == nil else { return }
-        let animation = CAKeyframeAnimation(keyPath: "transform.rotation")
-        animation.values = [-0.03, 0.03, -0.03]
-        animation.duration = 0.25
-        animation.repeatCount = .infinity
-        layer.add(animation, forKey: "wiggle")
+        thumbnailView.startShake()
     }
 
     func stopShake() {
-        layer.removeAnimation(forKey: "wiggle")
+        thumbnailView.stopShake()
     }
 
     override func prepareForReuse() {
@@ -169,13 +86,9 @@ final class PhotoGridCell: UICollectionViewCell {
             imageRequestID = PHInvalidImageRequestID
         }
         currentAssetId = nil
-        imageView.image = nil
-        originalImage = nil
-        currentState = nil
-        contentView.layer.borderColor = UIColor.clear.cgColor
-        contentView.layer.borderWidth = 0
-        stateOverlayContainer.isHidden = true
-        imageOverlayView.isHidden = true
+        thumbnailView.grayscaleCacheKey = nil
+        thumbnailView.image = nil
+        thumbnailView.applyState(nil)
         stopShake()
     }
 
@@ -185,7 +98,7 @@ final class PhotoGridCell: UICollectionViewCell {
     import SwiftUI
 
     private struct PhotoGridCellPreview: UIViewRepresentable {
-        let state: SimilarGroupCell.PhotoState?
+        let state: SimilarPhotoState?
 
         func makeUIView(context: Context) -> PhotoGridCell {
             let cell = PhotoGridCell(frame: .zero)
@@ -218,8 +131,7 @@ final class PhotoGridCell: UICollectionViewCell {
                 )
                 text.draw(at: point, withAttributes: attrs)
             }
-            originalImage = placeholder
-            imageView.image = placeholder
+            thumbnailView.image = placeholder
         }
     }
 

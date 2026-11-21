@@ -7105,6 +7105,23 @@
         }
       }
     },
+    "similarGroup.binPart": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld to the bin"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld çöpe"
+          }
+        }
+      }
+    },
     "similarGroup.confirm": {
       "extractionState": "manual",
       "localizations": {
@@ -7118,6 +7135,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Onayla"
+          }
+        }
+      }
+    },
+    "similarGroup.confirmedState": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "confirmed"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "onaylandı"
           }
         }
       }
@@ -7156,6 +7190,40 @@
         }
       }
     },
+    "similarGroup.keptPart": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kept %lld"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld tutuldu"
+          }
+        }
+      }
+    },
+    "similarGroup.notConfirmed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "not confirmed"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "onaylanmadı"
+          }
+        }
+      }
+    },
     "similarGroup.setTitle": {
       "extractionState": "manual",
       "localizations": {
@@ -7186,6 +7254,81 @@
           "stringUnit": {
             "state": "translated",
             "value": "Depola"
+          }
+        }
+      }
+    },
+    "similarGroup.storeDone": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitti"
+          }
+        }
+      }
+    },
+    "similarGroup.storedPart": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld stored"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld depolandı"
+          }
+        }
+      }
+    },
+    "similarGroup.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld photo · %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld photos · %2$@"
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld fotoğraf · %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld fotoğraf · %2$@"
+                }
+              }
+            }
           }
         }
       }
@@ -7275,6 +7418,125 @@
         }
       }
     },
+    "similarHelp.hintConfirmLead": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Onayla"
+          }
+        }
+      }
+    },
+    "similarHelp.hintConfirmText": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sends each one where it belongs"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "her birini ait olduğu yere gönderir"
+          }
+        }
+      }
+    },
+    "similarHelp.hintDone": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tamamlandı"
+          }
+        }
+      }
+    },
+    "similarHelp.hintStoreLead": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Store, then photos"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Önce Depola'ya, sonra fotoğraflara dokun"
+          }
+        }
+      }
+    },
+    "similarHelp.hintStoreText": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "to save them to an album"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ve onları bir albüme kaydet"
+          }
+        }
+      }
+    },
+    "similarHelp.hintTapLead": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a photo"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bir fotoğrafa dokun"
+          }
+        }
+      }
+    },
+    "similarHelp.hintTapText": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "to switch keep ↔ delete"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ve tut ↔ sil arasında geçiş yap"
+          }
+        }
+      }
+    },
     "similarHelp.keep": {
       "extractionState": "manual",
       "localizations": {
@@ -7305,6 +7567,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Orijinal yerinde bırak"
+          }
+        }
+      }
+    },
+    "similarHelp.photoAccessibility": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photo %1$d, %2$@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğraf %1$d, %2$@"
           }
         }
       }
@@ -7360,6 +7639,23 @@
         }
       }
     },
+    "similarHelp.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a photo to switch it, then Confirm."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Değiştirmek için bir fotoğrafa dokun, sonra Onayla'ya bas."
+          }
+        }
+      }
+    },
     "similarHelp.tapToToggle": {
       "extractionState": "manual",
       "localizations": {
@@ -7373,6 +7669,190 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tut  / Sil arasında geçiş yapmak için dokun"
+          }
+        }
+      }
+    },
+    "similarHelp.targetAccessibility": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$d"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$d"
+          }
+        }
+      }
+    },
+    "similarHelp.targetBin": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bin"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çöp Kutusu"
+          }
+        }
+      }
+    },
+    "similarHelp.targetPhotos": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photos"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğraflar"
+          }
+        }
+      }
+    },
+    "similarHelp.targetStored": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stored"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Depolanan"
+          }
+        }
+      }
+    },
+    "similarHelp.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try it on this set"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu sette dene"
+          }
+        }
+      }
+    },
+    "similarPhotos.allCheckedMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld set in %2$@. ~%3$@ waits in the bin until you empty it."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld sets in %2$@. ~%3$@ waits in the bin until you empty it."
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%2$@ içinde %1$lld set. ~%3$@ sen boşaltana kadar çöpte bekliyor."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%2$@ içinde %1$lld set. ~%3$@ sen boşaltana kadar çöpte bekliyor."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "similarPhotos.allCheckedMessageLibrary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld set in your library. ~%2$@ waits in the bin until you empty it."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld sets in your library. ~%2$@ waits in the bin until you empty it."
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Kütüphanende %1$lld set. ~%2$@ sen boşaltana kadar çöpte bekliyor."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Kütüphanende %1$lld set. ~%2$@ sen boşaltana kadar çöpte bekliyor."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "similarPhotos.allCheckedTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every set is checked"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tüm setler kontrol edildi"
           }
         }
       }
@@ -7407,23 +7887,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zaten İşlendi"
-          }
-        }
-      }
-    },
-    "similarPhotos.batchBinTitle": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Confirm All Groups"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tüm Grupları Onayla"
           }
         }
       }
@@ -7516,6 +7979,47 @@
           "stringUnit": {
             "state": "translated",
             "value": "Onayla"
+          }
+        }
+      }
+    },
+    "similarPhotos.confirmAll": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Confirm all · %lld set"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Confirm all · %lld sets"
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Tümünü onayla · %lld set"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Tümünü onayla · %lld set"
+                }
+              }
+            }
           }
         }
       }
@@ -7881,6 +8385,81 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "%lld fotoğrafı depola"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "similarPhotos.summaryDone": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld done"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld bitti"
+          }
+        }
+      }
+    },
+    "similarPhotos.summaryFree": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "~%@ to free"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "~%@ boşalacak"
+          }
+        }
+      }
+    },
+    "similarPhotos.summarySets": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld set to check"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld sets to check"
+                }
+              }
+            }
+          }
+        },
+        "tr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld set kontrol edilecek"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld set kontrol edilecek"
                 }
               }
             }

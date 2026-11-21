@@ -6,94 +6,174 @@
 //
 
 import Photos
-import SwiftUI
 import UIKit
+
+// MARK: - Strings
 
 private enum Strings {
     static let scanningMessage = NSLocalizedString("similarPhotos.scanningMessage", comment: "Scanning for similar photos progress message")
     static let similarPhotosTitle = NSLocalizedString("similarPhotos.title", comment: "Similar photos screen title")
-    static let cancel = CommonStrings.cancel
-    static let noneTitle = NSLocalizedString("similarPhotos.noneTitle", comment: "No similar photos found: every photo is one of a kind")
-    static let noneMessageLibraryUncounted = NSLocalizedString("similarPhotos.noneMessageLibraryUncounted", comment: "No similar photos found in the whole library, count unknown")
-    private static func comparedCount(_ count: Int) -> String {
-        String.localizedStringWithFormat(
-            NSLocalizedString("similarPhotos.comparedCount", comment: "How many photos a scan compared, e.g. '92 photos'"),
-            count)
-    }
-    static func noneMessage(count: Int, month: String) -> String {
-        String(
-            format: NSLocalizedString("similarPhotos.noneMessage", comment: "No similar photos found: compared count ('92 photos'), month"),
-            comparedCount(count), month)
-    }
-    static func noneMessageLibrary(count: Int) -> String {
-        String(
-            format: NSLocalizedString("similarPhotos.noneMessageLibrary", comment: "No similar photos found in the whole library: compared count ('92 photos')"),
-            comparedCount(count))
-    }
-    static let scanAgain = NSLocalizedString("similarPhotos.scanAgain", comment: "Scan again button")
-    static let tryAnotherMonth = NSLocalizedString("similarPhotos.tryAnotherMonth", comment: "Try another month button")
     static let photosAccessDenied = NSLocalizedString("similarPhotos.photosAccessDenied", comment: "Photos access denied message")
-    static let alreadyProcessedTitle = NSLocalizedString("similarPhotos.alreadyProcessedTitle", comment: "Already processed alert title")
-    static let alreadyProcessedMessage = NSLocalizedString("similarPhotos.alreadyProcessedMessage", comment: "Already processed alert message")
-    static let confirmTitle = NSLocalizedString("similarPhotos.confirmTitle", comment: "Confirm actions alert title")
-    static let confirm = NSLocalizedString("similarPhotos.confirm", comment: "Confirm button")
-    static let ok = CommonStrings.ok
     static func similarPhotosNavTitle(month: String) -> String {
         String(format: NSLocalizedString("similarPhotos.navTitle", comment: "Similar photos nav title with month"), month)
     }
-    static func confirmMessage(keepCount: Int, deleteCount: Int, storeCount: Int) -> String {
-        var parts: [String] = []
-        if keepCount > 0 {
-            parts.append(String.localizedStringWithFormat(NSLocalizedString("similarPhotos.keepCount", comment: "Keep photo count, e.g. 'Keep 3 photos'"), keepCount))
-        }
-        if deleteCount > 0 {
-            parts.append(String.localizedStringWithFormat(NSLocalizedString("similarPhotos.deleteCount", comment: "Delete photo count, e.g. 'Delete 2 photos'"), deleteCount))
-        }
-        if storeCount > 0 {
-            parts.append(String.localizedStringWithFormat(NSLocalizedString("similarPhotos.storeCount", comment: "Store photo count, e.g. 'Store 1 photo'"), storeCount))
-        }
-        return parts.joined(separator: "\n")
-    }
-    static let batchConfirmTitle = NSLocalizedString("similarPhotos.batchConfirmTitle", comment: "Confirm all groups title")
-    static let batchConfirmAction = NSLocalizedString("similarPhotos.batchConfirmAction", comment: "Add to bin button")
-    static let noUnprocessedGroups = NSLocalizedString("similarPhotos.noUnprocessedGroups", comment: "All groups processed message")
-    static let batchBinTitle = NSLocalizedString("similarPhotos.batchBinTitle", comment: "Batch confirm title")
-    static func batchConfirmMessage(keepCount: Int, deleteCount: Int, storeCount: Int, groupCount: Int) -> String {
-        var parts: [String] = []
-        if keepCount > 0 {
-            parts.append(String.localizedStringWithFormat(NSLocalizedString("similarPhotos.keepCount", comment: "Keep photo count"), keepCount))
-        }
-        if deleteCount > 0 {
-            parts.append(String.localizedStringWithFormat(NSLocalizedString("similarPhotos.deleteCount", comment: "Delete photo count"), deleteCount))
-        }
-        if storeCount > 0 {
-            parts.append(String.localizedStringWithFormat(NSLocalizedString("similarPhotos.storeCount", comment: "Store photo count"), storeCount))
-        }
-        let fromGroups = String.localizedStringWithFormat(NSLocalizedString("similarPhotos.fromGroups", comment: "From group count, e.g. 'From 3 groups'"), groupCount)
-        return parts.joined(separator: "\n") + "\n\n" + fromGroups
-    }
 }
 
+/// The similar sets of a month, a year session or the whole library (board "Similar photos · A,
+/// refined list, every size"): a self-sizing list of `SimilarSetCardView`s over a bottom row
+/// with "Confirm all" and the bin's slot. The Duo's inner display splits it at the fold
+/// (`+Fold.swift`); everything confirmed ends in the finished state (`+EndStates.swift`).
 class SimilarPhotosViewController: UIViewController {
 
-    private struct UndoAction {
+    struct UndoAction {
         let groupIndex: Int
         let deletedAssets: [PHAsset]
         let keptAssets: [PHAsset]
         let storedAssets: [PHAsset]
     }
 
-    private lazy var tableView: UITableView = {
-        let tableView = UITableView()
-        tableView.separatorStyle = .none
-        tableView.backgroundColor = .clear
-        tableView.register(SimilarGroupCell.self, forCellReuseIdentifier: SimilarGroupCell.reuseIdentifier)
-        tableView.delegate = self
-        tableView.dataSource = self
-        tableView.contentInsetAdjustmentBehavior = .automatic
-        tableView.useSoftTopEdgeEffect()
-        tableView.translatesAutoresizingMaskIntoConstraints = false
-        return tableView
+    enum Section: Hashable {
+        case summary
+        case sets
+    }
+
+    enum Item: Hashable {
+        case summary
+        /// A set, by its signature
+        case set(String)
+    }
+
+    /// How the list is arranged around the Duo's fold
+    enum SplitLayout {
+        /// One column: phones, the cover display, Split View
+        case single
+        /// Inner display held sideways: two columns, one on each side of the fold
+        case sideways
+        /// Inner display upright: a spotlight set on the raised half, the list on the base
+        case upright
+    }
+
+    /// What the list's layout is built from; the layout is invalidated when it changes
+    struct ListMetrics: Equatable {
+        var layout: SplitLayout = .single
+        var firstColumnWidth: CGFloat = 0
+        var secondColumnWidth: CGFloat = 0
+        var columnGap: CGFloat = 0
+        var spacing: CGFloat = Layout.cardSpacing
+    }
+
+    enum Layout {
+        static let cardSpacing: CGFloat = 10
+        /// Short columns: iPhone SE, the Duo's cover display
+        static let compactCardSpacing: CGFloat = 8
+        static let shortColumnHeight: CGFloat = 700
+        static let listToBottomRow: CGFloat = 12
+        /// How far above the bottom row the list's blur reaches
+        static let blurBandHeight: CGFloat = 28
+        static let listTopInset: CGFloat = 8
+        static let estimatedCardHeight: CGFloat = 250
+        static let estimatedSummaryHeight: CGFloat = 24
+        static let springDuration: TimeInterval = 0.4
+        static let springDamping: CGFloat = 0.75
+        static let springVelocity: CGFloat = 0.8
+        static let spotlightDissolve: TimeInterval = 0.25
+        /// Vertical scroll that ends a set's store mode
+        static let storeModeScrollLimit: CGFloat = 30
+    }
+
+    // MARK: - Views
+
+    /// Everything of the list: hidden while scanning and under the empty and finished states
+    let listContentView: UIView = {
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.isHidden = true
+        return view
+    }()
+
+    lazy var collectionView: UICollectionView = {
+        let collectionView = UICollectionView(frame: .zero, collectionViewLayout: makeListLayout())
+        collectionView.backgroundColor = .clear
+        collectionView.alwaysBounceVertical = true
+        collectionView.contentInsetAdjustmentBehavior = .automatic
+        collectionView.register(SimilarSetCell.self, forCellWithReuseIdentifier: SimilarSetCell.reuseIdentifier)
+        collectionView.register(
+            SimilarSummaryCell.self, forCellWithReuseIdentifier: SimilarSummaryCell.reuseIdentifier)
+        collectionView.delegate = self
+        collectionView.useSoftTopEdgeEffect()
+        collectionView.translatesAutoresizingMaskIntoConstraints = false
+        return collectionView
+    }()
+
+    var dataSource: UICollectionViewDiffableDataSource<Section, Item>?
+
+    /// Cards scrolling under the bottom row blur progressively into the background
+    let listBottomBlurView: ProgressiveBlurView = {
+        let view = ProgressiveBlurView()
+        view.edge = .bottom
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
+
+    /// Rests on Home's baseline; the row inside starts at the fold while held sideways
+    let bottomRowContainer: UIView = {
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
+
+    let bottomRowStack: UIStackView = {
+        let stack = UIStackView()
+        stack.axis = .horizontal
+        stack.spacing = Layout.cardSpacing
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        return stack
+    }()
+
+    lazy var confirmAllButton: DynamicGlassButton = {
+        let button = DynamicGlassButton()
+        button.addTarget(self, action: #selector(confirmAllTapped), for: .touchUpInside)
+        return button
+    }()
+
+    /// Where the global bin sits (`setBinButtonPlacement(.slot)`)
+    let binSlotView: UIView = {
+        let view = UIView()
+        view.isUserInteractionEnabled = false
+        view.isAccessibilityElement = false
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
+
+    /// Upright inner display: the summary card and the spotlight set, above the fold
+    let raisedContainer: UIView = {
+        let view = UIView()
+        view.isHidden = true
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
+
+    let summaryCardView: UIView = {
+        let view = UIView()
+        view.backgroundColor = .cardBackground
+        view.layer.cornerRadius = GeneralConstants.CornerRadius.card
+        view.layer.cornerCurve = .continuous
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
+
+    let raisedSummaryView: SimilarSummaryView = {
+        let view = SimilarSummaryView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
+
+    let spotlightCardView: SimilarSetCardView = {
+        let view = SimilarSetCardView()
+        view.fillsHeight = true
+        view.isHidden = true
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
     }()
 
     private let activityIndicator: UIActivityIndicatorView = {
@@ -116,35 +196,73 @@ class SimilarPhotosViewController: UIViewController {
         return label
     }()
 
-    private let emptyStateView: EmptyStateView = {
+    let emptyStateView: EmptyStateView = {
         let view = EmptyStateView()
         view.translatesAutoresizingMaskIntoConstraints = false
         view.isHidden = true
         return view
     }()
-    private var isShowingEmptyState = false
+    var isShowingEmptyState = false
+    /// The finished state keeps the bin in a slot beside its primary; "none found" hides it
+    var endStateUsesBinSlot = false
 
-    private let photoLibraryService = PhotoLibraryService.shared
+    // MARK: - Layout state
 
-    private var similarGroups: [SimilarAssetGroup] = []
-    private var assets: [PHAsset]?
-    private let monthTitle: String?
-    private let monthKey: String?
-    private let mediaType: PHAssetMediaType
+    var collectionEdges: DuoEdgeConstraints?
+    var bottomRowEdges: DuoEdgeConstraints?
+    var singleConstraints: [NSLayoutConstraint] = []
+    var sidewaysConstraints: [NSLayoutConstraint] = []
+    var uprightConstraints: [NSLayoutConstraint] = []
+    /// Sideways: where the bottom row starts
+    var bottomRowStartConstraint: NSLayoutConstraint?
+    /// Upright: where the raised half ends and the base's list starts
+    var raisedBottomConstraint: NSLayoutConstraint?
+    var baseTopConstraint: NSLayoutConstraint?
+    var bottomRowHeightConstraint: NSLayoutConstraint?
+    var binSlotWidthConstraint: NSLayoutConstraint?
 
-    private var binController: FloatingBinButtonController? {
+    var splitLayout: SplitLayout = .single
+    var hasAppliedSplitLayout = false
+    var isFoldActive = false
+    var listMetrics = ListMetrics()
+    var isShortColumn = false
+    var lastSentBinSlot: CGRect?
+    var binSlotCount = 0
+    /// The set the upright spotlight shows
+    var spotlightIndex: Int?
+
+    // MARK: - Data
+
+    let photoLibraryService = PhotoLibraryService.shared
+
+    var similarGroups: [SimilarAssetGroup] = []
+    /// Each set's signature (its sorted asset ids), by index; the list's item ids
+    var signatures: [String] = []
+    var indexBySignature: [String: Int] = [:]
+    var assets: [PHAsset]?
+    let monthTitle: String?
+    let monthKey: String?
+    let mediaType: PHAssetMediaType
+
+    var binController: FloatingBinButtonController? {
         tabBarController as? FloatingBinButtonController
     }
 
-    private var processedGroupIndexes = Set<Int>()
+    var processedGroupIndexes = Set<Int>()
+    var processedActions: [Int: UndoAction] = [:]
+    /// Each photo's mark, by set index and asset id: the one record the cards are drawn from
+    var setStates: [Int: [String: SimilarPhotoState]] = [:]
+    /// Each photo's bytes, by set signature and asset id; filled once after the scan, off main
+    var sizesBySignature: [String: [String: Int64]] = [:]
+    /// The sets confirmed since this screen opened: the finished state's totals and "Undo all"
+    var confirmedThisVisit = Set<Int>()
 
-    private var processedActions: [Int: UndoAction] = [:]
-
-    private var groupAssetStates: [Int: [String: SimilarGroupCell.PhotoState]] = [:]
-
+    private var sizeTask: Task<Void, Never>?
     private var scrollStartOffset: CGFloat = 0
 
-    private var lastBatchConfirmedIndices: [Int] = []
+    var unconfirmedIndices: [Int] {
+        similarGroups.indices.filter { !processedGroupIndexes.contains($0) }
+    }
 
     private var compactMonthString: String? {
         guard let key = monthKey else { return nil }
@@ -152,6 +270,8 @@ class SimilarPhotosViewController: UIViewController {
     }
 
     var navigationSource: NavigationSource = .manual
+
+    // MARK: - Init
 
     init(
         assets: [PHAsset]? = nil, monthTitle: String? = nil, monthKey: String? = nil,
@@ -168,11 +288,14 @@ class SimilarPhotosViewController: UIViewController {
         fatalError("init(coder:) has not been implemented")
     }
 
+    // MARK: - Lifecycle
+
     override func viewDidLoad() {
         super.viewDidLoad()
 
         setupUI()
         setupConstraint()
+        setupDataSource()
         setupNavigationBar()
 
         if let compactMonth = compactMonthString {
@@ -181,346 +304,131 @@ class SimilarPhotosViewController: UIViewController {
             title = Strings.similarPhotosTitle
         }
 
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(handleBinCountChange), name: .deleteBinCountDidChange, object: nil)
+
+        if #available(iOS 17.0, *) {
+            registerForTraitChanges([UITraitUserInterfaceStyle.self]) {
+                (self: SimilarPhotosViewController, _: UITraitCollection) in
+                self.applyAppearanceColors()
+            }
+        }
+
+        applyConfirmAllButton()
         showSkeletonLoading()
-        tableView.isHidden = true
     }
 
-    func didTapUndo(cell: SimilarGroupCell) {
-        guard let indexPath = tableView.indexPath(for: cell),
-            let action = processedActions[indexPath.row]
-        else { return }
-
-        let group = similarGroups[indexPath.row]
-        let signature = getSignature(for: group)
-
-        // Revert Deletions
-        DeleteBinStore.shared.removeAssetIds(action.deletedAssets.map(\.localIdentifier))
-
-        // Revert deletion stats
-        for asset in action.deletedAssets {
-            let resources = PHAssetResource.assetResources(for: asset)
-            let bytes = resources.first?.value(forKey: "fileSize") as? Int64 ?? 0
-            StatsStore.shared.undoDeletion(for: asset.mediaType, bytes: bytes)
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        // iOS 17+ uses registerForTraitChanges
+        if #available(iOS 17.0, *) { return }
+        if traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
+            applyAppearanceColors()
         }
-
-        // Revert Kept
-        KeptAssetsStore.shared.removeAssetIds(action.keptAssets.map(\.localIdentifier))
-
-        // Revert Stored
-        WillBeStoredStore.shared.removeAssetIds(action.storedAssets.map(\.localIdentifier))
-        for asset in action.storedAssets {
-            Task {
-                _ = await photoLibraryService.removeAssetFromWillBeStoredAlbum(asset: asset)
-            }
-        }
-
-        // Revert review stats for all assets in the group
-        for asset in action.deletedAssets + action.keptAssets + action.storedAssets {
-            StatsStore.shared.undoReview(for: asset.mediaType)
-        }
-
-        // Revert Processed State
-        processedGroupIndexes.remove(action.groupIndex)
-        processedActions.removeValue(forKey: action.groupIndex)
-
-        // Remove from Persistence
-        SimilarUndoStore.shared.removeAction(forGroupSignature: signature)
-
-        // Revert Progress
-        let totalReverted = action.deletedAssets.count + action.keptAssets.count + action.storedAssets.count
-        revertProgress(
-            deletedCount: action.deletedAssets.count,
-            keptCount: action.keptAssets.count,
-            storedCount: action.storedAssets.count,
-            totalProcessedCount: totalReverted
-        )
-
-        HapticFeedbackManager.shared.impact(intensity: .medium)
-
-        cell.configureForProcessedState(isProcessed: false)
-
-        lastBatchConfirmedIndices.removeAll { $0 == indexPath.row }
-        configureGlobalBinButton()
     }
 
-    func didTapConfirm(cell: SimilarGroupCell) {
-        guard let indexPath = tableView.indexPath(for: cell) else { return }
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        let railEdge = DuoLayout.railEdge(tabBarController, in: view)
+        collectionEdges?.update(railEdge: railEdge)
+        bottomRowEdges?.update(railEdge: railEdge)
+        emptyStateView.update(railEdge: railEdge)
 
-        if processedGroupIndexes.contains(indexPath.row) {
-            HapticFeedbackManager.shared.warning()
-            showAlert(title: Strings.alreadyProcessedTitle, message: Strings.alreadyProcessedMessage)
+        updateShortColumn()
+        updateFoldSplit()
+        updateListInsets()
+        updateBinSlot()
+        sendEndStateBinSlotIfNeeded()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        // Every push and pop resets the bin's placement and lets it show again
+        lastSentBinSlot = nil
+        if isShowingEmptyState {
+            applyEndStateBinButton()
             return
         }
 
-        let (keep, delete, store) = cell.getAssetsByState()
-
-        HapticFeedbackManager.shared.impact(intensity: .light)
-        processGroup(at: indexPath.row, keeping: keep, deleting: delete, storing: store)
-        configureGlobalBinButton()
-    }
-
-    private func processGroup(at index: Int, keeping: [PHAsset], deleting: [PHAsset], storing: [PHAsset]) {
-        guard index < similarGroups.count else { return }
-
-        let group = similarGroups[index]
-        let signature = getSignature(for: group)
-
-        DeleteBinStore.shared.addAssetIds(deleting.map(\.localIdentifier))
-
-        // Record deletion stats for each asset marked for deletion
-        for asset in deleting {
-            let resources = PHAssetResource.assetResources(for: asset)
-            let bytes = resources.first?.value(forKey: "fileSize") as? Int64 ?? 0
-            StatsStore.shared.recordDeletion(for: asset.mediaType, bytes: bytes)
-        }
-
-        // Record review stats for all assets in the group (keep + delete + store = all reviewed)
-        for asset in keeping + deleting + storing {
-            StatsStore.shared.recordReview(for: asset.mediaType)
-        }
-
-        KeptAssetsStore.shared.addAssetIds(keeping.map(\.localIdentifier))
-
-        WillBeStoredStore.shared.addAssetIds(storing.map(\.localIdentifier))
-        for asset in storing {
-            Task {
-                _ = await photoLibraryService.addAssetToWillBeStoredAlbum(asset: asset)
-            }
-        }
-
-        // Mark as processed
-        processedGroupIndexes.insert(index)
-
-        // Update Progress
-        updateProgress(
-            deletedCount: deleting.count,
-            keptCount: keeping.count,
-            storedCount: storing.count,
-            totalProcessedCount: group.assets.count
-        )
-
-        // Record Action for Undo
-        let action = UndoAction(
-            groupIndex: index,
-            deletedAssets: deleting,
-            keptAssets: keeping,
-            storedAssets: storing
-        )
-        processedActions[index] = action
-
-        // Persist Action
-        let persisted = PersistedUndoAction(
-            groupSignature: signature,
-            deletedIds: deleting.map { $0.localIdentifier },
-            keptIds: keeping.map { $0.localIdentifier },
-            storedIds: storing.map { $0.localIdentifier },
-            timestamp: Date()
-        )
-        SimilarUndoStore.shared.saveAction(persisted)
-
-        HapticFeedbackManager.shared.success()
-
-        if let cell = tableView.cellForRow(at: IndexPath(row: index, section: 0)) as? SimilarGroupCell {
-            cell.configureForProcessedState(isProcessed: true)
-        }
-    }
-
-    private func configureGlobalBinButton() {
-        // Show "Undo All" if there are still batch-confirmed groups
-        if !lastBatchConfirmedIndices.isEmpty {
-            binController?.configureWideBinButton(
-                title: NSLocalizedString("similarPhotos.undoAll", comment: "Undo all button"),
-                monthKey: monthKey,
-                monthTitle: monthTitle,
-                tapHandler: { [weak self] in self?.handleBatchUndo() }
-            )
-            binController?.showBinButton()
-            return
-        }
-
-        let unprocessedIndices = similarGroups.indices.filter { !processedGroupIndexes.contains($0) }
-        let deleteCount = unprocessedIndices.reduce(0) { sum, index in
-            let states = groupAssetStates[index] ?? [:]
-            return sum + states.values.filter { $0 == .delete }.count
-        }
-
-        if deleteCount > 0 {
-            binController?.configureWideBinButton(
-                title: Strings.batchBinTitle,
-                monthKey: monthKey,
-                monthTitle: monthTitle,
-                tapHandler: { [weak self] in self?.handleBatchConfirm() }
-            )
-            binController?.showBinButton()
-        } else {
-            // All processed — revert to default. navigate to DeleteBinVC
-            binController?.configureBinButton(
-                mode: .count(DeleteBinStore.shared.count),
-                monthKey: monthKey,
-                monthTitle: monthTitle,
-                tapHandler: nil
-            )
-        }
-    }
-
-    private func handleBatchConfirm() {
-        let unprocessedIndices = similarGroups.indices.filter { !processedGroupIndexes.contains($0) }
-
-        guard !unprocessedIndices.isEmpty else {
-            showAlert(title: Strings.alreadyProcessedTitle, message: Strings.noUnprocessedGroups)
-            return
-        }
-
-        var totalKeep = 0
-        var totalDelete = 0
-        var totalStore = 0
-        for index in unprocessedIndices {
-            let states = groupAssetStates[index] ?? [:]
-            for state in states.values {
-                switch state {
-                case .keep: totalKeep += 1
-                case .delete: totalDelete += 1
-                case .store: totalStore += 1
-                }
-            }
-        }
-
-        let alert = UIAlertController(
-            title: Strings.batchConfirmTitle,
-            message: Strings.batchConfirmMessage(
-                keepCount: totalKeep, deleteCount: totalDelete,
-                storeCount: totalStore, groupCount: unprocessedIndices.count),
-            preferredStyle: .alert
-        )
-        alert.addAction(
-            UIAlertAction(title: Strings.cancel, style: .cancel) { _ in
-                HapticFeedbackManager.shared.impact(intensity: .light)
-            })
-        alert.addAction(
-            UIAlertAction(title: Strings.batchConfirmAction, style: .destructive) { [weak self] _ in
-                self?.executeBatchConfirm()
-            })
-        present(alert, animated: true)
-    }
-
-    private func executeBatchConfirm() {
-        var batchIndices: [Int] = []
-        for (index, group) in similarGroups.enumerated() {
-            guard !processedGroupIndexes.contains(index) else { continue }
-
-            let states = groupAssetStates[index] ?? [:]
-            var keeping: [PHAsset] = []
-            var deleting: [PHAsset] = []
-            var storing: [PHAsset] = []
-
-            for asset in group.assets {
-                switch states[asset.localIdentifier] ?? .delete {
-                case .keep: keeping.append(asset)
-                case .delete: deleting.append(asset)
-                case .store: storing.append(asset)
-                }
-            }
-
-            processGroup(at: index, keeping: keeping, deleting: deleting, storing: storing)
-            batchIndices.append(index)
-        }
-
-        lastBatchConfirmedIndices = batchIndices
-        tableView.reloadData()
-
-        if !batchIndices.isEmpty {
-            binController?.configureWideBinButton(
-                title: NSLocalizedString("similarPhotos.undoAll", comment: "Undo all button"),
-                monthKey: monthKey,
-                monthTitle: monthTitle,
-                tapHandler: { [weak self] in self?.handleBatchUndo() }
-            )
-        } else {
+        if !similarGroups.isEmpty {
             configureGlobalBinButton()
+            updateBinSlot()
+            if sizesBySignature.isEmpty { loadSizes() }
+            return
+        }
+
+        if assets != nil {
+            runScan()
+        } else if monthKey != nil {
+            fetchAssetsForScan()
         }
     }
 
-    private func handleBatchUndo() {
-        let indices = lastBatchConfirmedIndices
-        guard !indices.isEmpty else { return }
-
-        var allDeletedIds: [String] = []
-        var allKeptIds: [String] = []
-        var allStoredAssets: [PHAsset] = []
-
-        for index in indices {
-            guard let action = processedActions[index] else { continue }
-            let group = similarGroups[index]
-            let signature = getSignature(for: group)
-
-            allDeletedIds.append(contentsOf: action.deletedAssets.map(\.localIdentifier))
-            allKeptIds.append(contentsOf: action.keptAssets.map(\.localIdentifier))
-            allStoredAssets.append(contentsOf: action.storedAssets)
-
-            for asset in action.deletedAssets {
-                let resources = PHAssetResource.assetResources(for: asset)
-                let bytes = resources.first?.value(forKey: "fileSize") as? Int64 ?? 0
-                StatsStore.shared.undoDeletion(for: asset.mediaType, bytes: bytes)
-            }
-
-            for asset in action.deletedAssets + action.keptAssets + action.storedAssets {
-                StatsStore.shared.undoReview(for: asset.mediaType)
-            }
-
-            revertProgress(
-                deletedCount: action.deletedAssets.count,
-                keptCount: action.keptAssets.count,
-                storedCount: action.storedAssets.count,
-                totalProcessedCount: action.deletedAssets.count + action.keptAssets.count + action.storedAssets.count
-            )
-
-            SimilarUndoStore.shared.removeAction(forGroupSignature: signature)
-            processedGroupIndexes.remove(index)
-            processedActions.removeValue(forKey: index)
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        exitStoreModeOnAllCards(except: nil)
+        sizeTask?.cancel()
+        sizeTask = nil
+        if lastSentBinSlot != nil {
+            lastSentBinSlot = nil
+            binController?.setBinButtonPlacement(.standard)
         }
-
-        DeleteBinStore.shared.removeAssetIds(allDeletedIds)
-        KeptAssetsStore.shared.removeAssetIds(allKeptIds)
-        WillBeStoredStore.shared.removeAssetIds(allStoredAssets.map(\.localIdentifier))
-        for asset in allStoredAssets {
-            Task { _ = await photoLibraryService.removeAssetFromWillBeStoredAlbum(asset: asset) }
+        if isMovingFromParent {
+            binController?.hideBinButton()
         }
-
-        lastBatchConfirmedIndices = []
-
-        HapticFeedbackManager.shared.impact(intensity: .medium)
-        tableView.reloadData()
-        configureGlobalBinButton()
     }
 
-    private func revertProgress(deletedCount: Int, keptCount: Int, storedCount: Int, totalProcessedCount: Int) {
-        guard let monthKey = monthKey else { return }
-
-        let similarKey = "\(monthKey)_similar"
-        let currentSimilar = ReviewProgressStore.shared.getProgress(forMonthKey: similarKey, mediaType: mediaType)
-        let currentMain = ReviewProgressStore.shared.getProgress(forMonthKey: monthKey, mediaType: mediaType)
-
-        // Batch: single persist for both keys
-        ReviewProgressStore.shared.batchSave([
-            (monthKey: similarKey, mediaType: mediaType,
-             currentIndex: max(0, currentSimilar.currentIndex - totalProcessedCount),
-             reviewedCount: max(0, currentSimilar.reviewedCount - totalProcessedCount),
-             deletedCount: max(0, currentSimilar.deletedCount - deletedCount),
-             keptCount: max(0, currentSimilar.keptCount - keptCount),
-             storedCount: max(0, currentSimilar.storedCount - storedCount),
-             originalTotalCount: currentSimilar.originalTotalCount),
-            (monthKey: monthKey, mediaType: mediaType,
-             currentIndex: currentMain.currentIndex,
-             reviewedCount: max(0, currentMain.reviewedCount - totalProcessedCount),
-             deletedCount: max(0, currentMain.deletedCount - deletedCount),
-             keptCount: max(0, currentMain.keptCount - keptCount),
-             storedCount: max(0, currentMain.storedCount - storedCount),
-             originalTotalCount: currentMain.originalTotalCount)
-        ])
-    }
+    // MARK: - Setup
 
     private func setupNavigationBar() {
         navigationItem.rightBarButtonItem = .helpItem(target: self, action: #selector(handleHelpTap))
+    }
+
+    private func setupUI() {
+        view.backgroundColor = .mainBackground
+
+        view.addSubview(listContentView)
+        listContentView.addSubview(collectionView)
+        listContentView.addSubview(raisedContainer)
+        raisedContainer.addSubview(summaryCardView)
+        summaryCardView.addSubview(raisedSummaryView)
+        raisedContainer.addSubview(spotlightCardView)
+        listContentView.addSubview(listBottomBlurView)
+        listContentView.addSubview(bottomRowContainer)
+        bottomRowContainer.addSubview(bottomRowStack)
+        bottomRowStack.addArrangedSubview(confirmAllButton)
+        bottomRowStack.addArrangedSubview(binSlotView)
+
+        view.addSubview(activityIndicator)
+        view.addSubview(statusLabel)
+        view.addSubview(emptyStateView)
+    }
+
+    private func setupConstraint() {
+        NSLayoutConstraint.activate([
+            listContentView.topAnchor.constraint(equalTo: view.topAnchor),
+            listContentView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            listContentView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            listContentView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            // Sides from the safe area; top and bottom from the view, so its bottom row can
+            // rest on Home's rail baseline
+            emptyStateView.topAnchor.constraint(equalTo: view.topAnchor),
+            emptyStateView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            emptyStateView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            emptyStateView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -50),
+
+            statusLabel.topAnchor.constraint(equalTo: activityIndicator.bottomAnchor, constant: 20),
+            statusLabel.leadingAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 2 * GeneralConstants.EdgePadding.content),
+            statusLabel.trailingAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -2 * GeneralConstants.EdgePadding.content)
+        ])
+
+        setupListConstraint()
     }
 
     @objc private func handleHelpTap() {
@@ -529,43 +437,13 @@ class SimilarPhotosViewController: UIViewController {
         present(helpSheet, animated: true)
     }
 
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
+    @objc private func handleBinCountChange() {
+        guard !similarGroups.isEmpty, !isShowingEmptyState else { return }
+        binSlotCount = DeleteBinStore.shared.count
+        updateBinSlotWidth()
     }
 
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        emptyStateView.update(railEdge: DuoLayout.railEdge(tabBarController, in: view))
-    }
-
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        exitStoreModeOnAllCells()
-        lastBatchConfirmedIndices = []
-        if isMovingFromParent {
-            binController?.hideBinButton()
-        }
-    }
-
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        // Reconfigure bin button in case it was reset during navigation
-        if !similarGroups.isEmpty {
-            configureGlobalBinButton()
-        }
-        // Every push and pop lets the bin show again; the empty state has its own bottom row
-        if isShowingEmptyState {
-            binController?.setBinButtonSuppressed(true)
-            return
-        }
-
-        guard similarGroups.isEmpty else { return }
-        if assets != nil {
-            runScan()
-        } else if monthKey != nil {
-            fetchAssetsForScan()
-        }
-    }
+    // MARK: - Data Loading
 
     private func fetchAssetsForScan() {
         guard let monthKey = monthKey else { return }
@@ -591,51 +469,14 @@ class SimilarPhotosViewController: UIViewController {
         }
     }
 
-    private func getSignature(for group: SimilarAssetGroup) -> String {
+    func getSignature(for group: SimilarAssetGroup) -> String {
         return group.assets.map { $0.localIdentifier }.sorted().joined(separator: "|")
-    }
-
-    private func setupUI() {
-        view.backgroundColor = .mainBackground
-
-        view.addSubview(tableView)
-        view.addSubview(activityIndicator)
-        view.addSubview(statusLabel)
-        view.addSubview(emptyStateView)
-
-        tableView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 80, right: 0)
-        tableView.scrollIndicatorInsets = UIEdgeInsets(top: 0, left: 0, bottom: 80, right: 0)
-    }
-
-    private func setupConstraint() {
-        NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: view.topAnchor),
-            tableView.leadingAnchor.constraint(
-                equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: GeneralConstants.EdgePadding.medium),
-            tableView.trailingAnchor.constraint(
-                equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -GeneralConstants.EdgePadding.medium),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-
-            // Sides from the safe area; top and bottom from the view, so its bottom row can
-            // rest on Home's rail baseline
-            emptyStateView.topAnchor.constraint(equalTo: view.topAnchor),
-            emptyStateView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
-            emptyStateView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
-            emptyStateView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-
-            activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -50),
-
-            statusLabel.topAnchor.constraint(equalTo: activityIndicator.bottomAnchor, constant: 20),
-            statusLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 40),
-            statusLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -40)
-        ])
     }
 
     private func showSkeletonLoading() {
         activityIndicator.stopAnimating()
         statusLabel.isHidden = true
-        tableView.isHidden = true
+        listContentView.isHidden = true
 
         if skeletonListView == nil {
             let skeleton = SkeletonListView(rowCount: 5)
@@ -643,12 +484,11 @@ class SimilarPhotosViewController: UIViewController {
             view.addSubview(skeleton)
             self.skeletonListView = skeleton
 
+            // Its sides follow the list's: the safe area and the rail
             NSLayoutConstraint.activate([
                 skeleton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-                skeleton.leadingAnchor.constraint(
-                    equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: GeneralConstants.EdgePadding.medium),
-                skeleton.trailingAnchor.constraint(
-                    equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -GeneralConstants.EdgePadding.medium),
+                skeleton.leadingAnchor.constraint(equalTo: collectionView.leadingAnchor),
+                skeleton.trailingAnchor.constraint(equalTo: collectionView.trailingAnchor),
                 skeleton.bottomAnchor.constraint(equalTo: view.bottomAnchor)
             ])
         }
@@ -657,15 +497,16 @@ class SimilarPhotosViewController: UIViewController {
         skeletonListView?.startAnimating()
     }
 
-    private func hideSkeletonLoading() {
+    func hideSkeletonLoading() {
         skeletonListView?.stopAnimating()
         skeletonListView?.isHidden = true
+        activityIndicator.stopAnimating()
+        statusLabel.isHidden = true
     }
 
-    private func startScan() {
+    func startScan() {
         hideEmptyState()
         showSkeletonLoading()
-        tableView.isHidden = true
 
         let status = PHPhotoLibrary.authorizationStatus()
         if status == .authorized || status == .limited {
@@ -690,196 +531,136 @@ class SimilarPhotosViewController: UIViewController {
     private func runScan() {
         PhotoSimilarityService.shared.findSimilarPhotos(assets: assets) { [weak self] groups in
             guard let self = self else { return }
-//            print("[SimilarPhotos] scan completed, \(groups.count) groups found")
             self.hideSkeletonLoading()
             self.activityIndicator.stopAnimating()
             self.statusLabel.isHidden = true
 
-            if groups.isEmpty {
+            guard !groups.isEmpty else {
                 self.showEmptyState()
-            } else {
-                if let monthKey = self.monthKey {
-                    MonthFilterStatusStore.shared.markFilterNotFinished(monthKey: monthKey, filter: .similar)
-                }
-                self.similarGroups = groups
+                return
+            }
 
-                self.groupAssetStates.removeAll()
-                for (index, group) in groups.enumerated() {
-                    var states: [String: SimilarGroupCell.PhotoState] = [:]
-                    for asset in group.assets {
-                        if asset.localIdentifier == group.bestAsset?.localIdentifier {
-                            states[asset.localIdentifier] = .keep
-                        } else {
-                            states[asset.localIdentifier] = .delete
+            if let monthKey = self.monthKey {
+                MonthFilterStatusStore.shared.markFilterNotFinished(monthKey: monthKey, filter: .similar)
+            }
+            self.similarGroups = groups
+            self.signatures = groups.map { self.getSignature(for: $0) }
+            self.indexBySignature = Dictionary(
+                self.signatures.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
+
+            // The best photo stays, the rest go to the bin, until the user says otherwise
+            self.setStates.removeAll()
+            for (index, group) in groups.enumerated() {
+                var states: [String: SimilarPhotoState] = [:]
+                for asset in group.assets {
+                    states[asset.localIdentifier] =
+                        asset.localIdentifier == group.bestAsset?.localIdentifier ? .keep : .delete
+                }
+                self.setStates[index] = states
+            }
+
+            self.processedGroupIndexes.removeAll()
+            self.processedActions.removeAll()
+            self.confirmedThisVisit.removeAll()
+            self.sizesBySignature.removeAll()
+
+            // Sets confirmed on an earlier visit come back confirmed, with what was chosen then
+            for (index, group) in groups.enumerated() {
+                guard let persisted = SimilarUndoStore.shared.getAction(forGroupSignature: self.signatures[index])
+                else { continue }
+
+                let deletedAssets = group.assets.filter { persisted.deletedIds.contains($0.localIdentifier) }
+                let keptAssets = group.assets.filter { persisted.keptIds.contains($0.localIdentifier) }
+                let storedAssets = group.assets.filter { persisted.storedIds.contains($0.localIdentifier) }
+
+                self.processedActions[index] = UndoAction(
+                    groupIndex: index,
+                    deletedAssets: deletedAssets,
+                    keptAssets: keptAssets,
+                    storedAssets: storedAssets)
+                self.processedGroupIndexes.insert(index)
+
+                var states = self.setStates[index] ?? [:]
+                deletedAssets.forEach { states[$0.localIdentifier] = .delete }
+                keptAssets.forEach { states[$0.localIdentifier] = .keep }
+                storedAssets.forEach { states[$0.localIdentifier] = .store }
+                self.setStates[index] = states
+            }
+
+            self.showList()
+            self.loadSizes()
+
+            if let monthKey = self.monthKey {
+                let similarKey = "\(monthKey)_similar"
+                let totalSimilarPhotos = groups.reduce(0) { $0 + $1.assets.count }
+
+                let current = ReviewProgressStore.shared.getProgress(
+                    forMonthKey: similarKey, mediaType: self.mediaType)
+                ReviewProgressStore.shared.saveProgress(
+                    forMonthKey: similarKey,
+                    mediaType: self.mediaType,
+                    currentIndex: current.currentIndex,
+                    reviewedCount: current.reviewedCount,
+                    deletedCount: current.deletedCount,
+                    keptCount: current.keptCount,
+                    storedCount: current.storedCount,
+                    originalTotalCount: totalSimilarPhotos
+                )
+            }
+        }
+    }
+
+    /// Shows the list for the current sets, from the top.
+    func showList() {
+        listContentView.isHidden = false
+        spotlightIndex = nil
+        applySnapshot(reloading: true)
+        updateSpotlight(animated: false)
+        refreshSummary()
+        configureGlobalBinButton()
+        view.setNeedsLayout()
+        view.layoutIfNeeded()
+        lastSentBinSlot = nil
+        updateBinSlot()
+    }
+
+    /// Reads every photo's size once, off main, then fills in the subtitles and the summary.
+    func loadSizes() {
+        sizeTask?.cancel()
+        let groups = similarGroups
+        let signatures = signatures
+        guard !groups.isEmpty else { return }
+
+        sizeTask = Task { [weak self] in
+            let sizes: [String: [String: Int64]] = await withCheckedContinuation { continuation in
+                DispatchQueue.global(qos: .userInitiated).async {
+                    var result: [String: [String: Int64]] = [:]
+                    for (index, group) in groups.enumerated() {
+                        var groupSizes: [String: Int64] = [:]
+                        for asset in group.assets {
+                            groupSizes[asset.localIdentifier] = asset.resourceMetadata().fileSize
                         }
+                        result[signatures[index]] = groupSizes
                     }
-                    self.groupAssetStates[index] = states
-                }
-
-                self.processedGroupIndexes.removeAll()
-                self.processedActions.removeAll()
-
-                for (index, group) in groups.enumerated() {
-                    let signature = self.getSignature(for: group)
-                    if let persisted = SimilarUndoStore.shared.getAction(forGroupSignature: signature) {
-
-                        let deletedAssets = group.assets.filter { persisted.deletedIds.contains($0.localIdentifier) }
-                        let keptAssets = group.assets.filter { persisted.keptIds.contains($0.localIdentifier) }
-                        let storedAssets = group.assets.filter { persisted.storedIds.contains($0.localIdentifier) }
-
-                        let action = UndoAction(
-                            groupIndex: index,
-                            deletedAssets: deletedAssets,
-                            keptAssets: keptAssets,
-                            storedAssets: storedAssets
-                        )
-
-                        self.processedActions[index] = action
-                        self.processedGroupIndexes.insert(index)
-                    }
-                }
-
-                self.tableView.isHidden = false
-                self.tableView.reloadData()
-                self.configureGlobalBinButton()
-
-                if let monthKey = self.monthKey {
-                    let similarKey = "\(monthKey)_similar"
-                    let totalSimilarPhotos = groups.reduce(0) { $0 + $1.assets.count }
-
-                    let current = ReviewProgressStore.shared.getProgress(
-                        forMonthKey: similarKey, mediaType: self.mediaType)
-                    ReviewProgressStore.shared.saveProgress(
-                        forMonthKey: similarKey,
-                        mediaType: self.mediaType,
-                        currentIndex: current.currentIndex,
-                        reviewedCount: current.reviewedCount,
-                        deletedCount: current.deletedCount,
-                        keptCount: current.keptCount,
-                        storedCount: current.storedCount,
-                        originalTotalCount: totalSimilarPhotos
-                    )
+                    continuation.resume(returning: result)
                 }
             }
-        }
-    }
-
-    /// Nothing similar: the stamp, how much was compared, the month's other open filters,
-    /// Continue and "Scan again" (board "Empty & finished states · A + B").
-    private func showEmptyState() {
-        hideSkeletonLoading()
-
-        if let monthKey = monthKey {
-            MonthFilterStatusStore.shared.markFilterFinished(monthKey: monthKey, filter: .similar)
-        }
-
-        var accessory: UIView?
-        var continueTitle: String?
-        if let monthKey, let monthTitle {
-            let nextSteps = MonthNextStepsView()
-            let shortName = DateFormatterManager.shared.monthName(fromMonthKey: monthKey) ?? monthTitle
-            if nextSteps.configure(
-                monthTitle: shortName, monthKey: monthKey, mediaType: mediaType, excluding: .similar) {
-                nextSteps.onSelect = { [weak self] filter in self?.openFilter(filter) }
-                accessory = nextSteps
-            }
-            // Continue resumes the month's All Photos deck; a complete month has nothing to continue
-            continueTitle = MonthFilterStatusStore.FilterType.continueTitle(monthKey: monthKey, mediaType: mediaType)
-        }
-
-        let showTryAnother = navigationSource == .dashboard || navigationSource == .luckyPicker
-        emptyStateView.configure(
-            hero: .stamp,
-            title: Strings.noneTitle,
-            message: emptyStateMessage(),
-            accessory: accessory,
-            actionTitle: continueTitle,
-            actionIcon: "play.fill",
-            onAction: { [weak self] in self?.openFilter(.allContent) },
-            secondaryTitle: showTryAnother ? Strings.tryAnotherMonth : Strings.scanAgain,
-            onSecondary: { [weak self] in
-                if showTryAnother {
-                    self?.tryAnotherMonth()
-                } else {
-                    self?.startScan()
-                }
-            })
-
-        isShowingEmptyState = true
-        emptyStateView.isHidden = false
-        emptyStateView.update(railEdge: DuoLayout.railEdge(tabBarController, in: view))
-        emptyStateView.show(animated: true)
-        // Its bottom row sits where the bin would float
-        binController?.setBinButtonSuppressed(true)
-
-        activityIndicator.stopAnimating()
-        statusLabel.isHidden = true
-        tableView.isHidden = true
-    }
-
-    private func hideEmptyState() {
-        guard isShowingEmptyState else { return }
-        isShowingEmptyState = false
-        emptyStateView.hide(animated: false)
-        emptyStateView.isHidden = true
-        binController?.setBinButtonSuppressed(false)
-    }
-
-    /// "We compared 92 photos in August 2025…"; a whole-library scan counts the library's photos.
-    private func emptyStateMessage() -> String {
-        if let monthTitle {
-            return Strings.noneMessage(count: assets?.count ?? 0, month: monthTitle)
-        }
-        if let count = assets?.count {
-            return Strings.noneMessageLibrary(count: count)
-        }
-        if let buckets = photoLibraryService.getCachedMonthBuckets(mediaType: mediaType) {
-            return Strings.noneMessageLibrary(count: buckets.reduce(0) { $0 + $1.totalCount })
-        }
-        return Strings.noneMessageLibraryUncounted
-    }
-
-    /// Opens another of the month's filters in place of this screen (FilterType+Route).
-    private func openFilter(_ filter: MonthFilterStatusStore.FilterType) {
-        guard let monthKey, let monthTitle else { return }
-        let destination = filter.makeViewController(
-            monthTitle: monthTitle, monthKey: monthKey, mediaType: mediaType,
-            // A year session's screens share its preloaded assets
-            yearAssets: monthKey.hasPrefix("year-") ? assets : nil,
-            navigationSource: navigationSource)
-        replaceInNavigationStack(with: destination)
-    }
-
-    private func tryAnotherMonth() {
-        let service = PhotoLibraryService.shared
-
-        if let buckets = service.getCachedMonthBuckets(mediaType: mediaType) {
-            navigateToRandomMonth(from: buckets)
-            return
-        }
-
-        Task { [weak self] in
-            guard let self = self else { return }
-            let buckets = await service.loadMonthBuckets(mediaType: self.mediaType)
+            guard !Task.isCancelled else { return }
             await MainActor.run { [weak self] in
-                self?.navigateToRandomMonth(from: buckets)
+                guard let self, signatures == self.signatures else { return }
+                self.sizesBySignature = sizes
+                self.refreshVisibleCardSizes()
+                self.refreshSummary()
             }
         }
     }
 
-    private func navigateToRandomMonth(from buckets: [PhotoLibraryService.MonthBucket]) {
-        let otherBuckets = buckets.filter { $0.key != monthKey }
-        guard let picked = otherBuckets.randomElement() else { return }
-
-        let newVC = SimilarPhotosViewController(
-            assets: nil,
-            monthTitle: picked.title,
-            monthKey: picked.key,
-            mediaType: mediaType
-        )
-        newVC.navigationSource = navigationSource
-
-        replaceInNavigationStack(with: newVC)
+    /// One photo's bytes: the cached size, or read now when the sizes aren't in yet.
+    func byteSize(of asset: PHAsset, inSetAt index: Int) -> Int64 {
+        if index < signatures.count, let size = sizesBySignature[signatures[index]]?[asset.localIdentifier] {
+            return size
+        }
+        return asset.resourceMetadata().fileSize
     }
 
     private func showPermissionError() {
@@ -890,119 +671,31 @@ class SimilarPhotosViewController: UIViewController {
     }
 }
 
-// MARK: - Store Mode Dismissal
-extension SimilarPhotosViewController {
 
-    private func exitStoreModeOnAllCells() {
-        for cell in tableView.visibleCells {
-            (cell as? SimilarGroupCell)?.exitStoreModeIfNeeded()
-        }
-    }
-}
+// MARK: - UICollectionViewDelegate
 
-// MARK: - TableView
-extension SimilarPhotosViewController: UITableViewDataSource, UITableViewDelegate {
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return similarGroups.count
-    }
-
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell =
-            tableView.dequeueReusableCell(withIdentifier: SimilarGroupCell.reuseIdentifier, for: indexPath)
-            as! SimilarGroupCell
-        let group = similarGroups[indexPath.row]
-        cell.configure(with: group, index: indexPath.row)
-        cell.delegate = self
-
-        if groupAssetStates[indexPath.row] == nil {
-            groupAssetStates[indexPath.row] = cell.getCurrentAssetStates()
-        }
-
-        let isProcessed = processedGroupIndexes.contains(indexPath.row)
-        cell.configureForProcessedState(isProcessed: isProcessed)
-
-        return cell
-    }
-
-    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 240
-    }
-
-    // MARK: - ScrollView Delegate
-
+extension SimilarPhotosViewController: UICollectionViewDelegate {
     func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
         scrollStartOffset = scrollView.contentOffset.y
     }
 
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         let delta = abs(scrollView.contentOffset.y - scrollStartOffset)
-        if delta > 30 {
-            exitStoreModeOnAllCells()
+        if delta > Layout.storeModeScrollLimit {
+            exitStoreModeOnAllCards(except: nil)
         }
+        updateBottomBlur()
     }
 }
 
-// MARK: - Cell Delegate
-extension SimilarPhotosViewController: SimilarGroupCellDelegate {
+// MARK: - Preview
 
-    func didInteractWithCell(_ cell: SimilarGroupCell) { // just one active store mode cell
-        for visibleCell in tableView.visibleCells {
-            guard let groupCell = visibleCell as? SimilarGroupCell,
-                groupCell !== cell
-            else { continue }
-            groupCell.exitStoreModeIfNeeded()
-        }
+#if DEBUG
+    import SwiftUI
+
+    @available(iOS 17.0, *)
+    #Preview {
+        UINavigationController(
+            rootViewController: SimilarPhotosViewController(assets: [], monthTitle: "January", monthKey: "2024-01"))
     }
-
-    func didChangeAssetStates(_ cell: SimilarGroupCell, states: [String: SimilarGroupCell.PhotoState]) {
-        guard let indexPath = tableView.indexPath(for: cell) else { return }
-        groupAssetStates[indexPath.row] = states
-        configureGlobalBinButton()
-    }
-
-    private func updateProgress(deletedCount: Int, keptCount: Int, storedCount: Int, totalProcessedCount: Int) {
-        guard let monthKey = monthKey else { return }
-
-        let similarKey = "\(monthKey)_similar"
-        let currentSimilar = ReviewProgressStore.shared.getProgress(forMonthKey: similarKey, mediaType: mediaType)
-        let currentMain = ReviewProgressStore.shared.getProgress(forMonthKey: monthKey, mediaType: mediaType)
-
-        // Batch: single persist for both keys
-        ReviewProgressStore.shared.batchSave([
-            (monthKey: similarKey, mediaType: mediaType,
-             currentIndex: currentSimilar.currentIndex + totalProcessedCount,
-             reviewedCount: currentSimilar.reviewedCount + totalProcessedCount,
-             deletedCount: currentSimilar.deletedCount + deletedCount,
-             keptCount: currentSimilar.keptCount + keptCount,
-             storedCount: currentSimilar.storedCount + storedCount,
-             originalTotalCount: currentSimilar.originalTotalCount),
-            (monthKey: monthKey, mediaType: mediaType,
-             currentIndex: currentMain.currentIndex,
-             reviewedCount: currentMain.reviewedCount + totalProcessedCount,
-             deletedCount: currentMain.deletedCount + deletedCount,
-             keptCount: currentMain.keptCount + keptCount,
-             storedCount: currentMain.storedCount + storedCount,
-             originalTotalCount: currentMain.originalTotalCount)
-        ])
-
-        let newReviewedCount = currentMain.reviewedCount + totalProcessedCount
-        ReminderDataCenter.shared.markSimilarReviewActivity(
-            monthKey: monthKey,
-            mediaType: mediaType,
-            reviewedCount: newReviewedCount,
-            totalCount: currentMain.originalTotalCount
-        )
-    }
-
-    private func showAlert(title: String, message: String) {
-        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: Strings.ok, style: .default))
-        present(alert, animated: true)
-    }
-}
-
-@available(iOS 17.0, *)
-#Preview {
-    UINavigationController(
-        rootViewController: SimilarPhotosViewController(assets: [], monthTitle: "January", monthKey: "2024-01"))
-}
+#endif

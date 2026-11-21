@@ -28,7 +28,9 @@ enum BinButtonPlacement: Equatable {
     /// A slot a screen lays out in its own bottom row, in window coordinates
     /// (MonthReview held sideways on the iPhone Duo's inner display, and MonthFilterCards' bottom row).
     /// `showsTitle` puts "Bin" before the count, for a slot wide enough to hold it.
-    case slot(CGRect, showsTitle: Bool = false)
+    /// `matchesHeight` makes the button as tall as the slot (SimilarPhotos' 50pt row on short
+    /// columns); otherwise it keeps its standard height.
+    case slot(CGRect, showsTitle: Bool = false, matchesHeight: Bool = false)
 }
 
 protocol FloatingBinButtonController: AnyObject {
@@ -69,6 +71,7 @@ class MainTabBarController: UITabBarController, UINavigationControllerDelegate {
     private var binSlotLeadingConstraint: NSLayoutConstraint?
     private var binSlotWidthConstraint: NSLayoutConstraint?
     private var binSlotBottomConstraint: NSLayoutConstraint?
+    private var binButtonHeightConstraint: NSLayoutConstraint?
     private var isBinButtonInSlot: Bool {
         if case .slot = binButtonPlacement { return true }
         return false
@@ -139,10 +142,12 @@ class MainTabBarController: UITabBarController, UINavigationControllerDelegate {
         }
 
         binButtonStandardBottomConstraint = binButtonBottom
+        let binButtonHeight = binButton.heightAnchor.constraint(equalToConstant: GeneralConstants.ButtonSize.large)
+        binButtonHeightConstraint = binButtonHeight
         NSLayoutConstraint.activate([
             binButtonTrailingConstraint!,
             binButtonBottom,
-            binButton.heightAnchor.constraint(equalToConstant: GeneralConstants.ButtonSize.large)
+            binButtonHeight
         ])
 
         binSlotLeadingConstraint = binButton.leadingAnchor.constraint(equalTo: view.leadingAnchor)
@@ -295,8 +300,7 @@ extension MainTabBarController: UITabBarControllerDelegate {
         isTransitioning = false
         lastShownViewController = viewController
 
-        if !(viewController is DeleteBinViewController)
-            && !(viewController is SimilarPhotosViewController) {
+        if !(viewController is DeleteBinViewController) {
             morphButtonToCompact()
         }
 
@@ -507,10 +511,11 @@ extension MainTabBarController: FloatingBinButtonController {
         binButtonPlacement = placement
 
         switch placement {
-        case .slot(let windowRect, let showsTitle):
+        case .slot(let windowRect, let showsTitle, let matchesHeight):
             binButton.setFitsSlot(true)
             binButton.setShowsTitle(showsTitle)
             let rect = view.convert(windowRect, from: nil)
+            binButtonHeightConstraint?.constant = matchesHeight ? rect.height : GeneralConstants.ButtonSize.large
             if !wasInSlot {
                 // Deactivate every standard constraint before the slot's
                 NSLayoutConstraint.deactivate([
@@ -533,6 +538,7 @@ extension MainTabBarController: FloatingBinButtonController {
         case .standard:
             binButton.setFitsSlot(false)
             binButton.setShowsTitle(false)
+            binButtonHeightConstraint?.constant = GeneralConstants.ButtonSize.large
             NSLayoutConstraint.deactivate([
                 binSlotLeadingConstraint, binSlotWidthConstraint, binSlotBottomConstraint
             ].compactMap { $0 })

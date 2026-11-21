@@ -233,7 +233,9 @@ final class EmptyStateView: UIView {
     private let primaryRow: UIStackView = {
         let stack = UIStackView()
         stack.axis = .horizontal
-        stack.alignment = .fill
+        // The primary and the slot are the same height; a secondary standing in for the
+        // primary is shorter and centers beside the slot
+        stack.alignment = .center
         stack.spacing = Layout.primaryToSlot
         return stack
     }()
@@ -268,6 +270,7 @@ final class EmptyStateView: UIView {
             guard trailingSlotWidth != oldValue else { return }
             trailingSlotWidthConstraint?.constant = trailingSlotWidth ?? 0
             trailingSlotView.isHidden = trailingSlotWidth == nil
+            updateActionsArrangement()
         }
     }
 
@@ -431,7 +434,7 @@ final class EmptyStateView: UIView {
         self.onAction = showsPrimary ? onAction : nil
         primaryTitle = showsPrimary ? actionTitle : nil
         primaryIcon = showsPrimary ? actionIcon : nil
-        primaryRow.isHidden = !showsPrimary
+        primaryButton.isHidden = !showsPrimary
         applyPrimaryButtonStyle()
 
         let showsSecondary = secondaryTitle != nil && onSecondary != nil
@@ -444,8 +447,7 @@ final class EmptyStateView: UIView {
             config.attributedTitle = attributed
             quietButton.configuration = config
         }
-        // The secondary is its own 44pt row, so it needs no gap above it
-        actionsStack.setCustomSpacing(showsSecondary ? 0 : Layout.actionsSpacing, after: primaryRow)
+        updateActionsArrangement()
 
         accessibilityElements = [heroTitleLabel, heroMessageLabel, accessoryContainer, primaryButton, quietButton]
         setNeedsLayout()
@@ -455,6 +457,30 @@ final class EmptyStateView: UIView {
     /// (`DuoLayout.railEdge(tabBarController, in: view)`).
     func update(railEdge: DuoLayout.RailEdge?) {
         boardEdges?.update(railEdge: railEdge)
+    }
+
+    /// Where the secondary sits. Normally it is its own row under the primary's; with a slot
+    /// and no primary (SimilarPhotos' finished state in a complete month) it takes the
+    /// primary's place beside the slot, so the bin still has a row to sit in.
+    private func updateActionsArrangement() {
+        guard hasBuiltBoard else { return }
+        let showsPrimary = onAction != nil
+        let showsSecondary = onSecondaryAction != nil
+        let secondaryInRow = !showsPrimary && showsSecondary && trailingSlotWidth != nil
+
+        if secondaryInRow, quietButton.superview !== primaryRow {
+            actionsStack.removeArrangedSubview(quietButton)
+            quietButton.removeFromSuperview()
+            primaryRow.insertArrangedSubview(quietButton, at: 0)
+        } else if !secondaryInRow, quietButton.superview !== actionsStack {
+            primaryRow.removeArrangedSubview(quietButton)
+            quietButton.removeFromSuperview()
+            actionsStack.addArrangedSubview(quietButton)
+        }
+        primaryRow.isHidden = !(showsPrimary || secondaryInRow)
+        // The secondary is its own 44pt row, so it needs no gap above it
+        actionsStack.setCustomSpacing(
+            showsSecondary && !secondaryInRow ? 0 : Layout.actionsSpacing, after: primaryRow)
     }
 
     private func buildBoardIfNeeded() {
@@ -511,6 +537,7 @@ final class EmptyStateView: UIView {
             stampWidth,
             stampHeight,
             slotWidth,
+            trailingSlotView.heightAnchor.constraint(equalToConstant: GeneralConstants.ButtonSize.large),
             primaryButton.heightAnchor.constraint(equalToConstant: GeneralConstants.ButtonSize.large),
             quietButton.heightAnchor.constraint(equalToConstant: GeneralConstants.ButtonSize.medium)
         ])

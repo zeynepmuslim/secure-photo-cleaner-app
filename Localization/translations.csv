@@ -337,7 +337,6 @@ similarHelp.storeHint;Tap the button to select storage;Depolama seçimi için bu
 similarHelp.tapToToggle;Tap to toggle between Keep / Delete;Tut  / Sil arasında geçiş yapmak için dokun;;;;
 similarPhotos.alreadyProcessedMessage;This group has already been processed. You can undo it if needed.;Bu grup zaten işlendi. Gerekirse geri alabilirsiniz.;;;;
 similarPhotos.alreadyProcessedTitle;Already Processed;Zaten İşlendi;;;;
-similarPhotos.batchBinTitle;Confirm All Groups;Tüm Grupları Onayla;;;;
 similarPhotos.batchConfirmAction;Add to Bin;Çöpe Ekle;;;;
 similarPhotos.batchConfirmTitle;Confirm All Groups?;Tüm Gruplar Onaylansın mı?;;;;
 similarPhotos.confirm;Confirm;Onayla;;;;
@@ -530,3 +529,31 @@ accessCard.notAskedMessage;You choose: the whole library or only some items. Not
 accessCard.offTitle;Access off;Erişim kapalı;;;;
 accessCard.offMessage;Selected items only is enough to start. Nothing ever leaves your iPhone.;Başlamak için yalnızca seçili öğeler yeterli. Hiçbir şey iPhone'unuzdan çıkmaz.;;;;
 accessCard.limitedMessage;;;"Purgio sees the %lld item you picked. Full access shows every month; nothing ever leaves your iPhone.";"Purgio sees the %lld items you picked. Full access shows every month; nothing ever leaves your iPhone.";"Purgio seçtiğiniz %lld öğeyi görüyor. Tam erişim tüm ayları gösterir; hiçbir şey iPhone'unuzdan çıkmaz.";"Purgio seçtiğiniz %lld öğeyi görüyor. Tam erişim tüm ayları gösterir; hiçbir şey iPhone'unuzdan çıkmaz."
+similarPhotos.summarySets;;;%lld set to check;%lld sets to check;%lld set kontrol edilecek;%lld set kontrol edilecek
+similarPhotos.summaryDone;%lld done;%lld bitti;;;;
+similarPhotos.summaryFree;~%@ to free;~%@ boşalacak;;;;
+similarGroup.subtitle;;;%1$lld photo · %2$@;%1$lld photos · %2$@;%1$lld fotoğraf · %2$@;%1$lld fotoğraf · %2$@
+similarGroup.storeDone;Done;Bitti;;;;
+similarGroup.keptPart;Kept %lld;%lld tutuldu;;;;
+similarGroup.binPart;%lld to the bin;%lld çöpe;;;;
+similarGroup.storedPart;%lld stored;%lld depolandı;;;;
+similarGroup.notConfirmed;not confirmed;onaylanmadı;;;;
+similarGroup.confirmedState;confirmed;onaylandı;;;;
+similarPhotos.confirmAll;;;Confirm all · %lld set;Confirm all · %lld sets;Tümünü onayla · %lld set;Tümünü onayla · %lld set
+similarPhotos.allCheckedTitle;Every set is checked;Tüm setler kontrol edildi;;;;
+similarPhotos.allCheckedMessage;;;%1$lld set in %2$@. ~%3$@ waits in the bin until you empty it.;%1$lld sets in %2$@. ~%3$@ waits in the bin until you empty it.;%2$@ içinde %1$lld set. ~%3$@ sen boşaltana kadar çöpte bekliyor.;%2$@ içinde %1$lld set. ~%3$@ sen boşaltana kadar çöpte bekliyor.
+similarPhotos.allCheckedMessageLibrary;;;%1$lld set in your library. ~%2$@ waits in the bin until you empty it.;%1$lld sets in your library. ~%2$@ waits in the bin until you empty it.;Kütüphanende %1$lld set. ~%2$@ sen boşaltana kadar çöpte bekliyor.;Kütüphanende %1$lld set. ~%2$@ sen boşaltana kadar çöpte bekliyor.
+similarHelp.title;Try it on this set;Bu sette dene;;;;
+similarHelp.subtitle;Tap a photo to switch it, then Confirm.;Değiştirmek için bir fotoğrafa dokun, sonra Onayla'ya bas.;;;;
+similarHelp.hintTapLead;Tap a photo;Bir fotoğrafa dokun;;;;
+similarHelp.hintTapText;to switch keep ↔ delete;ve tut ↔ sil arasında geçiş yap;;;;
+similarHelp.hintStoreLead;Store, then photos;Önce Depola'ya, sonra fotoğraflara dokun;;;;
+similarHelp.hintStoreText;to save them to an album;ve onları bir albüme kaydet;;;;
+similarHelp.hintConfirmLead;Confirm;Onayla;;;;
+similarHelp.hintConfirmText;sends each one where it belongs;her birini ait olduğu yere gönderir;;;;
+similarHelp.hintDone;Done;Tamamlandı;;;;
+similarHelp.targetPhotos;Photos;Fotoğraflar;;;;
+similarHelp.targetBin;Bin;Çöp Kutusu;;;;
+similarHelp.targetStored;Stored;Depolanan;;;;
+similarHelp.photoAccessibility;Photo %1$d, %2$@;Fotoğraf %1$d, %2$@;;;;
+similarHelp.targetAccessibility;%1$@, %2$d;%1$@, %2$d;;;;

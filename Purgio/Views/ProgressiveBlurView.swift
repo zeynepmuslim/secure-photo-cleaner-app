@@ -7,11 +7,20 @@
 
 import UIKit
 
-/// Lies over a scroll view's top edge: content scrolling under it blurs and fades into the
-/// background, strongest at the top edge and gone at the bottom. Touches pass through.
+/// Lies over a scroll view's top (or bottom) edge: content scrolling under it blurs and fades
+/// into the background, strongest at that edge and gone at the other. Touches pass through.
 /// The material has a tint of its own, so the blur shows only as content scrolls under it
 /// (`setContentOverlap(_:)`); at rest the view is invisible.
 final class ProgressiveBlurView: UIView {
+
+    enum Edge {
+        case top, bottom
+    }
+
+    /// The scroll view's edge the view lies over: the blur is strongest there
+    var edge: Edge = .top {
+        didSet { applyEdge() }
+    }
 
     /// The color content fades into: the background behind the scroll view
     var fadeColor: UIColor = .mainBackground {
@@ -59,6 +68,7 @@ final class ProgressiveBlurView: UIView {
         blurView.mask = blurMaskView
         blurView.alpha = 0
         applyFadeColors()
+        applyEdge()
 
         NSLayoutConstraint.activate([
             blurView.topAnchor.constraint(equalTo: topAnchor),
@@ -85,6 +95,15 @@ final class ProgressiveBlurView: UIView {
         let alpha = min(max(overlap / height, 0), 1)
         guard blurView.alpha != alpha else { return }
         blurView.alpha = alpha
+    }
+
+    private func applyEdge() {
+        let strong = CGPoint(x: 0.5, y: edge == .top ? 0 : 1)
+        let clear = CGPoint(x: 0.5, y: edge == .top ? 1 : 0)
+        for gradient in [blurMaskView, fadeView] {
+            gradient.startPoint = strong
+            gradient.endPoint = clear
+        }
     }
 
     private func applyFadeColors() {

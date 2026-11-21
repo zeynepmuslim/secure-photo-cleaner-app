@@ -18,6 +18,17 @@ private enum Strings {
 
 class FloatingBinButton: UIButton {
 
+    // MARK: - Layout
+
+    /// The button's own inner padding (not screen padding, so not `EdgePadding.content`).
+    private enum Layout {
+        static let verticalInset: CGFloat = 16
+        static let horizontalInset: CGFloat = 20
+        static let imagePadding: CGFloat = 8
+        /// Between icon and count in a screen's slot, where width is short.
+        static let slotImagePadding: CGFloat = 6
+    }
+
     enum DisplayMode: Equatable {
         case count(Int)   // Normal: "5"
         case increment(Int)   // Swiping: "+3"
@@ -28,6 +39,9 @@ class FloatingBinButton: UIButton {
     private var isWideMode = false
     /// Set while a screen's slot gives the button room for a title ("Bin · 14" instead of "14").
     private var showsTitle = false
+    /// Set while the button sits in a screen's slot (as narrow as 96pt): tighter insets and a
+    /// count that stays on one line beside the icon.
+    private var fitsSlot = false
     private(set) var currentMode: DisplayMode = .count(0)
 
     override init(frame: CGRect) {
@@ -48,16 +62,20 @@ class FloatingBinButton: UIButton {
             var config = UIButton.Configuration.prominentGlass()
             config.image = UIImage(
                 systemName: "trash", withConfiguration: UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold))
-            config.imagePadding = 8
-            config.contentInsets = NSDirectionalEdgeInsets(top: 16, leading: 20, bottom: 16, trailing: 20)
+            config.imagePadding = Layout.imagePadding
+            config.contentInsets = NSDirectionalEdgeInsets(
+                top: Layout.verticalInset, leading: Layout.horizontalInset,
+                bottom: Layout.verticalInset, trailing: Layout.horizontalInset)
             configuration = config
             tintColor = ThemeManager.Colors.statusRed
         } else {
             var config = UIButton.Configuration.filled()
             config.image = UIImage(
                 systemName: "trash", withConfiguration: UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold))
-            config.imagePadding = 8
-            config.contentInsets = NSDirectionalEdgeInsets(top: 16, leading: 20, bottom: 16, trailing: 20)
+            config.imagePadding = Layout.imagePadding
+            config.contentInsets = NSDirectionalEdgeInsets(
+                top: Layout.verticalInset, leading: Layout.horizontalInset,
+                bottom: Layout.verticalInset, trailing: Layout.horizontalInset)
             config.baseBackgroundColor = ThemeManager.Colors.statusRed
             config.baseForegroundColor = .white
             config.cornerStyle = .capsule
@@ -71,7 +89,8 @@ class FloatingBinButton: UIButton {
 
         config.image = UIImage(
             systemName: "trash", withConfiguration: UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold))
-        config.attributedTitle = countTitle(count > 0 ? "\(count)" : nil)
+        config.attributedTitle = countTitle(count > 0 ? countText(count) : nil)
+        applySlotMetrics(to: &config)
 
         if animated {
             UIView.animate(withDuration: 0.25, delay: 0, options: .curveEaseInOut) {
@@ -90,7 +109,8 @@ class FloatingBinButton: UIButton {
         config.image = UIImage(
             systemName: "trash", withConfiguration: UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold))
 
-        config.attributedTitle = countTitle(count > 0 ? "+\(count)" : nil)
+        config.attributedTitle = countTitle(count > 0 ? "+" + countText(count) : nil)
+        applySlotMetrics(to: &config)
 
         if animated {
             UIView.animate(withDuration: 0.25, delay: 0, options: .curveEaseInOut) {
@@ -173,7 +193,8 @@ class FloatingBinButton: UIButton {
         config.image = UIImage(
             systemName: "trash", withConfiguration: UIImage.SymbolConfiguration(pointSize: 22, weight: .semibold))
 
-        config.attributedTitle = countTitle(count > 0 ? "\(count)" : nil)
+        config.attributedTitle = countTitle(count > 0 ? countText(count) : nil)
+        applySlotMetrics(to: &config)
 
         configuration = config
 
@@ -202,6 +223,30 @@ class FloatingBinButton: UIButton {
         case .increment(let count): updateIncrement(count, animated: false)
         case .wide: break
         }
+    }
+
+    /// Tighter metrics in a slot, so a two- or three-digit count stays on one line in 96pt.
+    func setFitsSlot(_ fits: Bool) {
+        guard fits != fitsSlot else { return }
+        fitsSlot = fits
+        switch currentMode {
+        case .count(let count): updateCount(count, animated: false)
+        case .increment(let count): updateIncrement(count, animated: false)
+        case .wide: break
+        }
+    }
+
+    private func applySlotMetrics(to config: inout UIButton.Configuration) {
+        let horizontal = fitsSlot ? GeneralConstants.EdgePadding.small : Layout.horizontalInset
+        config.contentInsets = NSDirectionalEdgeInsets(
+            top: Layout.verticalInset, leading: horizontal, bottom: Layout.verticalInset, trailing: horizontal)
+        config.imagePadding = fitsSlot ? Layout.slotImagePadding : Layout.imagePadding
+        config.titleLineBreakMode = fitsSlot ? .byTruncatingTail : .byWordWrapping
+    }
+
+    /// The number as shown: compact ("1.2K") in a slot, where width is short.
+    private func countText(_ count: Int) -> String {
+        fitsSlot ? count.compactFormatted : "\(count)"
     }
 
     /// The count or increment text, with the title in front while `showsTitle` is on.

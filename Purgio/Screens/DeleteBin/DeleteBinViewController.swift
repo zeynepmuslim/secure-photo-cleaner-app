@@ -816,13 +816,14 @@ final class DeleteBinViewController: UIViewController {
     }
 
     private func updateUI() {
+        // Reload in both branches: a hidden grid that kept its old items crashed on the next
+        // size change, when viewWillLayoutSubviews reconfigured them past the emptied array
+        collectionView.reloadData()
         if photoAssets.isEmpty {
             showEmptyState()
         } else {
             hideEmptyState()
             updateHeader()
-            collectionView.reloadData()
-
         }
     }
 

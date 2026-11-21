@@ -10,7 +10,7 @@ import UIKit
 /// iPhone Duo edge rules. HomeViewController is the reference screen: when the tab bar
 /// becomes a vertical rail (outer display, inner landscape), its content moves closer to
 /// the rail and down to the bottom edge. Other screens match those values so every
-/// screen's bottom row and trailing edge line up. See Docs/iPhone-Duo-Transformation.md.
+/// screen's bottom row and trailing edge line up. See CLAUDE.md, iPhone Duo.
 enum DuoLayout {
 
     /// Home's vertical-rail padding. Positive values; apply the edge's sign at the constraint.

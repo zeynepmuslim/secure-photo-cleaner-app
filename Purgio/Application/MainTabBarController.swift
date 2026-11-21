@@ -247,7 +247,14 @@ extension MainTabBarController: UITabBarControllerDelegate {
         isBinButtonSuppressed = false
         customTapHandler = nil
         currentMonthContext = nil
-        binButton.setMode(.count(deleteBinStore.count))
+        // The saved mode belongs to the screen under DeleteBin in the tab being left. Kept, the
+        // new tab's navigation controller restores it in didShow (a stale "+1" after Delete All).
+        savedMode = nil
+        if case .wide = binButton.currentMode {
+            morphButtonToCompact()
+        } else {
+            binButton.setMode(.count(deleteBinStore.count))
+        }
         return true
     }
 
@@ -474,6 +481,7 @@ extension MainTabBarController: FloatingBinButtonController {
 
         switch placement {
         case .slot(let windowRect, let showsTitle):
+            binButton.setFitsSlot(true)
             binButton.setShowsTitle(showsTitle)
             let rect = view.convert(windowRect, from: nil)
             if !wasInSlot {
@@ -496,6 +504,7 @@ extension MainTabBarController: FloatingBinButtonController {
             }
 
         case .standard:
+            binButton.setFitsSlot(false)
             binButton.setShowsTitle(false)
             NSLayoutConstraint.deactivate([
                 binSlotLeadingConstraint, binSlotWidthConstraint, binSlotBottomConstraint

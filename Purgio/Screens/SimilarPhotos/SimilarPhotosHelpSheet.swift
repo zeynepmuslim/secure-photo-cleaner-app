@@ -28,7 +28,7 @@ private enum Strings {
 final class SimilarPhotosHelpSheet: UIViewController {
 
     private enum Layout {
-        static let sidePadding: CGFloat = 24
+        static let sidePadding = GeneralConstants.EdgePadding.sheetColumn
         static let maximumContentWidth: CGFloat = 420
         static let titleToSubtitle: CGFloat = 6
         static let hintSpacing: CGFloat = 12

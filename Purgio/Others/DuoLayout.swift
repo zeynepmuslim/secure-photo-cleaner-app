@@ -32,6 +32,21 @@ enum DuoLayout {
         return tabBar.bounds.height > tabBar.bounds.width
     }
 
+    /// Either iPhone Duo display, read from the window's traits and safe area, never its size:
+    /// - inner display: regular width (an iPhone-only, portrait app gets it nowhere else);
+    /// - cover display: compact width with a horizontal safe area (the camera strip down one side).
+    static func isDuoDisplay(_ window: UIWindow?) -> Bool {
+        guard let window = window else { return false }
+        switch window.traitCollection.horizontalSizeClass {
+        case .regular:
+            return true
+        case .compact:
+            return window.safeAreaInsets.left > 0 || window.safeAreaInsets.right > 0
+        default:
+            return false
+        }
+    }
+
     enum RailSide {
         case left, right
     }

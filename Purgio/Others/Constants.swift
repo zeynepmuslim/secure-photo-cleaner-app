@@ -33,6 +33,8 @@ enum GeneralConstants {
         static let content: CGFloat = 20
         /// Cards' inner padding and Settings rows.
         static let cardInner: CGFloat = 18
+        /// The column's sides in a full-width page sheet (the photo access sheet, the Similar photos help sheet).
+        static let sheetColumn: CGFloat = 24
     }
 
     enum CornerRadius {

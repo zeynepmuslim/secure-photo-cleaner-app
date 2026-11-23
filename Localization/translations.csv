@@ -397,7 +397,12 @@ storageLite.usageLabel;Usage: %@ / %@;Kullanım: %@ / %@;;;;
 storageLite.used;Used;Kullanılan;;;;
 storageLite.videos;Videos;Videolar;;;;
 storageSheet.analyzing;Analyzing...;Analiz ediliyor...;;;;
+storageSheet.photoCount;;;%d photo;%d photos;%d fotoğraf;%d fotoğraf
+storageSheet.refresh;Refresh;Yenile;;;;
+storageSheet.usedAccessibility;%1$@ of %2$@ used;%2$@ alanın %1$@ kadarı kullanılıyor;;;;
+storageSheet.videoCount;;;%d video;%d videos;%d video;%d video
 storageSheet.progressLabel;%1$@... %2$d%%;%1$@... %%%2$d;;;;
+storageSheet.totalOf;/ %@;/ %@;;;;
 storageSheet.title;Storage Analysis;Depolama Analizi;;;;
 storeTutorial.albumFavorites;Favorites;Favoriler;;;;
 storeTutorial.albumRecents;Recents;Son Kaydedilenler;;;;

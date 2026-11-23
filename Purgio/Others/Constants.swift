@@ -103,6 +103,9 @@ enum GeneralConstants {
     enum LegendCapsule {
         static let width: CGFloat = 5
         static let height: CGFloat = 12
+        /// The taller mark beside a row of the storage sheet's ledger.
+        static let rowWidth: CGFloat = 6
+        static let rowHeight: CGFloat = 22
     }
 
     /// Spacing in the storage cards' legends.

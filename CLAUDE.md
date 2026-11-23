@@ -142,7 +142,7 @@ Declare each name as a `Notification.Name` extension next to its owner, with the
   - `BulkYear.sparseYearThreshold` 50
   - `LargeFile.photoHighlightBytes` 20 MB and `videoHighlightBytes` 150 MB (decimal, as `formattedBytes()` shows them): what the filter loading screen counts as "Over 20 MB" / "Over 150 MB". Not a filter; Largest First still shows every item.
   - `BinSlot.compactWidth` 96 (the bin's slot beside a bottom row's primary button)
-  - `LegendCapsule` (the storage cards' legend and status marks, radius width / 2): `width` 5, `height` 12; `LegendGrid`: `columnSpacing` 12, `packedItemSpacing` 16
+  - `LegendCapsule` (the storage cards' legend and status marks, radius width / 2): `width` 5, `height` 12; `rowWidth` 6 / `rowHeight` 22 for the storage sheet's ledger rows; `LegendGrid`: `columnSpacing` 12, `packedItemSpacing` 16
 
   If a value has no token yet and repeats, add the token first.
 - **Corners:** every rounded corner sets `layer.cornerCurve = .continuous`. Pill buttons use `config.cornerStyle = .capsule`.
@@ -302,6 +302,7 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
   - `SimilarPhotoThumbnailView` (`Screens/SimilarPhotos`): the state look itself, hosted by `PhotoGridCell` and by the help sheet's sample: `image`, `grayscaleCacheKey`, `applyState(_:animated:)` (nil clears it; animated is a 0.15 s cross-dissolve), `startShake()` / `stopShake()`. Show a marked similar photo with it, never by copying the border and badge.
   - `SimilarHelpSampleCardView`, `SimilarHelpHintRowView`, `SimilarHelpTargetsView` (`Screens/SimilarPhotos`): the help sheet's parts (see **Similar photos → Help sheet**). The targets' bin and store box are the template images `.binLid` / `.binBody` and `.storeBoxLid` / `.storeBoxBody` (PDF, vector preserved), a lid over a body; each part's `center` is constrained to the point it turns or squashes around and its `layer.anchorPoint` is that point, so the transforms need no offsets.
   - `SimilarSummaryView` (`Screens/SimilarPhotos`): "**6** sets to check · 2 done" leading and "~73 MB to free" trailing ("–" until sizes are known); `configure(setsToCheck:done:bytesToFree:)`.
+  - `StorageLedgerRowView` (`Screens/Home`): one row of the storage sheet's ledger: a `LegendCapsule` row mark (`rowWidth` × `rowHeight`) in the segment's color, the name (15pt semibold) over an optional count (12pt), and the size trailing (15pt bold, monospaced digits). `configure(color:name:count:size:reservesCountLine:)` (a nil count hides its line; `reservesCountLine` keeps its height so the row doesn't change size between states), `setVerticalPadding(_:)` (11 regular, 8 compact). One VoiceOver element: "name, count, size".
   - Reuse these before writing new ones.
 
 ## Concurrency
@@ -465,7 +466,10 @@ These rules come from Photolift's verified Duo work, adapted to Purgio's iOS 15 
 - **Layout:** a vertical stack of `StorageAnalysisLiteView`, a row of Photos and Videos `FilterCard`s ("Browse by month"), and a `DashboardCard`. On the Duo's inner display it splits at the fold (see **iPhone Duo**).
 - **Bar buttons:** `.luckyItem` on the left, `.helpItem` on the right (presents onboarding again).
 - **Data:** `loadData()` returns early while access is `.notDetermined`. Otherwise it shows the cached storage data, calls `refreshIfNeeded()` and refreshes the dashboard. It observes the storage notifications.
-- **Storage view tap:** presents `StorageAnalysisBottomSheet` (55% detent, a ring while loading). Ignored while iCloud Photos sync is on.
+- **Storage view tap:** presents `StorageAnalysisBottomSheet` (board "Storage analysis sheet · S1 Ledger on every size"). Ignored while iCloud Photos sync is on.
+  - One column, no card around it: the title, the used figure (34pt heavy, monospaced) with "/ total" beside it (wrapping under it when they don't fit) over "Used", a `SegmentedBarView` (photos / videos / other, available as the track), a ledger card of `StorageLedgerRowView`s (Photos and Videos with plural counts, Other, Available; hairlines between), a separate Saved card (leaf, shown only while `spaceSavedBytes > 0`) and a footer with the last-analyzed text and a gray Refresh `DynamicGlassButton` (36pt) that calls `startAnalysis()`.
+  - One layout in every state; values cross-dissolve (0.25 s). Scanning: "–" values, one gray segment growing with `.storageAnalysisDidUpdateProgress`, the progress text in the footer, Refresh disabled, Saved hidden. Idle: "Not analyzed yet" + Analyze Storage; error: Unable to analyze + Try Again.
+  - A plain native sheet as tall as its content (iOS 16+ one custom detent from `fittedHeight`, `invalidateDetents()` when it changes; iOS 15 medium or large); scrolls only as a fallback. Compact metrics (22 / 28pt, tighter gaps) are picked after layout: a compact-width window `<= 700` tall, or on the Duo's inner display a horizontal `splittingFold` (the sheet sits below the fold) or a vertical `activeFold` (book pose). The column is capped at 560pt and centered; sideways fully open it may cross the fold line.
 - **Photos / Videos cards:** select tab 1 or 2 and pop to root.
 - **Dashboard card:** `DashboardCardManager.generateSmartCard()` makes a weighted random pick:
   - **Motivation** (weight 60): one of 11 messages plus one of 5 action suggestions built from a cached `GalleryContext`.
@@ -872,7 +876,7 @@ There is **one global `FloatingBinButton`**, owned by `MainTabBarController` and
   - **Rendering:** the `StorageAnalysisWidget` extension does it, for the lock screen and the Dynamic Island.
 - **`StorageAnalysisAttributes.swift` exists as two byte-identical copies,** in `Purgio/Models/` and `StorageAnalysisWidget/`. They are separate files in two synchronized groups. **Change both together.**
 - **Storage views:**
-  - `StorageAnalysisView`: the full card, in Settings and the bottom sheet.
+  - `StorageAnalysisView`: the full card, in Settings.
   - `StorageAnalysisLiteView`: Home's compact version, whose header switches layout under 390pt.
   - **Legends** (`layoutLegendItems`): marks are `LegendCapsule`s. They lay out from the leading edge, by the card's own width (`CompactContentWidth.fullWidthCard`): the lite card packs a row that fits (3 regular, 2 compact); otherwise a grid of 2 columns (compact, or 4 items) or 3, five regular items as (2, 2, 1) equal thirds. An item wider than its column gets its own row at the end, and the legend is re-laid out when the card's width changes.
   - Both have DEBUG hooks: `setDebugSavedBytesOverride`, `setDebugProgress`.

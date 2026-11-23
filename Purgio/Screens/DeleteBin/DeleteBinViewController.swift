@@ -1191,49 +1191,19 @@ final class DeleteBinViewController: UIViewController {
             }
         }
 
-        previewVC.onRemove = { [weak self] in
-            guard let self = self,
-                let currentIndex = self.photoAssets.firstIndex(of: asset)
-            else {
-                return
-            }
-            let currentIndexPath = IndexPath(item: currentIndex, section: 0)
-
-            self.deleteBinStore.removeAssetId(asset.localIdentifier)
+        // Keep or Store: the item leaves the bin as a review decision.
+        previewVC.onDecide = { [weak self] type in
+            guard let self, let currentIndex = self.photoAssets.firstIndex(of: asset) else { return }
+            BinDecision.apply(type, to: asset)
+            // The grid is updated here; the store's count change needs no reload.
+            self.needsReload = false
             self.photoAssets.remove(at: currentIndex)
-
             if self.photoAssets.isEmpty {
                 self.updateUI()
             } else {
-                self.collectionView.deleteItems(at: [currentIndexPath])
+                self.collectionView.deleteItems(at: [IndexPath(item: currentIndex, section: 0)])
                 self.updateHeader()
             }
-            print(
-                "[BIN SYNC] onRemove: done, arrayCount=\(self.photoAssets.count), cvCount=\(self.collectionView.numberOfItems(inSection: 0))"
-            )
-        }
-
-        // Set up undo callback
-        previewVC.onUndo = { [weak self] in
-            guard let self = self else { return }
-
-            guard !self.photoAssets.contains(asset) else {
-                print("[BIN SYNC] onUndo: asset already in array, skipping. arrayCount=\(self.photoAssets.count)")
-                return
-            }
-
-            print(
-                "[BIN SYNC] onUndo: inserting, arrayCount=\(self.photoAssets.count), cvCount=\(self.collectionView.numberOfItems(inSection: 0))"
-            )
-            self.deleteBinStore.addAssetId(asset.localIdentifier)
-            self.photoAssets.append(asset)
-            let insertIndexPath = IndexPath(item: self.photoAssets.count - 1, section: 0)
-
-            self.collectionView.insertItems(at: [insertIndexPath])
-            self.updateHeader()
-            print(
-                "[BIN SYNC] onUndo: done, arrayCount=\(self.photoAssets.count), cvCount=\(self.collectionView.numberOfItems(inSection: 0))"
-            )
         }
 
         previewVC.onDeleteNow = { [weak self] in

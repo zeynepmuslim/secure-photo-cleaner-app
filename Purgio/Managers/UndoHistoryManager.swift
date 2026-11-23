@@ -163,6 +163,40 @@ final class UndoHistoryManager {
         return updatedAction
     }
 
+    /// Changes the type of the newest action for an asset across the given sessions (the bin's
+    /// Keep / Store decision). Does nothing when no session holds an action for it.
+    func changeActionType(assetLocalIdentifier: String, in keys: [SessionKey], to newActionType: UndoAction.ActionType) {
+        var didChange = false
+
+        queue.sync(flags: .barrier) {
+            var newest: (keyString: String, index: Int, action: UndoAction)?
+            for key in keys {
+                let keyString = key.undoKeyString
+                guard let actions = self.sessionActions[keyString] else { continue }
+                for (index, action) in actions.enumerated() where action.assetLocalIdentifier == assetLocalIdentifier {
+                    if let current = newest, current.action.timestamp >= action.timestamp { continue }
+                    newest = (keyString, index, action)
+                }
+            }
+            guard let match = newest, var actions = self.sessionActions[match.keyString] else { return }
+            let oldAction = match.action
+            actions[match.index] = UndoAction(
+                id: oldAction.id,
+                actionType: newActionType,
+                assetLocalIdentifier: oldAction.assetLocalIdentifier,
+                index: oldAction.index,
+                assetSize: oldAction.assetSize,
+                timestamp: Date(),
+                sessionId: oldAction.sessionId
+            )
+            self.sessionActions[match.keyString] = actions
+            self.scheduleSave()
+            didChange = true
+        }
+
+        if didChange { notifyChanges() }
+    }
+
     /// Remove specific actions by their IDs (for selective undo)
     func removeActions(withIDs ids: Set<UUID>) -> [UndoAction] {
         guard let key = currentSessionKey else { return [] }

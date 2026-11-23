@@ -157,6 +157,7 @@ luckyPicker.title;I Feel Lucky!;Şanslı Hissediyorum!;;;;
 luckyPicker.videos;Videos;Videolar;;;;
 mainTabBar.deleteAll;Delete All;Tümünü Sil;;;;
 mediaPreview.deleteNow;Delete Now;Şimdi Sil;;;;
+mediaPreview.leaveInBin;Leave in Bin;Çöpte Kalsın;;;;
 mediaPreview.removeFromBin;Remove from Bin;Çöp kutusundan kaldır;;;;
 mediaType.photo;Photo;Fotoğraf;;;;
 mediaType.video;Video;Video;;;;

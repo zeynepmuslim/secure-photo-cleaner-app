@@ -19,8 +19,7 @@ extension MonthReviewViewController {
             sheet.detents = [.medium(), .large()]
             sheet.prefersGrabberVisible = true
             sheet.prefersScrollingExpandsWhenScrolledToEdge = false
-            sheet.prefersEdgeAttachedInCompactHeight = true
-            sheet.widthFollowsPreferredContentSizeWhenEdgeAttached = true
+            // No edge-attached override: the Duo's inner display gets the system's centered sheet.
         }
 
         present(navController, animated: true)

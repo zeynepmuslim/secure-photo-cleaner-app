@@ -20,9 +20,12 @@ final class VideoPlayerController {
     /// `.split`: `controlsContainer` turns into a transparent host for two glass capsules
     /// (play + scrubber + time | mute + duration) that can split around the iPhone Duo fold.
     /// Alpha and visibility set on `controlsContainer` apply to both capsules.
+    /// `.bar`: one glass capsule with everything in a row (play, time, scrubber, duration,
+    /// sound), for a player whose controls sit under the video (the history sheet's grown video).
     enum ControlsLayout {
         case overlay
         case split
+        case bar
     }
 
     private enum SplitLayout {
@@ -30,6 +33,8 @@ final class VideoPlayerController {
         static let buttonSize: CGFloat = 40
         static let buttonInset: CGFloat = 6
         static let defaultGap: CGFloat = 12
+        /// `.bar`: between the scrubber and the time labels beside it.
+        static let sliderGap: CGFloat = 10
         static let previewSize = CGSize(width: 128, height: 72)
     }
 
@@ -353,6 +358,66 @@ final class VideoPlayerController {
             playPauseButton.tintColor = .black
             playPauseButton.layer.cornerRadius = SplitLayout.buttonSize / 2
 
+        case .bar:
+            NSLayoutConstraint.deactivate(overlayInternalConstraints + splitInternalConstraints + [
+                splitLeadingEndConstraint, splitTrailingStartConstraint
+            ].compactMap { $0 })
+            trailingCapsule.removeFromSuperview()
+            scrubPreview.removeFromSuperview()
+            controlsContainer.effect = nil
+            controlsContainer.layer.cornerRadius = 0
+            controlsContainer.layer.masksToBounds = false
+            controlsContainer.clipsToBounds = false
+
+            host.addSubview(leadingCapsule)
+            let content = leadingCapsule.contentView
+            playPauseButton.removeFromSuperview()
+            [playPauseButton, currentTimeLabel, progressSlider, durationLabel, muteButton].forEach {
+                content.addSubview($0)
+            }
+            currentTimeLabel.setContentHuggingPriority(.required, for: .horizontal)
+            currentTimeLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+            durationLabel.setContentHuggingPriority(.required, for: .horizontal)
+            durationLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+
+            splitPlayButtonSizeConstraints = [
+                playPauseButton.widthAnchor.constraint(equalToConstant: SplitLayout.buttonSize),
+                playPauseButton.heightAnchor.constraint(equalToConstant: SplitLayout.buttonSize)
+            ]
+            // Kept in the split set, so `.overlay` takes them down the same way.
+            splitInternalConstraints = splitPlayButtonSizeConstraints + [
+                leadingCapsule.leadingAnchor.constraint(equalTo: host.leadingAnchor),
+                leadingCapsule.trailingAnchor.constraint(equalTo: host.trailingAnchor),
+                leadingCapsule.topAnchor.constraint(equalTo: host.topAnchor),
+                leadingCapsule.bottomAnchor.constraint(equalTo: host.bottomAnchor),
+
+                playPauseButton.leadingAnchor.constraint(
+                    equalTo: content.leadingAnchor, constant: SplitLayout.buttonInset),
+                playPauseButton.centerYAnchor.constraint(equalTo: content.centerYAnchor),
+                currentTimeLabel.leadingAnchor.constraint(
+                    equalTo: playPauseButton.trailingAnchor, constant: SplitLayout.defaultGap),
+                currentTimeLabel.centerYAnchor.constraint(equalTo: content.centerYAnchor),
+                progressSlider.leadingAnchor.constraint(
+                    equalTo: currentTimeLabel.trailingAnchor, constant: SplitLayout.sliderGap),
+                progressSlider.trailingAnchor.constraint(
+                    equalTo: durationLabel.leadingAnchor, constant: -SplitLayout.sliderGap),
+                progressSlider.centerYAnchor.constraint(equalTo: content.centerYAnchor),
+                durationLabel.trailingAnchor.constraint(
+                    equalTo: muteButton.leadingAnchor, constant: -SplitLayout.defaultGap),
+                durationLabel.centerYAnchor.constraint(equalTo: content.centerYAnchor),
+                muteButton.trailingAnchor.constraint(
+                    equalTo: content.trailingAnchor, constant: -SplitLayout.buttonInset),
+                muteButton.centerYAnchor.constraint(equalTo: content.centerYAnchor),
+                muteButton.widthAnchor.constraint(equalToConstant: SplitLayout.buttonSize),
+                muteButton.heightAnchor.constraint(equalToConstant: SplitLayout.buttonSize)
+            ]
+            NSLayoutConstraint.activate(splitInternalConstraints)
+
+            playButtonBlurView.isHidden = true
+            playPauseButton.backgroundColor = .white
+            playPauseButton.tintColor = .black
+            playPauseButton.layer.cornerRadius = SplitLayout.buttonSize / 2
+
         case .overlay:
             hideScrubPreview()
             NSLayoutConstraint.deactivate(splitInternalConstraints + [
@@ -578,7 +643,7 @@ final class VideoPlayerController {
 
     private func updatePlayPauseIcon() {
         let iconName = _isPlaying ? "pause.fill" : "play.fill"
-        let pointSize: CGFloat = controlsLayout == .split ? 18 : 28
+        let pointSize: CGFloat = controlsLayout == .overlay ? 28 : 18
         let config = UIImage.SymbolConfiguration(pointSize: pointSize, weight: .regular)
         playPauseButton.setImage(UIImage(systemName: iconName, withConfiguration: config), for: .normal)
     }

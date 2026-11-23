@@ -15,6 +15,7 @@ enum CommonStrings {
     static let delete = NSLocalizedString("common.delete", comment: "Delete button title")
     static let ok     = NSLocalizedString("common.ok", comment: "OK button title")
     static let help   = NSLocalizedString("common.help", comment: "Help button title")
+    static let close  = NSLocalizedString("common.close", comment: "Close button accessibility label")
     // Shared by the month hub and the finished month's split (keys kept from the hub)
     static let keep   = NSLocalizedString("filterCards.keep", comment: "Keep action label")
     static let store  = NSLocalizedString("filterCards.store", comment: "Store action label")

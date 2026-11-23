@@ -10,18 +10,50 @@ import UIKit
 
 final class UndoHistoryCell: UITableViewCell {
 
-    private let iconImageView: UIImageView = {
+    private enum Layout {
+        static let capsuleLeading = GeneralConstants.EdgePadding.medium
+        static let capsuleWidth = ActionRuleCapsuleView.size.width
+        static let capsuleToText: CGFloat = 12
+        static let thumbnailTrailing = GeneralConstants.EdgePadding.medium
+        static let selectionIndicatorSize: CGFloat = 24
+        static let selectionIndicatorToCapsule: CGFloat = 12
+        static let selectingDuration: TimeInterval = 0.25
+    }
+
+    /// The select mode's mark: an empty ring, or a blue circle with a dot. Not a tick, which is Keep's.
+    private let selectionIndicator: UIImageView = {
         let imageView = UIImageView()
-        imageView.contentMode = .scaleAspectFit
-        imageView.tintColor = .label
+        imageView.contentMode = .center
+        imageView.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 21, weight: .regular)
+        imageView.alpha = 0
+        imageView.isAccessibilityElement = false
         imageView.translatesAutoresizingMaskIntoConstraints = false
         return imageView
+    }()
+
+    private var capsuleLeadingConstraint: NSLayoutConstraint?
+    private var isSelecting = false
+
+    /// The capsule's leading distance: it moves in to make room for the selection mark.
+    private var capsuleLeadingOffset: CGFloat {
+        Layout.capsuleLeading
+            + (isSelecting ? Layout.selectionIndicatorSize + Layout.selectionIndicatorToCapsule : 0)
+    }
+
+    /// The rule capsule: the action's color with its symbol (no circle) in the action's ink.
+    private let capsuleView: ActionRuleCapsuleView = {
+        let view = ActionRuleCapsuleView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
     }()
 
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 16, weight: .medium)
         label.textColor = .label
+        label.numberOfLines = 2
+        label.lineBreakMode = .byWordWrapping
+        label.setContentCompressionResistancePriority(.required, for: .vertical)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
@@ -64,7 +96,9 @@ final class UndoHistoryCell: UITableViewCell {
     }
 
     private func setupUI() {
-        contentView.addSubview(iconImageView)
+        contentView.addSubview(selectionIndicator)
+        contentView.addSubview(capsuleView)
+        updateSelectionIndicator()
         contentView.addSubview(stackView)
         contentView.addSubview(thumbnailImageView)
 
@@ -73,17 +107,29 @@ final class UndoHistoryCell: UITableViewCell {
     }
 
     private func setupConstraint() {
+        let capsuleLeading = capsuleView.leadingAnchor.constraint(
+            equalTo: contentView.leadingAnchor, constant: capsuleLeadingOffset)
+        capsuleLeadingConstraint = capsuleLeading
         NSLayoutConstraint.activate([
-            iconImageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            iconImageView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-            iconImageView.widthAnchor.constraint(equalToConstant: 24),
-            iconImageView.heightAnchor.constraint(equalToConstant: 24),
+            selectionIndicator.leadingAnchor.constraint(
+                equalTo: contentView.leadingAnchor, constant: Layout.capsuleLeading),
+            selectionIndicator.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            selectionIndicator.widthAnchor.constraint(equalToConstant: Layout.selectionIndicatorSize),
+            selectionIndicator.heightAnchor.constraint(equalToConstant: Layout.selectionIndicatorSize),
 
-            stackView.leadingAnchor.constraint(equalTo: iconImageView.trailingAnchor, constant: 12),
+            capsuleLeading,
+            capsuleView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            capsuleView.widthAnchor.constraint(equalToConstant: Layout.capsuleWidth),
+            capsuleView.heightAnchor.constraint(equalToConstant: ActionRuleCapsuleView.size.height),
+
+            stackView.leadingAnchor.constraint(equalTo: capsuleView.trailingAnchor, constant: Layout.capsuleToText),
             stackView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            stackView.topAnchor.constraint(greaterThanOrEqualTo: contentView.topAnchor, constant: 12),
+            stackView.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: -12),
             stackView.trailingAnchor.constraint(equalTo: thumbnailImageView.leadingAnchor, constant: -12),
 
-            thumbnailImageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            thumbnailImageView.trailingAnchor.constraint(
+                equalTo: contentView.trailingAnchor, constant: -Layout.thumbnailTrailing),
             thumbnailImageView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
             thumbnailImageView.widthAnchor.constraint(equalToConstant: 60),
             thumbnailImageView.heightAnchor.constraint(equalToConstant: 60),
@@ -92,9 +138,82 @@ final class UndoHistoryCell: UITableViewCell {
         ])
     }
 
+    /// Hidden when the row below is selected, so no line cuts above a selected row's fill.
+    var hidesSeparator = false {
+        didSet {
+            guard hidesSeparator != oldValue else { return }
+            setNeedsLayout()
+        }
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        // The separator starts at the text (it moves with the content in select mode).
+        let leading = hidesSeparator
+            ? bounds.width
+            : contentView.frame.minX + capsuleLeadingOffset + Layout.capsuleWidth + Layout.capsuleToText
+        if separatorInset.left != leading {
+            separatorInset = UIEdgeInsets(top: 0, left: leading, bottom: 0, right: 0)
+        }
+    }
+
+    // MARK: - Select mode
+
+    /// Shows or hides the selection mark; the row's content moves in to make room for it.
+    func setSelecting(_ selecting: Bool, animated: Bool) {
+        guard selecting != isSelecting else { return }
+        isSelecting = selecting
+        capsuleLeadingConstraint?.constant = capsuleLeadingOffset
+        updateSelectionIndicator()
+        setNeedsLayout()
+        let changes = {
+            self.selectionIndicator.alpha = selecting ? 1 : 0
+            self.layoutIfNeeded()
+        }
+        if animated, !UIAccessibility.isReduceMotionEnabled {
+            UIView.animate(withDuration: Layout.selectingDuration, animations: changes)
+        } else {
+            changes()
+        }
+    }
+
+    override func setSelected(_ selected: Bool, animated: Bool) {
+        super.setSelected(selected, animated: animated)
+        updateSelectionIndicator()
+    }
+
+    private func updateSelectionIndicator() {
+        if isSelected {
+            // A filled circle with a dot; the older name is a ring around the dot.
+            selectionIndicator.image = UIImage(systemName: "smallcircle.filled.circle.fill")
+                ?? UIImage(systemName: "circle.inset.filled")
+            selectionIndicator.tintColor = .systemBlue
+        } else {
+            selectionIndicator.image = UIImage(systemName: "circle")
+            selectionIndicator.tintColor = .systemGray3
+        }
+    }
+
+    private func applyCapsule(for action: UndoAction) {
+        capsuleView.configure(type: action.actionType, color: action.displayColor)
+    }
+
+    /// Selection is a fill inside the inset card (clipped to its corners), never full-bleed. Both
+    /// fills are solid colors of the app's own, one step apart.
+    override func updateConfiguration(using state: UICellConfigurationState) {
+        var background = UIBackgroundConfiguration.listGroupedCell().updated(for: state)
+        background.backgroundColor = (state.isSelected || state.isHighlighted) ? Self.selectedFill : Self.rowFill
+        backgroundConfiguration = background
+    }
+
+    // The app's card color (white / #1C1C1E), on the sheet's solid grouped background.
+    private static let rowFill = UIColor.cardBackground
+
+    // .systemGray5 (light #E5E5EA, dark #2C2C2E): one step above the card, opaque.
+    private static let selectedFill = UIColor.systemGray5
+
     func configure(with action: UndoAction, thumbnail: UIImage?) {
-        iconImageView.image = UIImage(systemName: action.displayIcon)
-        iconImageView.tintColor = action.displayColor
+        applyCapsule(for: action)
         titleLabel.text = action.displayTitle
         timeLabel.text = action.timestamp.timeAgo()
         thumbnailImageView.image = thumbnail
@@ -103,8 +222,7 @@ final class UndoHistoryCell: UITableViewCell {
     }
 
     func configureAsDeleted(with action: UndoAction) {
-        iconImageView.image = UIImage(systemName: action.displayIcon)
-        iconImageView.tintColor = action.displayColor
+        applyCapsule(for: action)
         titleLabel.text = action.displayTitle
         timeLabel.text = action.timestamp.timeAgo()
 
@@ -119,7 +237,7 @@ final class UndoHistoryCell: UITableViewCell {
         thumbnailImageView.image = nil
         thumbnailImageView.contentMode = .scaleAspectFill
 
-        iconImageView.image = nil
+        hidesSeparator = false
         titleLabel.text = nil
         timeLabel.text = nil
     }

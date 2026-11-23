@@ -54,6 +54,8 @@ final class PrivacyShieldArtView: UIView {
         static let homeButtonChinRatio: CGFloat = 0.125
         /// A tile's standard corner radius, and the enlarged photo's at the start and end of its flight.
         static let tileRadius: CGFloat = 5
+        /// The enlarged photo's longer side never passes this.
+        static let enlargedPhotoMaximumSide: CGFloat = 420
     }
 
     /// The bundled sample photos, one per tile (400×400, sharp enough for the largest tile).
@@ -156,9 +158,8 @@ final class PrivacyShieldArtView: UIView {
     private var samplePhotos: [UIImage?] = PrivacyShieldArtView.samplePhotoNames.map { _ in nil }
     private var tileCorners: [Corners] = PrivacyShieldArtView.samplePhotoNames.map { _ in Corners(all: 0) }
 
-    /// The enlarged photo (an easter egg: the sample photos are the developer's), over the window.
-    private var photoOverlay: UIView?
-    private var enlargedTileIndex: Int?
+    /// Enlarges a photo over the window (an easter egg: the sample photos are the developer's).
+    private let photoPresenter = PhotoGrowPresenter()
 
     private var phoneBuiltFor: (variant: DeviceVariant, size: CGSize, isFolded: Bool)?
     private(set) var deviceVariant: DeviceVariant = .dynamicIsland
@@ -254,7 +255,7 @@ final class PrivacyShieldArtView: UIView {
 
     override func didMoveToWindow() {
         super.didMoveToWindow()
-        if window == nil { dismissPhoto(animated: false) }
+        if window == nil { photoPresenter.dismiss(animated: false) }
         setNeedsLayout()
     }
 
@@ -649,9 +650,9 @@ final class PrivacyShieldArtView: UIView {
     // MARK: - Enlarged photo
 
     @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
-        guard photoOverlay == nil, let index = tileIndex(at: gesture), let photo = samplePhotos[index],
-              let start = tileFrameInWindow(index) else { return }
-        showPhoto(photo, tileIndex: index, from: start)
+        guard !photoPresenter.isPresented, let index = tileIndex(at: gesture), let photo = samplePhotos[index],
+              tileFrameInWindow(index) != nil else { return }
+        showPhoto(photo, tileIndex: index)
     }
 
     /// Where the folded halves sit in the flat art (each half is a crop of it).
@@ -704,69 +705,21 @@ final class PrivacyShieldArtView: UIView {
 
     /// Grows the photo out of its tile into a large rounded square over a blur; a tap anywhere
     /// shrinks it back into the tile.
-    private func showPhoto(_ photo: UIImage, tileIndex index: Int, from start: CGRect) {
+    private func showPhoto(_ photo: UIImage, tileIndex index: Int) {
         guard let window else { return }
-        HapticFeedbackManager.shared.impact(intensity: .light)
-
-        let overlay = UIView(frame: window.bounds)
-        overlay.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        let blurView = UIVisualEffectView(effect: nil)
-        blurView.frame = overlay.bounds
-        blurView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        overlay.addSubview(blurView)
-
-        let imageView = UIImageView(image: photo)
-        imageView.contentMode = .scaleAspectFill
-        imageView.clipsToBounds = true
-        imageView.layer.cornerCurve = .continuous
-        imageView.layer.cornerRadius = Layout.tileRadius
-        imageView.frame = start
-        overlay.addSubview(imageView)
-        overlay.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleOverlayTap)))
-        window.addSubview(overlay)
-        photoOverlay = overlay
-        enlargedTileIndex = index
-        setTileLifted(index, true)
-
-        let safe = window.bounds.inset(by: window.safeAreaInsets)
-        let side = min(safe.width - 2 * GeneralConstants.EdgePadding.content,
-                       safe.height - 2 * GeneralConstants.EdgePadding.content, 420)
-        let aspect = photo.size.height > 0 ? photo.size.width / photo.size.height : 1
-        let target = CGSize(width: aspect >= 1 ? side : side * aspect, height: aspect >= 1 ? side / aspect : side)
-        let end = CGRect(x: safe.midX - target.width / 2, y: safe.midY - target.height / 2,
-                         width: target.width, height: target.height)
-        UIView.animate(withDuration: 0.4, delay: 0, usingSpringWithDamping: 0.75, initialSpringVelocity: 0.8) {
-            blurView.effect = UIBlurEffect(style: .systemThinMaterial)
-            imageView.frame = end
-            imageView.layer.cornerRadius = GeneralConstants.CornerRadius.card * 1.5
-        }
-    }
-
-    @objc private func handleOverlayTap() {
-        dismissPhoto(animated: true)
-    }
-
-    private func dismissPhoto(animated: Bool) {
-        guard let overlay = photoOverlay else { return }
-        photoOverlay = nil
-        let index = enlargedTileIndex
-        enlargedTileIndex = nil
-        let blurView = overlay.subviews.first as? UIVisualEffectView
-        let imageView = overlay.subviews.last as? UIImageView
-        let finish = { [weak self] in
-            overlay.removeFromSuperview()
-            if let index { self?.setTileLifted(index, false) }
-        }
-        // The tile may have moved (a fold or unfold) while the photo was open.
-        guard animated, let index, overlay.window != nil, let end = tileFrameInWindow(index) else {
-            finish()
-            return
-        }
-        UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseInOut], animations: {
-            blurView?.effect = nil
-            imageView?.frame = end
-            imageView?.layer.cornerRadius = Layout.tileRadius
-        }, completion: { _ in finish() })
+        photoPresenter.onWillShow = { [weak self] in self?.setTileLifted(index, true) }
+        photoPresenter.onDidDismiss = { [weak self] in self?.setTileLifted(index, false) }
+        photoPresenter.present(
+            in: window, image: photo, sourceCornerRadius: Layout.tileRadius,
+            maximumSide: Layout.enlargedPhotoMaximumSide,
+            // The photo's longer side follows the safe area's shorter one.
+            availableRect: { window in
+                let safe = window.bounds.inset(by: window.safeAreaInsets)
+                let side = min(safe.width, safe.height)
+                return CGRect(x: safe.midX - side / 2, y: safe.midY - side / 2, width: side, height: side)
+            },
+            // Asked again when shrinking: the tile may have moved (a fold or unfold) meanwhile.
+            sourceFrame: { [weak self] in self?.tileFrameInWindow(index) })
     }
 
     // MARK: - Folded phone

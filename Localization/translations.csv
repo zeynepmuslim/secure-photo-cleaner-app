@@ -157,6 +157,9 @@ luckyPicker.title;I Feel Lucky!;Şanslı Hissediyorum!;;;;
 luckyPicker.videos;Videos;Videolar;;;;
 mainTabBar.deleteAll;Delete All;Tümünü Sil;;;;
 mediaPreview.deleteNow;Delete Now;Şimdi Sil;;;;
+mediaPreview.enlarge;Enlarge;Büyüt;;;;
+mediaPreview.enlargedPhoto;Enlarged photo;Büyütülmüş fotoğraf;;;;
+mediaPreview.enlargedVideo;Enlarged video;Büyütülmüş video;;;;
 mediaPreview.leaveInBin;Leave in Bin;Çöpte Kalsın;;;;
 mediaPreview.removeFromBin;Remove from Bin;Çöp kutusundan kaldır;;;;
 mediaType.photo;Photo;Fotoğraf;;;;
@@ -204,7 +207,11 @@ monthsList.year;Year;Yıl;;;;
 videoPlayer.mute;Mute;Sesi Kapat;;;;
 videoPlayer.unmute;Unmute;Sesi Aç;;;;
 yearCell.itemsCount;%d items;%d öğe;;;;
-yearDetailSheet.months;%d months;%d ay;;;;
+yearDetailSheet.months;;;%lld month;%lld months;%lld ay;%lld ay
+yearDetailSheet.note;Years with few items are reviewed in one session.;Az öğesi olan yıllar tek oturumda incelenir.;;;;
+yearDetailSheet.itemsCount;;;%lld item;%lld items;%lld öğe;%lld öğe
+yearDetailSheet.reviewedAccessibility;%1$lld of %2$lld reviewed;%2$lld içinden %1$lld incelendi;;;;
+yearDetailSheet.allCaughtUp;All caught up!;Hepsi tamamlandı!;;;;
 motivation.catVideos;Make room for more cat videos!;Daha fazla kedi videosu için yer açın!;;;;
 motivation.littleRoom;Make a little room today;Bugün biraz yer açın;;;;
 motivation.memoriesOnTheWay;New memories are on the way!;Yeni anılar yolda!;;;;

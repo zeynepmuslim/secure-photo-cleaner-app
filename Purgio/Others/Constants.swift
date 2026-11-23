@@ -42,6 +42,11 @@ enum GeneralConstants {
         static let card: CGFloat = 16
     }
 
+    enum SheetColumn {
+        /// The widest a sheet's one content column gets, centered in wider sheets (560).
+        static let maximumWidth: CGFloat = 560
+    }
+
     enum ButtonSize {
         
         ///30

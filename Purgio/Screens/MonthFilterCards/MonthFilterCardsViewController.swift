@@ -881,26 +881,7 @@ final class MonthFilterCardsViewController: UIViewController {
     private func buildFreshYearItem() -> YearItem? {
         guard let section = yearSection else { return nil }
         let yearProgress = ReviewProgressStore.shared.getProgress(forMonthKey: monthKey, mediaType: mediaType)
-        let yearReviewed = yearProgress.reviewedCount
-        let totalSectionCount = section.totalItemCount
-
-        // No per-month progress exists, distribute the year total proportionally by photo count.
-        let freshMonths = section.months.map { month in
-            let proportional = totalSectionCount > 0
-                ? Int(round(Double(yearReviewed) * Double(month.currentPhotoCount) / Double(totalSectionCount)))
-                : 0
-            return MonthItem(
-                title: month.title,
-                key: month.key,
-                currentPhotoCount: month.currentPhotoCount,
-                reviewedCount: proportional,
-                keptCount: 0,
-                deletedCount: 0,
-                storedCount: 0,
-                originalTotalCount: month.currentPhotoCount,
-                mediaType: month.mediaType
-            )
-        }
+        let freshMonths = preloadedYearAssets.map { monthItems(for: section, from: $0) } ?? section.months
         return YearItem(
             year: section.year,
             key: monthKey,
@@ -913,6 +894,45 @@ final class MonthFilterCardsViewController: UIViewController {
             originalTotalCount: yearProgress.originalTotalCount,
             mediaType: mediaType
         )
+    }
+
+    /// Each month's real progress inside the year: its assets counted in the bin, kept and
+    /// will-be-stored stores ("processed" is global, so a year session's swipes show per month).
+    /// Main thread only, as the stores are.
+    private func monthItems(for section: YearSection, from assets: [PHAsset]) -> [MonthItem] {
+        let formatter = DateFormatterManager.shared
+        let assetsByMonth = Dictionary(grouping: assets) { asset in
+            asset.creationDate.map { formatter.monthKey(from: $0) } ?? ""
+        }
+        let bin = DeleteBinStore.shared
+        let kept = KeptAssetsStore.shared
+        let stored = WillBeStoredStore.shared
+
+        return section.months.map { month in
+            guard let monthAssets = assetsByMonth[month.key] else { return month }
+            var deleted = 0, keptCount = 0, storedCount = 0
+            for asset in monthAssets {
+                let id = asset.localIdentifier
+                if bin.hasAssetId(id) {
+                    deleted += 1
+                } else if kept.hasAssetId(id) {
+                    keptCount += 1
+                } else if stored.hasAssetId(id) {
+                    storedCount += 1
+                }
+            }
+            return MonthItem(
+                title: month.title,
+                key: month.key,
+                currentPhotoCount: monthAssets.count,
+                reviewedCount: deleted + keptCount + storedCount,
+                keptCount: keptCount,
+                deletedCount: deleted,
+                storedCount: storedCount,
+                originalTotalCount: monthAssets.count,
+                mediaType: month.mediaType
+            )
+        }
     }
 
     // MARK: - Year Session Support

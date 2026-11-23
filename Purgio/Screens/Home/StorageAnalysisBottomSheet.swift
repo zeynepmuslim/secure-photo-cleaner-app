@@ -61,7 +61,7 @@ final class StorageAnalysisBottomSheet: UIViewController {
         static let topPadding: CGFloat = 24
         static let bottomPadding = GeneralConstants.EdgePadding.content
         static let sidePadding = GeneralConstants.EdgePadding.content
-        static let columnMaxWidth: CGFloat = 560
+        static let columnMaxWidth = GeneralConstants.SheetColumn.maximumWidth
         static let cardSidePadding = GeneralConstants.EdgePadding.medium
         static let savedGap: CGFloat = 10
         static let refreshHeight: CGFloat = 36

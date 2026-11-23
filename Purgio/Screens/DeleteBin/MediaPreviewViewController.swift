@@ -45,7 +45,7 @@ final class MediaPreviewViewController: UIViewController {
         static let regularTitleSize: CGFloat = 20
         static let compactTitleSize: CGFloat = 18
         static let deleteNowGap: CGFloat = 8
-        static let maximumColumnWidth: CGFloat = 560
+        static let maximumColumnWidth = GeneralConstants.SheetColumn.maximumWidth
         static let compactWindowHeight: CGFloat = 700
         static let playBadge: CGFloat = 40
         static let durationChipHeight: CGFloat = 22
@@ -943,19 +943,19 @@ final class MediaPreviewViewController: UIViewController {
 // MARK: - Strings
 
 private enum Strings {
-    static let keep = NSLocalizedString("historyDetail.keep", comment: "Keep action button")
-    static let store = NSLocalizedString("historyDetail.store", comment: "Store action button")
+    static let keep = CommonStrings.keep
+    static let store = CommonStrings.store
     static let leaveInBin = NSLocalizedString(
         "mediaPreview.leaveInBin", comment: "The bin preview's current choice: the item stays in the Delete Bin")
     static let deleteNow = NSLocalizedString("mediaPreview.deleteNow", comment: "Delete now button")
-    static let markedForDeletion = NSLocalizedString(
-        "undoAction.markedForDeletion", comment: "Title of an item in the Delete Bin")
+    /// The bin item's title is the delete action's own title.
+    static var markedForDeletion: String { UndoAction.ActionType.delete.displayTitle }
     static let enlarge = NSLocalizedString(
-        "historyDetail.enlarge", comment: "Accessibility label of the photo or video card; a tap enlarges it")
+        "mediaPreview.enlarge", comment: "Accessibility label of the photo or video card; a tap enlarges it")
     static let enlargedPhoto = NSLocalizedString(
-        "historyDetail.enlargedPhoto", comment: "Accessibility label of the enlarged photo")
+        "mediaPreview.enlargedPhoto", comment: "Accessibility label of the enlarged photo")
     static let enlargedVideo = NSLocalizedString(
-        "historyDetail.enlargedVideo", comment: "Accessibility label of the enlarged video")
+        "mediaPreview.enlargedVideo", comment: "Accessibility label of the enlarged video")
 }
 
 // MARK: - Preview

@@ -87,6 +87,9 @@ final class DateFormatterManager {
         return monthNameFormatter.string(from: date)
     }
 
+    /// Jan…Dec (standalone short names in the user's calendar), always 12
+    private(set) lazy var shortStandaloneMonthSymbols: [String] = monthNameFormatter.shortStandaloneMonthSymbols
+
     /// 2026-01 → 01.2026
     func shortMonth(fromMonthKey monthKey: String) -> String {
         guard let date = date(fromMonthKey: monthKey) else { return monthKey }

@@ -9,14 +9,29 @@ import Foundation
 import UIKit.UIView
 
 extension Int {
+    /// A count in at most 4 characters: "950", "1.5K", "12K". The thousands suffix and the
+    /// decimal separator follow the app's language, so Turkish reads "1,5B", "12B".
     var compactFormatted: String {
-        if self >= 10_000 { return "\(self / 1_000)K" }
-        if self >= 1_000 {
-            let s = String(format: "%.1fK", Double(self) / 1_000)
-            return s.hasSuffix(".0K") ? s.replacingOccurrences(of: ".0K", with: "K") : s
-        }
-        return "\(self)"
+        guard self >= 1_000 else { return "\(self)" }
+        let suffix = CommonStrings.thousandsSuffix
+        if self >= 10_000 { return "\(self / 1_000)\(suffix)" }
+        let thousands = NSNumber(value: Double(self) / 1_000)
+        let number = Self.compactThousandsFormatter.string(from: thousands) ?? "\(self / 1_000)"
+        return number + suffix
     }
+
+    /// One fraction digit at most, rounded down so a count is never overstated, in the
+    /// app's language rather than the region's
+    private static let compactThousandsFormatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.locale = Locale(identifier: Bundle.main.preferredLocalizations.first ?? "en")
+        formatter.usesGroupingSeparator = false
+        formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = 1
+        formatter.roundingMode = .down
+        return formatter
+    }()
 }
 
 extension Int {

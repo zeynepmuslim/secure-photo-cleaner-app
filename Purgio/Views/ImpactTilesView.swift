@@ -15,6 +15,10 @@ import UIKit
 /// and the right column resists compression, so the saved value shrinks instead. When even
 /// that isn't enough for the card's own width, the card stacks: the saved value on top, a
 /// hairline, then the two counts side by side.
+///
+/// Before anything is done (nothing saved, stored or reviewed) the numbers give way to a
+/// motivating message and a "Start swiping" button (`onStartReviewing`). With counts but
+/// nothing saved yet, the saved value is a hint to swipe left instead of "0 KB".
 final class ImpactTilesView: UIView {
 
     // MARK: - Strings
@@ -22,6 +26,10 @@ final class ImpactTilesView: UIView {
         static let spaceSaved = NSLocalizedString("impactStats.spaceSaved", comment: "Space saved stat label")
         static let itemsStored = NSLocalizedString("impactStats.itemsStored", comment: "Items stored stat label")
         static let totalReviewed = NSLocalizedString("impactStats.totalReviewed", comment: "Total reviewed stat label")
+        static let emptyTitle = NSLocalizedString("impactStats.emptyTitle", comment: "Impact card title before any cleanup")
+        static let emptyMessage = NSLocalizedString("impactStats.emptyMessage", comment: "Impact card message before any cleanup")
+        static let startSwiping = NSLocalizedString("impactStats.startSwiping", comment: "Impact card button that opens the Photos tab")
+        static let savedHint = NSLocalizedString("impactStats.savedHint", comment: "Shown instead of 0 KB space saved")
     }
 
     private enum Layout {
@@ -37,6 +45,14 @@ final class ImpactTilesView: UIView {
         static let savedFontSize: CGFloat = 34
         static let savedMinimumScale: CGFloat = 0.6
         static let titleMinimumScale: CGFloat = 0.8
+        static let hintFontSize: CGFloat = 15
+        static let emptyTitleSpacing: CGFloat = 10
+        static let emptyMessageSpacing: CGFloat = 4
+        static let emptyButtonSpacing: CGFloat = 14
+        static let emptyButtonHeight: CGFloat = 36
+        static let emptyIconPointSize: CGFloat = 20
+        /// How far the empty state's icon sits above the title's first baseline (its center)
+        static let emptyIconBaselineOffset: CGFloat = 5
     }
 
     private enum Arrangement {
@@ -82,6 +98,65 @@ final class ImpactTilesView: UIView {
         return view
     }()
 
+    /// The look before anything is done: icon and title in a row, the message, the button
+    private let emptyContentView: UIView = {
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.isHidden = true
+        return view
+    }()
+
+    private let emptyIconView: UIImageView = {
+        let imageView = UIImageView()
+        let config = UIImage.SymbolConfiguration(pointSize: Layout.emptyIconPointSize, weight: .medium)
+        imageView.image = UIImage(systemName: "sparkles", withConfiguration: config)
+        imageView.tintColor = .systemGreen
+        imageView.contentMode = .scaleAspectFit
+        imageView.isAccessibilityElement = false
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        return imageView
+    }()
+
+    private let emptyTitleLabel: UILabel = {
+        let label = UILabel()
+        label.text = Strings.emptyTitle
+        label.font = ThemeManager.Fonts.semiboldBody
+        label.textColor = .textPrimary
+        label.numberOfLines = 0
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+
+    private let emptyMessageLabel: UILabel = {
+        let label = UILabel()
+        label.text = Strings.emptyMessage
+        label.font = .systemFont(ofSize: 13, weight: .regular)
+        label.textColor = .textSecondary
+        label.numberOfLines = 0
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+
+    /// The title and message as one VoiceOver element
+    private lazy var emptyTextAccessibilityElement = UIAccessibilityElement(accessibilityContainer: self)
+
+    private let startButton: DynamicGlassButton = {
+        let button = DynamicGlassButton()
+        button.configure(
+            title: Strings.startSwiping,
+            systemImage: "hand.draw",
+            style: .regular,
+            backgroundColor: .systemGray5,
+            foregroundColor: .label,
+            fontSize: 15,
+            fontWeight: .semibold,
+            iconSize: 13,
+            contentInsets: NSDirectionalEdgeInsets(top: 8, leading: 14, bottom: 8, trailing: 14))
+        button.setContentHuggingPriority(.required, for: .horizontal)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        return button
+    }()
+
     private let verticalSeparator: UIView = ImpactTilesView.makeSeparator()
     private let horizontalSeparator: UIView = ImpactTilesView.makeSeparator()
 
@@ -106,9 +181,13 @@ final class ImpactTilesView: UIView {
     private var arrangement: Arrangement = .sideBySide
     private var sideBySideConstraints: [NSLayoutConstraint] = []
     private var stackedConstraints: [NSLayoutConstraint] = []
+    private var emptyConstraints: [NSLayoutConstraint] = []
     /// Lines the counts' numbers up in one column while side by side
     private var equalNumberWidths: NSLayoutConstraint?
 
+    var onStartReviewing: (() -> Void)?
+
+    private var isEmpty = false
     private var savedText = ""
     private var storedCount = 0
     private var reviewedCount = 0
@@ -127,11 +206,26 @@ final class ImpactTilesView: UIView {
 
     // MARK: - Configuration
 
-    func configure(spaceSaved: String, storedCount: Int, reviewedCount: Int) {
-        savedText = spaceSaved
+    func configure(spaceSavedBytes: Int64, storedCount: Int, reviewedCount: Int) {
         self.storedCount = storedCount
         self.reviewedCount = reviewedCount
-        savedValueLabel.text = spaceSaved
+        setEmpty(spaceSavedBytes <= 0 && storedCount == 0 && reviewedCount == 0)
+
+        if spaceSavedBytes > 0 {
+            savedText = spaceSavedBytes.formattedBytes(allowedUnits: [.useKB, .useMB, .useGB, .useTB])
+            savedValueLabel.font = ThemeManager.Fonts.titleFont(size: Layout.savedFontSize, weight: .bold)
+            savedValueLabel.textColor = .systemGreen
+            savedValueLabel.numberOfLines = 1
+            savedValueLabel.adjustsFontSizeToFitWidth = true
+        } else {
+            // Something reviewed or stored, nothing freed yet: point at how to free space
+            savedText = Strings.savedHint
+            savedValueLabel.font = .systemFont(ofSize: Layout.hintFontSize, weight: .semibold)
+            savedValueLabel.textColor = .textSecondary
+            savedValueLabel.numberOfLines = 2
+            savedValueLabel.adjustsFontSizeToFitWidth = false
+        }
+        savedValueLabel.text = savedText
         storedRow.setValue(storedCount.compactFormatted)
         reviewedRow.setValue(reviewedCount.compactFormatted)
         updateAccessibilityLabel()
@@ -142,8 +236,32 @@ final class ImpactTilesView: UIView {
     // MARK: - Layout
 
     override func layoutSubviews() {
-        applyArrangement(fittingArrangement())
+        if !isEmpty { applyArrangement(fittingArrangement()) }
         super.layoutSubviews()
+        if isEmpty {
+            emptyTextAccessibilityElement.accessibilityFrameInContainerSpace =
+                emptyTitleLabel.frame.union(emptyMessageLabel.frame)
+        }
+    }
+
+    /// Swaps the numbers for the motivating message and back
+    private func setEmpty(_ empty: Bool) {
+        guard empty != isEmpty else { return }
+        isEmpty = empty
+        emptyContentView.isHidden = !empty
+        [savedColumn, countsStack].forEach { $0.isHidden = empty }
+        verticalSeparator.isHidden = empty || arrangement == .stacked
+        horizontalSeparator.isHidden = empty || arrangement == .sideBySide
+        NSLayoutConstraint.deactivate(empty ? currentArrangementConstraints : emptyConstraints)
+        NSLayoutConstraint.activate(empty ? emptyConstraints : currentArrangementConstraints)
+        // The numbers are one element; the empty look is its text and its button
+        isAccessibilityElement = !empty
+        accessibilityElements = empty ? [emptyTextAccessibilityElement, startButton] : nil
+        superview?.setNeedsLayout()
+    }
+
+    private var currentArrangementConstraints: [NSLayoutConstraint] {
+        arrangement == .stacked ? stackedConstraints : sideBySideConstraints
     }
 
     /// Side by side unless the counts at full size, the separator and the saved column at its
@@ -194,6 +312,18 @@ final class ImpactTilesView: UIView {
         [storedRow, reviewedRow].forEach { countsStack.addArrangedSubview($0) }
         [savedColumn, verticalSeparator, horizontalSeparator, countsStack].forEach { addSubview($0) }
         horizontalSeparator.isHidden = true
+
+        [emptyIconView, emptyTitleLabel, emptyMessageLabel, startButton].forEach { emptyContentView.addSubview($0) }
+        addSubview(emptyContentView)
+        startButton.addTarget(self, action: #selector(startTapped), for: .touchUpInside)
+        startButton.accessibilityLabel = Strings.startSwiping
+        emptyTextAccessibilityElement.accessibilityLabel = "\(Strings.emptyTitle), \(Strings.emptyMessage)"
+    }
+
+    // MARK: - Actions
+
+    @objc private func startTapped() {
+        onStartReviewing?()
     }
 
     private func setupConstraint() {
@@ -258,6 +388,39 @@ final class ImpactTilesView: UIView {
             countsStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -padding)
         ]
 
+        NSLayoutConstraint.activate([
+            emptyIconView.leadingAnchor.constraint(equalTo: emptyContentView.leadingAnchor),
+            emptyIconView.centerYAnchor.constraint(equalTo: emptyTitleLabel.firstBaselineAnchor, constant: -Layout.emptyIconBaselineOffset),
+            emptyIconView.widthAnchor.constraint(equalToConstant: Layout.iconSize),
+            emptyIconView.heightAnchor.constraint(equalToConstant: Layout.iconSize),
+
+            emptyTitleLabel.topAnchor.constraint(equalTo: emptyContentView.topAnchor),
+            emptyTitleLabel.leadingAnchor.constraint(
+                equalTo: emptyIconView.trailingAnchor, constant: Layout.emptyTitleSpacing),
+            emptyTitleLabel.trailingAnchor.constraint(equalTo: emptyContentView.trailingAnchor),
+
+            emptyMessageLabel.topAnchor.constraint(
+                equalTo: emptyTitleLabel.bottomAnchor, constant: Layout.emptyMessageSpacing),
+            emptyMessageLabel.leadingAnchor.constraint(equalTo: emptyTitleLabel.leadingAnchor),
+            emptyMessageLabel.trailingAnchor.constraint(equalTo: emptyContentView.trailingAnchor),
+
+            startButton.topAnchor.constraint(
+                equalTo: emptyMessageLabel.bottomAnchor, constant: Layout.emptyButtonSpacing),
+            startButton.leadingAnchor.constraint(equalTo: emptyTitleLabel.leadingAnchor),
+            startButton.trailingAnchor.constraint(lessThanOrEqualTo: emptyContentView.trailingAnchor),
+            startButton.heightAnchor.constraint(equalToConstant: Layout.emptyButtonHeight),
+            startButton.bottomAnchor.constraint(equalTo: emptyContentView.bottomAnchor)
+        ])
+
+        // Centered vertically when the card is taller than the message (the Duo's panes)
+        emptyConstraints = [
+            emptyContentView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: padding),
+            emptyContentView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -padding),
+            emptyContentView.centerYAnchor.constraint(equalTo: centerYAnchor),
+            emptyContentView.topAnchor.constraint(greaterThanOrEqualTo: topAnchor, constant: padding),
+            emptyContentView.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -padding)
+        ]
+
         equalNumberWidths = storedRow.numberLabel.widthAnchor.constraint(
             equalTo: reviewedRow.numberLabel.widthAnchor)
 
@@ -267,6 +430,7 @@ final class ImpactTilesView: UIView {
     }
 
     private func updateAccessibilityLabel() {
+        // savedText is the size, or the hint while nothing is saved
         accessibilityLabel = "\(Strings.spaceSaved) \(savedText), "
             + "\(Strings.itemsStored) \(storedCount), \(Strings.totalReviewed) \(reviewedCount)"
     }
@@ -410,10 +574,12 @@ import SwiftUI
 
 @available(iOS 17.0, *)
 #Preview {
-    let states: [(String, Int, Int)] = [
-        ("48 MB", 1, 12),
-        ("248.63 GB", 4812, 31407),
-        ("1.24 TB", 12345, 128904)
+    let states: [(Int64, Int, Int)] = [
+        (0, 0, 0),
+        (0, 3, 1240),
+        (48_000_000, 1, 12),
+        (248_630_000_000, 4812, 31407),
+        (1_240_000_000_000, 12345, 128904)
     ]
     let widths: [CGFloat] = [335, 362, 400]
 
@@ -425,7 +591,7 @@ import SwiftUI
     for width in widths {
         for (saved, stored, reviewed) in states {
             let card = ImpactTilesView()
-            card.configure(spaceSaved: saved, storedCount: stored, reviewedCount: reviewed)
+            card.configure(spaceSavedBytes: saved, storedCount: stored, reviewedCount: reviewed)
             stack.addArrangedSubview(card)
             card.widthAnchor.constraint(equalToConstant: width).isActive = true
         }

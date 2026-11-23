@@ -16,6 +16,10 @@ enum CommonStrings {
     static let ok     = NSLocalizedString("common.ok", comment: "OK button title")
     static let help   = NSLocalizedString("common.help", comment: "Help button title")
     static let close  = NSLocalizedString("common.close", comment: "Close button accessibility label")
+    // The storage title on Home's card, its sheet and Settings' card
+    static let storageTitle = NSLocalizedString("common.storageTitle", comment: "Storage card and sheet title")
+    // The thousands suffix of compact counts ("1.5K"; Turkish "1,5B")
+    static let thousandsSuffix = NSLocalizedString("common.thousandsSuffix", comment: "Compact thousands suffix, as in 1.5K")
     // Shared by the month hub and the finished month's split (keys kept from the hub)
     static let keep   = NSLocalizedString("filterCards.keep", comment: "Keep action label")
     static let store  = NSLocalizedString("filterCards.store", comment: "Store action label")

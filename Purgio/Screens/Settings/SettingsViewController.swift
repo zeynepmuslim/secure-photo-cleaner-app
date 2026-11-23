@@ -14,9 +14,6 @@ private enum Strings {
     static let navTitle = NSLocalizedString("settings.navTitle", comment: "Settings navigation title")
 
     static let yourImpact = NSLocalizedString("settings.yourImpact", comment: "Your impact section header")
-    static let storageAnalysis = NSLocalizedString("settings.storageAnalysis", comment: "Storage analysis section header")
-    static let storageCardTitle = NSLocalizedString(
-        "settings.storageCardTitle", comment: "Storage card title in the upright split layout")
     static let photoManagement = NSLocalizedString("settings.photoManagement", comment: "Photo management section header")
     static let features = NSLocalizedString("settings.features", comment: "Features section header")
     static let transparencySafety = NSLocalizedString("settings.transparencySafety", comment: "Transparency & safety section header")
@@ -184,36 +181,9 @@ final class SettingsViewController: UIViewController {
     private let aboutGroup = SettingsGroupView()
     private let versionRow = SettingsGroupRowView()
 
-    /// The Storage card's title (upright split layout), built like the support card's title row
-    private let storageTitleRow: UIStackView = {
-        let iconView = UIImageView()
-        let symbolConfig = UIImage.SymbolConfiguration(pointSize: 20, weight: .medium)
-        iconView.image = UIImage(systemName: "internaldrive.fill", withConfiguration: symbolConfig)
-        iconView.tintColor = .systemBlue
-        iconView.contentMode = .scaleAspectFit
-        NSLayoutConstraint.activate([
-            iconView.widthAnchor.constraint(equalToConstant: 24),
-            iconView.heightAnchor.constraint(equalToConstant: 24)
-        ])
-
-        let titleLabel = UILabel()
-        titleLabel.text = Strings.storageCardTitle
-        titleLabel.font = .systemFont(ofSize: 15, weight: .semibold)
-        titleLabel.textColor = .label
-        titleLabel.numberOfLines = 0
-
-        let stack = UIStackView(arrangedSubviews: [iconView, titleLabel])
-        stack.axis = .horizontal
-        stack.spacing = 12
-        stack.alignment = .center
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        return stack
-    }()
-
     private let statsSectionLabel = UILabel()
     private let impactStatsView = ImpactStatsView()
 
-    private let storageSectionLabel = UILabel()
     private let storageAnalysisView = StorageAnalysisView()
 
     private let photoSectionLabel = UILabel()
@@ -284,9 +254,19 @@ final class SettingsViewController: UIViewController {
         setupUI()
         setupConstraint()
         setupNotifications()
+        impactTilesView.onStartReviewing = { [weak self] in self?.openPhotosTab() }
         updateInternetToggleState()
         updateSkipICloudToggleState()
         updateRemindersToggleState()
+    }
+
+    /// The impact card's "Start swiping": the Photos tab's months list
+    private func openPhotosTab() {
+        guard let tabBarController,
+              let destination = tabBarController.viewControllers?[1] as? UINavigationController else { return }
+        HapticFeedbackManager.shared.impact(intensity: .medium)
+        tabBarController.selectedIndex = 1
+        destination.popToRootViewController(animated: false)
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -295,7 +275,7 @@ final class SettingsViewController: UIViewController {
         navigationItem.largeTitleDisplayMode = .never
         impactStatsView.update(stats: statsStore, storedCount: storedStore.count)
         impactTilesView.configure(
-            spaceSaved: statsStore.spaceSavedBytes.formattedBytes(allowedUnits: [.useKB, .useMB, .useGB, .useTB]),
+            spaceSavedBytes: statsStore.spaceSavedBytes,
             storedCount: storedStore.count,
             reviewedCount: statsStore.totalReviewed)
         storageAnalysisView.update(with: storageManager.currentState)
@@ -548,7 +528,7 @@ final class SettingsViewController: UIViewController {
         let applySplitSpacing = { (stack: UIStackView) in
             stack.spacing = self.splitGroupSpacing
             [self.photoSectionLabel, self.storeSectionLabel, self.transparencySectionLabel,
-             self.aboutSectionLabel, self.supportSectionLabel, self.storageSectionLabel, self.aboutGroup]
+             self.aboutSectionLabel, self.supportSectionLabel, self.aboutGroup]
                 .forEach { stack.setCustomSpacing(self.splitLabelSpacing, after: $0) }
             stack.setCustomSpacing(GeneralConstants.EdgePadding.small, after: self.impactTilesView)
             // Sideways the support card follows Storage directly, as the cards do upright
@@ -561,7 +541,7 @@ final class SettingsViewController: UIViewController {
         switch layout {
         case .uprightScroll, .uprightPanes:
             // The raised half: the tiles, then Storage | Support side by side, without their labels
-            // Under the card's title row, like the support card's; the slot grows with the row
+            // The card's own title row sits level with the support card's; the slot grows with the row
             placeStorageInSlot(hugsContent: false)
             // No section labels: the cards carry their own titles, and the raised half needs
             // the height to fit above the fold
@@ -597,14 +577,14 @@ final class SettingsViewController: UIViewController {
         }
     }
 
-    /// StorageAnalysisView under the slot's title row. Upright the slot grows with the
-    /// Storage | Support row and the view keeps its own height at the top; in the single
-    /// column the slot hugs the view, so its height is the title row plus the view.
+    /// StorageAnalysisView (with its own title row) at the slot's top. Upright the slot grows
+    /// with the Storage | Support row and the view keeps its own height at the top; in the
+    /// single column the slot hugs the view.
     private func placeStorageInSlot(hugsContent: Bool) {
         storageCardSlot.addSubview(storageAnalysisView)
         let slotBottom = storageCardSlot.bottomAnchor
         NSLayoutConstraint.activate([
-            storageAnalysisView.topAnchor.constraint(equalTo: storageTitleRow.bottomAnchor),
+            storageAnalysisView.topAnchor.constraint(equalTo: storageCardSlot.topAnchor),
             storageAnalysisView.leadingAnchor.constraint(equalTo: storageCardSlot.leadingAnchor),
             storageAnalysisView.trailingAnchor.constraint(equalTo: storageCardSlot.trailingAnchor),
             hugsContent
@@ -702,12 +682,6 @@ final class SettingsViewController: UIViewController {
         storageSupportRow.addArrangedSubview(storageRowColumn)
         storageSupportRow.addArrangedSubview(supportRowColumn)
         storageCardSlot.translatesAutoresizingMaskIntoConstraints = false
-        storageCardSlot.addSubview(storageTitleRow)
-        NSLayoutConstraint.activate([
-            storageTitleRow.topAnchor.constraint(equalTo: storageCardSlot.topAnchor, constant: 16),
-            storageTitleRow.leadingAnchor.constraint(equalTo: storageCardSlot.leadingAnchor, constant: 18),
-            storageTitleRow.trailingAnchor.constraint(lessThanOrEqualTo: storageCardSlot.trailingAnchor, constant: -18)
-        ])
 
         supportCardView.configure(
             title: Strings.supportTitle, message: Strings.supportText, tipTitle: Strings.supportButton,
@@ -720,10 +694,6 @@ final class SettingsViewController: UIViewController {
         statsSectionLabel.font = ThemeManager.Fonts.titleFont(size: 12, weight: .semibold)
         statsSectionLabel.textColor = .systemGray
 
-
-        storageSectionLabel.text = Strings.storageAnalysis
-        storageSectionLabel.font = ThemeManager.Fonts.titleFont(size: 12, weight: .semibold)
-        storageSectionLabel.textColor = .systemGray
 
         storageAnalysisView.translatesAutoresizingMaskIntoConstraints = false
         storageAnalysisView.onRefreshTapped = { [weak self] in

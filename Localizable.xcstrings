@@ -634,6 +634,40 @@
         }
       }
     },
+    "common.storageTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storage"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Depolama"
+          }
+        }
+      }
+    },
+    "common.thousandsSuffix": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "K"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "B"
+          }
+        }
+      }
+    },
     "dashboard.browsePhotos": {
       "extractionState": "manual",
       "localizations": {
@@ -2825,6 +2859,23 @@
         }
       }
     },
+    "impactStats.emptyMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe left on what you don't need. The space you free shows up here."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İhtiyacınız olmayanı sola kaydırın. Açtığınız alan burada görünür."
+          }
+        }
+      }
+    },
     "impactStats.emptyStats": {
       "extractionState": "manual",
       "localizations": {
@@ -2838,6 +2889,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "İstatistiklerinizi görmek için incelemeye başlayın!"
+          }
+        }
+      }
+    },
+    "impactStats.emptyTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your impact starts here"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yer açmak için hemen kaydırmaya başlayın"
           }
         }
       }
@@ -2893,6 +2961,23 @@
         }
       }
     },
+    "impactStats.savedHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe left to free space"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yer açmak için sola kaydırın"
+          }
+        }
+      }
+    },
     "impactStats.spaceSaved": {
       "extractionState": "manual",
       "localizations": {
@@ -2906,6 +2991,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kazanılan Alan"
+          }
+        }
+      }
+    },
+    "impactStats.startSwiping": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start swiping"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotoğraflara git"
           }
         }
       }
@@ -2940,6 +3042,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Videolar"
+          }
+        }
+      }
+    },
+    "luckyPicker.columnHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swipe up or down, or double-tap, to roll."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Çevirmek için yukarı veya aşağı kaydırın ya da iki kez dokunun."
           }
         }
       }

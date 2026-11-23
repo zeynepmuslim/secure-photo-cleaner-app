@@ -10,7 +10,6 @@ import UIKit
 // MARK: - Strings
 
 private enum Strings {
-    static let storageLabel = NSLocalizedString("storageLite.storage", comment: "Storage section title")
     static let analyzing = NSLocalizedString("storageLite.analyzing", comment: "Analyzing progress text")
     static let unableToAnalyze = NSLocalizedString("storageLite.unableToAnalyze", comment: "Error message when analysis fails")
     static let tryAgain = NSLocalizedString("storageLite.tryAgain", comment: "Try again button")
@@ -56,12 +55,10 @@ final class StorageAnalysisLiteView: UIView {
         return stack
     }()
 
-    private let deviceLabel: UILabel = {
-        let label = UILabel()
-        label.text = Strings.storageLabel
-        label.font = .systemFont(ofSize: 17, weight: .semibold)
-        label.textColor = .label
-        return label
+    private let titleRow: CardTitleRowView = {
+        let row = CardTitleRowView()
+        row.configure(title: CommonStrings.storageTitle)
+        return row
     }()
 
     private let usageLabel: UILabel = {
@@ -303,7 +300,7 @@ final class StorageAnalysisLiteView: UIView {
         retryButton.addTarget(self, action: #selector(refreshTapped), for: .touchUpInside)
         analyzeButton.addTarget(self, action: #selector(refreshTapped), for: .touchUpInside)
 
-        headerStack.addArrangedSubview(deviceLabel)
+        headerStack.addArrangedSubview(titleRow)
         headerStack.addArrangedSubview(usageLabel)
 
         let spacer = UIView()

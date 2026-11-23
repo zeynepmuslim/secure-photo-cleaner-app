@@ -19,30 +19,13 @@ final class SettingsSupportCardView: UIView {
     private enum Layout {
         static let verticalPadding: CGFloat = 16
         static let horizontalPadding: CGFloat = 18
-        static let iconSize: CGFloat = 24
         static let linkCornerRadius: CGFloat = 12
         static let linkBorderWidth: CGFloat = 1
         static let linkSideInset: CGFloat = 8
         static let linkFont = UIFont.systemFont(ofSize: 15, weight: .semibold)
     }
 
-    private let iconView: UIImageView = {
-        let imageView = UIImageView()
-        let symbolConfig = UIImage.SymbolConfiguration(pointSize: 20, weight: .medium)
-        imageView.image = UIImage(systemName: "heart.fill", withConfiguration: symbolConfig)
-        imageView.tintColor = .tipJarRed100
-        imageView.contentMode = .scaleAspectFit
-        imageView.translatesAutoresizingMaskIntoConstraints = false
-        return imageView
-    }()
-
-    private let titleLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 15, weight: .semibold)
-        label.textColor = .label
-        label.numberOfLines = 0
-        return label
-    }()
+    private let titleRow = CardTitleRowView()
 
     private let messageLabel: UILabel = {
         let label = UILabel()
@@ -50,14 +33,6 @@ final class SettingsSupportCardView: UIView {
         label.textColor = .secondaryLabel
         label.numberOfLines = 0
         return label
-    }()
-
-    private let titleRow: UIStackView = {
-        let stack = UIStackView()
-        stack.axis = .horizontal
-        stack.spacing = 12
-        stack.alignment = .center
-        return stack
     }()
 
     /// Ink button (board S3t): `.label` fill, so black in light and white in dark, with a red heart
@@ -117,7 +92,7 @@ final class SettingsSupportCardView: UIView {
     // MARK: - Configuration
 
     func configure(title: String, message: String, tipTitle: String, rateTitle: String, feedbackTitle: String) {
-        titleLabel.text = title
+        titleRow.configure(symbolName: "heart.fill", tintColor: .tipJarRed100, title: title)
         messageLabel.text = message
         tipButton.configuration?.title = tipTitle
         rateButton.configuration?.title = rateTitle
@@ -152,7 +127,10 @@ final class SettingsSupportCardView: UIView {
         for button in [rateButton, feedbackButton] {
             guard var config = button.configuration, let title = config.title,
                   button.bounds.width > 0 else { continue }
-            let iconWidth = (config.image?.size.width ?? 0) + config.imagePadding
+            // The drawn symbol is wider than its image (the symbol's own padding), so measure
+            // the image view once it's laid out; an icon counted short wraps the title
+            let drawnIconWidth = max(button.imageView?.bounds.width ?? 0, config.image?.size.width ?? 0)
+            let iconWidth = ceil(drawnIconWidth) + config.imagePadding
             let available = button.bounds.width - 2 * Layout.linkSideInset - iconWidth
             guard available > 0 else { continue }
             let used = (title as NSString).boundingRect(
@@ -212,9 +190,6 @@ final class SettingsSupportCardView: UIView {
         layer.cornerCurve = .continuous
         translatesAutoresizingMaskIntoConstraints = false
 
-        titleRow.addArrangedSubview(iconView)
-        titleRow.addArrangedSubview(titleLabel)
-
         linksStack.addArrangedSubview(rateButton)
         linksStack.addArrangedSubview(feedbackButton)
 
@@ -238,8 +213,6 @@ final class SettingsSupportCardView: UIView {
         }
 
         NSLayoutConstraint.activate([
-            iconView.widthAnchor.constraint(equalToConstant: Layout.iconSize),
-            iconView.heightAnchor.constraint(equalToConstant: Layout.iconSize),
             tipButton.heightAnchor.constraint(greaterThanOrEqualToConstant: GeneralConstants.ButtonSize.medium),
             rateButton.heightAnchor.constraint(greaterThanOrEqualToConstant: GeneralConstants.ButtonSize.medium),
             feedbackButton.heightAnchor.constraint(greaterThanOrEqualToConstant: GeneralConstants.ButtonSize.medium),

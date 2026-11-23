@@ -337,6 +337,15 @@ final class HomeViewController: UIViewController {
         updateFoldSplit()
         updateOuterPaddingForTabBarShape()
         updateResumeRowCount()
+        updateLuckyItemTint()
+    }
+
+    /// On either iPhone Duo display the Lucky bar item is blue, like the inner display's Lucky row.
+    /// (`.blue100` is the brand green despite its name, so this is `.systemBlue`.)
+    private func updateLuckyItemTint() {
+        guard let item = navigationItem.leftBarButtonItem else { return }
+        let tint: UIColor = DuoLayout.isDuoDisplay(view.window) ? .systemBlue : .textPrimary
+        if item.tintColor != tint { item.tintColor = tint }
     }
 
     /// Splits Home at the fold when one crosses the view (inactive included, so the
@@ -480,19 +489,7 @@ final class HomeViewController: UIViewController {
             }
         }
 
-        if let sheet = luckyVC.sheetPresentationController {
-            if #available(iOS 16.0, *) {
-                let compactDetent = UISheetPresentationController.Detent.custom { _ in
-                    return 360
-                }
-                sheet.detents = [compactDetent]
-            } else {
-                sheet.detents = [.medium()]
-            }
-            sheet.prefersGrabberVisible = true
-            sheet.prefersScrollingExpandsWhenScrolledToEdge = false
-        }
-
+        // The sheet sizes itself to its content (LuckyPickerSheetViewController.configureSheet)
         HapticFeedbackManager.shared.impact(intensity: .medium)
         present(luckyVC, animated: true)
     }

@@ -47,14 +47,28 @@ final class StorageAnalysisView: UIView {
     private enum Layout {
         /// The content's leading and trailing inset inside the card.
         static let horizontalInset: CGFloat = 18
+        /// The title row's top inset, level with the support card's title beside it
+        static let titleTopInset: CGFloat = 16
+        static let titleToContent: CGFloat = 12
+        /// Between the bar, the legend and the footer: the title's rhythm, so the card fits
+        /// the Duo's sideways Settings pane without scrolling
+        static let sectionSpacing: CGFloat = 12
+        /// As far below the content as the title row sits from the top
+        static let bottomInset: CGFloat = 16
     }
 
     var onRefreshTapped: (() -> Void)?
 
+    private let titleRow: CardTitleRowView = {
+        let row = CardTitleRowView()
+        row.configure(title: CommonStrings.storageTitle)
+        return row
+    }()
+
     private let containerStack: UIStackView = {
         let stack = UIStackView()
         stack.axis = .vertical
-        stack.spacing = 16
+        stack.spacing = Layout.sectionSpacing
         stack.translatesAutoresizingMaskIntoConstraints = false
         return stack
     }()
@@ -350,6 +364,7 @@ final class StorageAnalysisView: UIView {
         emptyStack.addArrangedSubview(emptyLabel)
         emptyStack.addArrangedSubview(analyzeButton)
 
+        addSubview(titleRow)
         addSubview(containerStack)
 
         NotificationCenter.default.addObserver(
@@ -362,10 +377,14 @@ final class StorageAnalysisView: UIView {
 
     private func setupConstraint() {
         NSLayoutConstraint.activate([
-            containerStack.topAnchor.constraint(equalTo: topAnchor, constant: 20),
+            titleRow.topAnchor.constraint(equalTo: topAnchor, constant: Layout.titleTopInset),
+            titleRow.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Layout.horizontalInset),
+            titleRow.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -Layout.horizontalInset),
+
+            containerStack.topAnchor.constraint(equalTo: titleRow.bottomAnchor, constant: Layout.titleToContent),
             containerStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Layout.horizontalInset),
             containerStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Layout.horizontalInset),
-            containerStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -20),
+            containerStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -Layout.bottomInset),
 
             storageBar.heightAnchor.constraint(equalToConstant: 14),
 

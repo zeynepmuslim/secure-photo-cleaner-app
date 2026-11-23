@@ -37,7 +37,7 @@ final class HomeLuckyRowView: UIControl {
         // "dice" needs SF Symbols 4; iOS 15 falls back to the bar item's die
         imageView.image = UIImage(systemName: "dice", withConfiguration: config)
             ?? UIImage(systemName: "die.face.5", withConfiguration: config)
-        imageView.tintColor = .blue100
+        imageView.tintColor = .systemBlue
         imageView.contentMode = .center
         imageView.setContentHuggingPriority(.required, for: .horizontal)
         imageView.setContentCompressionResistancePriority(.required, for: .horizontal)

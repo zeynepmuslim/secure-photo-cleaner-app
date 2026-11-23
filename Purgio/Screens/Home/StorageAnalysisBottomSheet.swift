@@ -10,7 +10,6 @@ import UIKit
 // MARK: - Strings
 
 private enum Strings {
-    static let sheetTitle = NSLocalizedString("storageSheet.title", comment: "Storage analysis sheet title")
     static let analyzing = NSLocalizedString("storageSheet.analyzing", comment: "Analyzing progress label")
     static let refresh = NSLocalizedString("storageSheet.refresh", comment: "Refresh button on the storage sheet")
     static let used = NSLocalizedString("storageAnalysis.used", comment: "Used storage label")
@@ -109,13 +108,12 @@ final class StorageAnalysisBottomSheet: UIViewController {
         return stack
     }()
 
-    private let titleLabel: UILabel = {
-        let label = UILabel()
-        label.text = Strings.sheetTitle
-        label.textColor = .label
-        label.numberOfLines = 0
-        label.accessibilityTraits = .header
-        return label
+    /// The same "Storage" title as Home's card and Settings' card, at the sheet's title size
+    private let titleRow: CardTitleRowView = {
+        let row = CardTitleRowView()
+        row.configure(title: CommonStrings.storageTitle)
+        row.setTitleFont(ThemeManager.Fonts.titleFont(size: Metrics.regular.titleSize, weight: .heavy))
+        return row
     }()
 
     /// The figure, "/ total" and "Used" as one VoiceOver element.
@@ -395,8 +393,8 @@ final class StorageAnalysisBottomSheet: UIViewController {
         footerRow.addArrangedSubview(refreshButton)
         refreshButton.addTarget(self, action: #selector(refreshTapped), for: .touchUpInside)
 
-        contentStack.setCustomSpacing(8, after: titleLabel)
-        [titleLabel, figureGroup, storageBar, ledgerCard, savedCard, footerRow]
+        contentStack.setCustomSpacing(8, after: titleRow)
+        [titleRow, figureGroup, storageBar, ledgerCard, savedCard, footerRow]
             .forEach { contentStack.addArrangedSubview($0) }
     }
 
@@ -496,7 +494,7 @@ final class StorageAnalysisBottomSheet: UIViewController {
 
     private func applyMetrics(_ metrics: Metrics) {
         didApplyMetrics = true
-        titleLabel.font = ThemeManager.Fonts.titleFont(size: metrics.titleSize, weight: .heavy)
+        titleRow.setTitleFont(ThemeManager.Fonts.titleFont(size: metrics.titleSize, weight: .heavy))
         figureLabel.font = .monospacedDigitSystemFont(ofSize: metrics.figureSize, weight: .heavy)
         barHeightConstraint?.constant = metrics.barHeight
         contentStack.setCustomSpacing(metrics.figureToBar, after: figureGroup)

@@ -8,7 +8,10 @@
 import UIKit
 
 /// The animated launch splash (board `Launch-R4-Wordmark`, R4·C "Letter by letter").
-/// Its first frame matches `LaunchScreen.storyboard`: the icon alone, 80pt wide, centered on the safe area.
+/// Its first frame matches `LaunchScreen.storyboard`: the icon alone, 80pt wide, centered on the screen.
+/// Both center on the view, not the safe area: the system's launch screen doesn't get the iPhone Duo's
+/// side insets (the cover's status column, the inner display's camera strip), so a safe-area center
+/// would land elsewhere. The icon and word (about 250pt) still clear those strips.
 final class LaunchSplashView: UIView {
 
     // MARK: - Layout
@@ -118,12 +121,12 @@ final class LaunchSplashView: UIView {
     }
 
     private func setupConstraint() {
-        let centerX = logoContainer.centerXAnchor.constraint(equalTo: safeAreaLayoutGuide.centerXAnchor)
+        let centerX = logoContainer.centerXAnchor.constraint(equalTo: centerXAnchor)
         logoCenterXConstraint = centerX
 
         var constraints: [NSLayoutConstraint] = [
             centerX,
-            logoContainer.centerYAnchor.constraint(equalTo: safeAreaLayoutGuide.centerYAnchor),
+            logoContainer.centerYAnchor.constraint(equalTo: centerYAnchor),
             logoContainer.widthAnchor.constraint(equalToConstant: Layout.logoWidth),
             logoContainer.heightAnchor.constraint(
                 equalTo: logoContainer.widthAnchor,

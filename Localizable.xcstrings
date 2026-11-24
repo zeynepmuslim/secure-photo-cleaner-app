@@ -7112,6 +7112,23 @@
         }
       }
     },
+    "settings.feedbackShortTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Feedback"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geri Bildirim"
+          }
+        }
+      }
+    },
     "settings.feedbackSubject" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7486,6 +7503,23 @@
         }
       }
     },
+    "settings.rateShortTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rate"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Puanla"
+          }
+        }
+      }
+    },
     "settings.remindersTitle" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7713,13 +7747,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "If you enjoy using the app, you can leave a tip to support development."
+            "value" : "Purgio is ad-free and completely free. Your support helps its development."
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Uygulamayı kullanmaktan memnunsanız, geliştirmeyi desteklemek için bahşiş bırakabilirsiniz."
+            "value" : "Purgio reklamsız ve tamamen ücretsizdir. Desteğin geliştirilmesine destek olur."
           }
         }
       }

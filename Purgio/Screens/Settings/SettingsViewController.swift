@@ -64,6 +64,8 @@ private enum Strings {
 
     static let rateAppTitle = NSLocalizedString("settings.rateAppTitle", comment: "Rate the app row title")
     static let giveFeedbackTitle = NSLocalizedString("settings.giveFeedbackTitle", comment: "Give feedback row title")
+    static let rateShortTitle = NSLocalizedString("settings.rateShortTitle", comment: "Support card's one-word rate button")
+    static let feedbackShortTitle = NSLocalizedString("settings.feedbackShortTitle", comment: "Support card's one-word feedback button")
     static let feedbackSubject = NSLocalizedString("settings.feedbackSubject", comment: "Pre-filled feedback email subject")
     static let mailUnavailableTitle = NSLocalizedString("settings.mailUnavailableTitle", comment: "Mail not configured alert title")
     static let mailUnavailableMessage = NSLocalizedString("settings.mailUnavailableMessage", comment: "Mail not configured alert message")
@@ -685,7 +687,7 @@ final class SettingsViewController: UIViewController {
 
         supportCardView.configure(
             title: Strings.supportTitle, message: Strings.supportText, tipTitle: Strings.supportButton,
-            rateTitle: Strings.rateAppTitle, feedbackTitle: Strings.giveFeedbackTitle)
+            rateTitle: Strings.rateShortTitle, feedbackTitle: Strings.feedbackShortTitle)
         supportCardView.onTip = { [weak self] in self?.tipJarBarButtonTapped() }
         supportCardView.onRate = { [weak self] in self?.rateAppTapped() }
         supportCardView.onFeedback = { [weak self] in self?.feedbackTapped() }

@@ -297,8 +297,8 @@ import SwiftUI
         title: NSLocalizedString("settings.supportTitle", comment: ""),
         message: NSLocalizedString("settings.supportText", comment: ""),
         tipTitle: NSLocalizedString("settings.supportButton", comment: ""),
-        rateTitle: NSLocalizedString("settings.rateAppTitle", comment: ""),
-        feedbackTitle: NSLocalizedString("settings.giveFeedbackTitle", comment: ""))
+        rateTitle: NSLocalizedString("settings.rateShortTitle", comment: ""),
+        feedbackTitle: NSLocalizedString("settings.feedbackShortTitle", comment: ""))
 
     let container = UIView()
     container.backgroundColor = .mainBackground

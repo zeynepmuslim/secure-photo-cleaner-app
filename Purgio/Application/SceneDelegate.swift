@@ -11,6 +11,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
     private var splashWindow: UIWindow?
+    private var hasPendingSplash = false
+    /// How long the system's cross-fade into the app takes (measured on the simulator: about 0.3 s).
+    private static let launchFadeInWait: TimeInterval = 0.35
 
     func scene(
         _ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions
@@ -90,10 +93,24 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         splashWindow.isHidden = false
         self.splashWindow = splashWindow
         splashWindow.layoutIfNeeded()
+        // Plays from `sceneDidBecomeActive`: before that the window may not be on screen yet,
+        // and the slide would run unseen.
+        hasPendingSplash = true
+    }
 
-        splashViewController.splashView.play { [weak self] in
-            self?.splashWindow?.isHidden = true
-            self?.splashWindow = nil
+    private func playPendingLaunchSplash() {
+        guard hasPendingSplash,
+              let splashView = (splashWindow?.rootViewController as? LaunchSplashViewController)?.splashView
+        else { return }
+        hasPendingSplash = false
+        // When the system has no launch-screen snapshot (the iPhone Duo, a fresh install) it cross-fades
+        // into the app from black as the scene becomes active; wait that out so the slide starts on a
+        // fully visible icon. Where the storyboard did show, this is just a longer still frame.
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.launchFadeInWait) { [weak self] in
+            splashView.play {
+                self?.splashWindow?.isHidden = true
+                self?.splashWindow = nil
+            }
         }
     }
 
@@ -118,6 +135,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func sceneDidBecomeActive(_ scene: UIScene) {
         // Called when the scene has moved from an inactive state to an active state.
         // Use this method to restart any tasks that were paused (or not yet started) when the scene was inactive.
+        playPendingLaunchSplash()
     }
 
     func sceneWillResignActive(_ scene: UIScene) {

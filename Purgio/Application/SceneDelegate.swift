@@ -10,6 +10,7 @@ import UIKit
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
+    private var splashWindow: UIWindow?
 
     func scene(
         _ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions
@@ -64,6 +65,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.makeKeyAndVisible()
         self.window = window
 
+        showLaunchSplash(in: windowScene)
+
         ReminderNotificationService.shared.syncScheduleIfNeeded()
 //        #if DEBUG
 //            ReminderNotificationService.shared.debugPrintSampleReminders()
@@ -75,6 +78,23 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             name: .notificationDeepLinkToDeleteBin,
             object: nil
         )
+    }
+
+    /// Cold launch only: plays the splash in its own window above Home, so Home's onboarding or
+    /// permission sheet (presented from its `viewDidAppear`) stays underneath and is revealed with it.
+    private func showLaunchSplash(in windowScene: UIWindowScene) {
+        let splashViewController = LaunchSplashViewController()
+        let splashWindow = UIWindow(windowScene: windowScene)
+        splashWindow.windowLevel = .normal + 1
+        splashWindow.rootViewController = splashViewController
+        splashWindow.isHidden = false
+        self.splashWindow = splashWindow
+        splashWindow.layoutIfNeeded()
+
+        splashViewController.splashView.play { [weak self] in
+            self?.splashWindow?.isHidden = true
+            self?.splashWindow = nil
+        }
     }
 
     @objc private func handleDeepLinkToDeleteBin() {
@@ -116,4 +136,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // to restore the scene back to its current state.
     }
 
+}
+
+// MARK: - LaunchSplashViewController
+
+/// The splash window's root: its view is the `LaunchSplashView`.
+private final class LaunchSplashViewController: UIViewController {
+    let splashView = LaunchSplashView()
+
+    override func loadView() {
+        view = splashView
+    }
 }

@@ -166,6 +166,19 @@ final class DashboardCardManager {
         return inProgress.sorted { $0.monthKey > $1.monthKey }
     }
 
+    /// The newest month in progress, of one media type or either. A record can outlive its
+    /// month (the library changed since), so when the month buckets are known the month has to
+    /// be one of them. The empty Delete Bin and the months list's empty state point at it.
+    func newestInProgressMonth(mediaType: PHAssetMediaType? = nil) -> InProgressMonthInfo? {
+        getInProgressMonths().first { info in
+            if let mediaType, info.mediaType != mediaType { return false }
+            guard let buckets = PhotoLibraryService.shared.getCachedMonthBuckets(mediaType: info.mediaType) else {
+                return true
+            }
+            return buckets.contains { $0.key == info.monthKey }
+        }
+    }
+
     func generateResumeCard() -> DashboardCardContent? {
         guard let inProgress = getInProgressMonths().randomElement() else {
             return nil

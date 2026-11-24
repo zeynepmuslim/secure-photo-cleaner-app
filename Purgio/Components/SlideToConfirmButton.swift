@@ -49,7 +49,8 @@ final class SlideToConfirmButton: UIControl {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
         label.font = ThemeManager.Fonts.semiboldBody
-        label.textColor = .white
+        // Dark on the light-gray track in light mode, white on the dark track in dark mode.
+        label.textColor = .label
         label.textAlignment = .center
         label.numberOfLines = 1
         label.adjustsFontSizeToFitWidth = true
@@ -141,8 +142,11 @@ final class SlideToConfirmButton: UIControl {
     override func layoutSubviews() {
         super.layoutSubviews()
         trackView.layer.cornerRadius = controlHeight / 2
+        trackView.layer.cornerCurve = .continuous
         greenOverlayView.layer.cornerRadius = controlHeight / 2
+        greenOverlayView.layer.cornerCurve = .continuous
         thumbView.layer.cornerRadius = thumbDiameter / 2
+        thumbView.layer.cornerCurve = .continuous
     }
 
     private var maxTravel: CGFloat {

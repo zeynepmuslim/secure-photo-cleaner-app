@@ -17,30 +17,19 @@
                         <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Rtw-iL-Pdb">
-                                <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
-                                <subviews>
-                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="launchScreen-logo" translatesAutoresizingMaskIntoConstraints="NO" id="TJS-TL-ZCT">
-                                        <rect key="frame" x="85" y="74" width="150" height="420"/>
-                                        <constraints>
-                                            <constraint firstAttribute="width" constant="150" id="bDN-Wk-UGp"/>
-                                        </constraints>
-                                    </imageView>
-                                </subviews>
-                                <color key="backgroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="launchLogo" translatesAutoresizingMaskIntoConstraints="NO" id="TJS-TL-ZCT">
+                                <rect key="frame" x="120" y="256.5" width="80" height="55"/>
                                 <constraints>
-                                    <constraint firstItem="TJS-TL-ZCT" firstAttribute="centerY" secondItem="Rtw-iL-Pdb" secondAttribute="centerY" id="AEx-Iq-4XQ"/>
-                                    <constraint firstItem="TJS-TL-ZCT" firstAttribute="centerX" secondItem="Rtw-iL-Pdb" secondAttribute="centerX" id="Y5i-4C-OkT"/>
+                                    <constraint firstAttribute="width" constant="80" id="bDN-Wk-UGp"/>
+                                    <constraint firstAttribute="width" secondItem="TJS-TL-ZCT" secondAttribute="height" multiplier="610:420" id="Asp-Rt-L0g"/>
                                 </constraints>
-                            </view>
+                            </imageView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                         <constraints>
-                            <constraint firstItem="Rtw-iL-Pdb" firstAttribute="top" secondItem="Ze5-6b-2t3" secondAttribute="top" id="Kkk-zw-KV4"/>
-                            <constraint firstAttribute="bottom" secondItem="Rtw-iL-Pdb" secondAttribute="bottom" id="bFG-Qg-gnN"/>
-                            <constraint firstItem="Rtw-iL-Pdb" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" id="gxr-Pg-HuT"/>
-                            <constraint firstItem="Rtw-iL-Pdb" firstAttribute="trailing" secondItem="6Tk-OE-BBY" secondAttribute="trailing" id="qiB-Ym-MVO"/>
+                            <constraint firstItem="TJS-TL-ZCT" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="Y5i-4C-OkT"/>
+                            <constraint firstItem="TJS-TL-ZCT" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="AEx-Iq-4XQ"/>
                         </constraints>
                     </view>
                 </viewController>
@@ -50,7 +39,7 @@
         </scene>
     </scenes>
     <resources>
-        <image name="launchScreen-logo" width="610" height="420"/>
+        <image name="launchLogo" width="610" height="420"/>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>

@@ -6,12 +6,12 @@
 //
 
 import Photos
-import SwiftUI
 import UIKit
 
 final class YearAggregateCell: UITableViewCell {
 
     static let reuseIdentifier = "YearAggregateCell"
+
     private let containerView: UIView = {
         let view = UIView()
         view.backgroundColor = .cardBackground
@@ -22,38 +22,10 @@ final class YearAggregateCell: UITableViewCell {
         return view
     }()
 
-    private let progressBackgroundView: UIView = {
-        let view = UIView()
-        view.backgroundColor = .progressInProgress
+    private let rowView: MonthProgressRowView = {
+        let view = MonthProgressRowView()
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
-    }()
-
-    private let titleLabel: UILabel = {
-        let label = UILabel()
-        label.font = ThemeManager.Fonts.titleFont(size: 17, weight: .bold)
-        label.textColor = .textPrimary
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
-    }()
-
-    private let detailLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 13, weight: .regular)
-        label.textColor = .textSecondary
-        label.numberOfLines = 0
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
-    }()
-
-    private let statsStackView: UIStackView = {
-        let stack = UIStackView()
-        stack.axis = .horizontal
-        stack.distribution = .fill
-        stack.alignment = .center
-        stack.spacing = 0
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        return stack
     }()
 
     private let chevronImageView: UIImageView = {
@@ -66,155 +38,131 @@ final class YearAggregateCell: UITableViewCell {
         return imageView
     }()
 
-    private let reviewedStat = StatItemView()
-    private let deletedStat = StatItemView()
-    private let keptStat = StatItemView()
-    private let storedStat = StatItemView()
-
-    private var progressWidthConstraint: NSLayoutConstraint?
-
-    // MARK: - Init
-    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
-        super.init(style: style, reuseIdentifier: reuseIdentifier)
-        setupUI()
-        setupConstraints()
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    private func setupUI() {
-        backgroundColor = .clear
-        selectionStyle = .none
-
-        contentView.addSubview(containerView)
-        containerView.addSubview(progressBackgroundView)
-        containerView.addSubview(titleLabel)
-        containerView.addSubview(detailLabel)
-        containerView.addSubview(chevronImageView)
-        containerView.addSubview(statsStackView)
-
-        statsStackView.addArrangedSubview(reviewedStat)
-        statsStackView.addArrangedSubview(deletedStat)
-        statsStackView.addArrangedSubview(keptStat)
-        statsStackView.addArrangedSubview(storedStat)
-    }
-
-    private func setupConstraints() {
-        reviewedStat.translatesAutoresizingMaskIntoConstraints = false
-        deletedStat.translatesAutoresizingMaskIntoConstraints = false
-        keptStat.translatesAutoresizingMaskIntoConstraints = false
-        storedStat.translatesAutoresizingMaskIntoConstraints = false
-
-        NSLayoutConstraint.activate([
-            deletedStat.widthAnchor.constraint(equalTo: keptStat.widthAnchor),
-            keptStat.widthAnchor.constraint(equalTo: storedStat.widthAnchor),
-            reviewedStat.widthAnchor.constraint(equalTo: deletedStat.widthAnchor, multiplier: 1.7),
-
-            containerView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 6),
-            containerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            containerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            containerView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -6),
-
-            progressBackgroundView.topAnchor.constraint(equalTo: containerView.topAnchor),
-            progressBackgroundView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
-            progressBackgroundView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
-
-            titleLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 12),
-            titleLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
-            titleLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -32),
-
-            chevronImageView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
-            chevronImageView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
-            chevronImageView.widthAnchor.constraint(equalToConstant: 12),
-            chevronImageView.heightAnchor.constraint(equalToConstant: 20),
-
-            detailLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
-            detailLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
-            detailLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -36),
-            detailLabel.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -12),
-
-            statsStackView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
-            statsStackView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
-            statsStackView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -36),
-            statsStackView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -12),
-            statsStackView.heightAnchor.constraint(equalToConstant: 20)
-        ])
-    }
-
-    override func prepareForReuse() {
-        super.prepareForReuse()
-        progressBackgroundView.backgroundColor = .clear
-        removeProgressConstraint()
-    }
-
-    private func removeProgressConstraint() {
-        progressWidthConstraint?.isActive = false
-        progressWidthConstraint = nil
-    }
-
-    // MARK: - Configuration
-    func configure(with item: YearItem) {
-        titleLabel.text = item.year
-
-        let total = item.originalTotalCount > 0 ? item.originalTotalCount : item.currentTotalCount
-        let reviewed = item.reviewedCount
-
-        removeProgressConstraint()
-
-        if total > 0 && reviewed >= total {
-            configureFullyReviewed()
-        } else if reviewed == 0 {
-            configureNotStarted(item: item)
-        } else {
-            configureInProgress(item: item, total: total)
-        }
-    }
-
-    private func configureFullyReviewed() {
-        detailLabel.isHidden = false
-        statsStackView.isHidden = true
-
-        progressBackgroundView.backgroundColor = .progressCompleted
-        progressWidthConstraint = progressBackgroundView.widthAnchor.constraint(
-            equalTo: containerView.widthAnchor)
-        progressWidthConstraint?.isActive = true
-
-        let textAttributes: [NSAttributedString.Key: Any] = [
-            .foregroundColor: ThemeManager.Colors.statusGreen,
-            .font: UIFont.systemFont(ofSize: 13, weight: .medium)
-        ]
-        let config = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
-        if let image = UIImage(systemName: "checkmark.seal.fill", withConfiguration: config)?
-            .withTintColor(ThemeManager.Colors.statusGreen)
-        {
-            let attachment = NSTextAttachment()
-            attachment.image = image
-            attachment.bounds = CGRect(x: 0, y: -2, width: 14, height: 14)
-            let attributed = NSMutableAttributedString(attachment: attachment)
-            attributed.append(NSAttributedString(
-                string: "  " + NSLocalizedString("monthsList.yearDone", comment: ""),
-                attributes: textAttributes))
-            detailLabel.attributedText = attributed
-        } else {
-            detailLabel.attributedText = NSAttributedString(
-                string: NSLocalizedString("monthsList.yearDone", comment: ""),
-                attributes: textAttributes)
-        }
-    }
-
     private static let monthAbbrevFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM"
         return formatter
     }()
 
-    private func configureNotStarted(item: YearItem) {
-        detailLabel.isHidden = false
-        statsStackView.isHidden = true
-        progressBackgroundView.backgroundColor = .clear
+    // MARK: - Init
 
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
+        setupUI()
+        setupConstraint()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    // MARK: - Setup
+
+    private func setupUI() {
+        // The card draws the row and its corners: no inset-grouped section background
+        // (rounded around the whole year) behind it
+        backgroundConfiguration = .clear()
+        backgroundColor = .clear
+        selectionStyle = .none
+
+        contentView.addSubview(containerView)
+        containerView.addSubview(rowView)
+        containerView.addSubview(chevronImageView)
+
+        // The whole row is one VoiceOver element
+        isAccessibilityElement = true
+        accessibilityTraits = .button
+
+        if #available(iOS 17.0, *) {
+            registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (self: YearAggregateCell, _: UITraitCollection) in
+                self.updateSelectionBorderColor()
+            }
+        }
+    }
+
+    private func setupConstraint() {
+        NSLayoutConstraint.activate([
+            containerView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 6),
+            containerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            containerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            containerView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -6),
+
+            rowView.topAnchor.constraint(equalTo: containerView.topAnchor),
+            rowView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            rowView.trailingAnchor.constraint(equalTo: chevronImageView.leadingAnchor),
+            rowView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+
+            chevronImageView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
+            chevronImageView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
+            chevronImageView.widthAnchor.constraint(equalToConstant: 12),
+            chevronImageView.heightAnchor.constraint(equalToConstant: 20)
+        ])
+    }
+
+    // MARK: - Layout
+
+    /// The inset-grouped table rounds each year's section by masking its first and last
+    /// cells, which cut the card's own corners (and its selection outline). Each card rounds
+    /// itself, so the cell keeps no mask.
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        if layer.cornerRadius != 0 { layer.cornerRadius = 0 }
+        if layer.masksToBounds { layer.masksToBounds = false }
+    }
+
+    // MARK: - Selection
+
+    /// Only the iPhone Duo's list | detail split keeps a row selected: the row showing in the
+    /// detail. Elsewhere rows deselect on tap, so the look never changes there.
+    override func setSelected(_ selected: Bool, animated: Bool) {
+        super.setSelected(selected, animated: animated)
+        // An outline, not a fill: a gray fill would hide the capsule's gray "left" segment
+        // On screen the outline fades between rows as the selection moves
+        containerView.layer.setBorderWidth(selected ? 2 : 0, animated: window != nil)
+        updateSelectionBorderColor()
+        accessibilityTraits = selected ? [.button, .selected] : .button
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        // iOS 17+ uses registerForTraitChanges
+        if #available(iOS 17.0, *) { return }
+        if traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
+            updateSelectionBorderColor()
+        }
+    }
+
+    private func updateSelectionBorderColor() {
+        containerView.layer.borderColor = UIColor.label.resolvedColor(with: traitCollection).cgColor
+    }
+
+    // MARK: - Reuse
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        rowView.reset()
+        accessibilityLabel = nil
+    }
+
+    // MARK: - Configure
+
+    func configure(with item: YearItem) {
+        let total = item.originalTotalCount > 0 ? item.originalTotalCount : item.currentTotalCount
+
+        rowView.configure(
+            title: item.year,
+            titleFont: ThemeManager.Fonts.titleFont(size: 17, weight: .bold),
+            deleted: item.deletedCount,
+            kept: item.keptCount,
+            stored: item.storedCount,
+            total: total,
+            reviewed: item.reviewedCount,
+            notStartedSubtitle: notStartedSubtitle(for: item))
+        accessibilityLabel = rowView.accessibilitySummary
+    }
+
+    /// "Jan, Jul, Nov · 23 items"
+    private func notStartedSubtitle(for item: YearItem) -> String {
         let monthNames = item.months.compactMap { month -> String? in
             guard let date = DateFormatterManager.shared.date(fromMonthKey: month.key) else { return nil }
             return Self.monthAbbrevFormatter.string(from: date)
@@ -224,38 +172,14 @@ final class YearAggregateCell: UITableViewCell {
             format: NSLocalizedString("yearCell.itemsCount", comment: ""),
             item.currentTotalCount)
 
-        let detail = monthNames.isEmpty ? countText : "\(monthNames) · \(countText)"
-        detailLabel.text = detail
-    }
-
-    private func configureInProgress(item: YearItem, total: Int) {
-        detailLabel.isHidden = true
-        statsStackView.isHidden = false
-
-        let color: UIColor = item.mediaType == .video ? .video50 : .photo50
-        progressBackgroundView.backgroundColor = color
-
-        let percentage = CGFloat(item.reviewedCount) / CGFloat(total)
-        progressWidthConstraint = progressBackgroundView.widthAnchor.constraint(
-            equalTo: containerView.widthAnchor, multiplier: percentage)
-        progressWidthConstraint?.isActive = true
-
-        let totalCount = item.originalTotalCount > 0 ? item.originalTotalCount : item.currentTotalCount
-        //Actually compactFormatted wont be needed bacause of bounds (50 curently)
-        reviewedStat.configure(
-            systemName: "eye.fill", color: .textPrimary,
-            text: "\(item.reviewedCount.compactFormatted)/\(totalCount.compactFormatted)")
-        deletedStat.configure(
-            systemName: "trash.fill", color: ThemeManager.Colors.statusRed,
-            text: item.deletedCount.compactFormatted)
-        keptStat.configure(
-            systemName: "checkmark.circle.fill", color: ThemeManager.Colors.statusGreen,
-            text: item.keptCount.compactFormatted)
-        storedStat.configure(
-            systemName: "archivebox.fill", color: ThemeManager.Colors.statusYellow,
-            text: item.storedCount.compactFormatted, iconPointSize: 14)
+        return monthNames.isEmpty ? countText : "\(monthNames) · \(countText)"
     }
 }
+
+// MARK: - Preview
+
+#if DEBUG
+import SwiftUI
 
 @available(iOS 17.0, *)
 #Preview("Not Started", traits: .fixedLayout(width: 375, height: 90)) {
@@ -297,3 +221,4 @@ final class YearAggregateCell: UITableViewCell {
         currentTotalCount: 5000, reviewedCount: 3200, deletedCount: 1200, keptCount: 1500, storedCount: 500, originalTotalCount: 5000, mediaType: .image))
     return cell
 }
+#endif

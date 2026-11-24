@@ -60,6 +60,8 @@ final class PhotoLibraryService: NSObject, PHPhotoLibraryChangeObserver {
     private var photoCacheDate: Date?
     private var videoCacheDate: Date?
     private let cacheValidityInterval: TimeInterval = 300   // 5 minutes
+    /// `subtypeMonthCounts` results by media type and subtype, cleared with the buckets
+    private var subtypeCountsCache: [String: (counts: [String: Int], date: Date)] = [:]
 
     /// Returns cached month buckets if available and valid, otherwise nil
     func getCachedMonthBuckets(mediaType: PHAssetMediaType) -> [MonthBucket]? {
@@ -103,11 +105,15 @@ final class PhotoLibraryService: NSObject, PHPhotoLibraryChangeObserver {
             async let videos = self.loadMonthBuckets(mediaType: .video)
             _ = await (photos, videos)
             print("[PhotoLibraryService] Month buckets cache preloaded")
+            for (mediaType, subtype) in Self.preloadedSubtypes {
+                _ = await self.subtypeMonthCounts(mediaType: mediaType, subtype: subtype)
+            }
         }
     }
 
     func invalidateMonthBucketsCache() {
         cacheQueue.sync {
+            subtypeCountsCache.removeAll()
             photoBucketsCache = nil
             videoBucketsCache = nil
             photoCacheDate = nil
@@ -142,6 +148,18 @@ final class PhotoLibraryService: NSObject, PHPhotoLibraryChangeObserver {
         await withCheckedContinuation { continuation in
             PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
                 continuation.resume(returning: status)
+            }
+        }
+    }
+
+    /// How many assets of a media type the app can see (with limited access, the picked ones).
+    /// 0 without access; never touches PhotoKit while access is `.notDetermined`.
+    func assetCount(mediaType: PHAssetMediaType) async -> Int {
+        let status = authorizationStatus()
+        guard status == .authorized || status == .limited else { return 0 }
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                continuation.resume(returning: PHAsset.fetchAssets(with: mediaType, options: nil).count)
             }
         }
     }
@@ -243,7 +261,11 @@ final class PhotoLibraryService: NSObject, PHPhotoLibraryChangeObserver {
                 ]
                 fetchOptions.predicate = NSPredicate(format: "mediaType == %d", mediaType.rawValue)
 
-                if let dateRange = DateFormatterManager.shared.monthDateRange(forMonthKey: monthKey) {
+                // A year session key ("year-2026") fetches the whole year, so screens opened before
+                // MonthFilterCards' year preload finishes still get the year's assets, not an empty list
+                let dateManager = DateFormatterManager.shared
+                if let dateRange = dateManager.monthDateRange(forMonthKey: monthKey)
+                    ?? dateManager.yearDateRange(forYearKey: monthKey) {
                     let datePredicate = NSPredicate(
                         format: "creationDate >= %@ AND creationDate < %@", dateRange.start as NSDate,
                         dateRange.end as NSDate)
@@ -264,7 +286,6 @@ final class PhotoLibraryService: NSObject, PHPhotoLibraryChangeObserver {
                     let assets = PHAsset.fetchAssets(with: fetchOptions)
                     var matchedAssets: [PHAsset] = []
                     let calendar = Calendar.current
-                    let dateManager = DateFormatterManager.shared
 
                     assets.enumerateObjects { asset, _, _ in
                         guard let creationDate = asset.creationDate else { return }
@@ -327,6 +348,56 @@ final class PhotoLibraryService: NSObject, PHPhotoLibraryChangeObserver {
             }
         }
     }
+
+    /// How many items of one subtype (screenshots, slow motion, …) each month holds, by month key.
+    /// One library-wide fetch that enumerates only the matching items; empty without access.
+    func subtypeMonthCounts(mediaType: PHAssetMediaType, subtype: PHAssetMediaSubtype) async -> [String: Int] {
+        let status = authorizationStatus()
+        guard status == .authorized || status == .limited else { return [:] }
+
+        let cacheKey = subtypeCacheKey(mediaType: mediaType, subtype: subtype)
+        let cached: [String: Int]? = cacheQueue.sync {
+            guard let entry = subtypeCountsCache[cacheKey],
+                  Date().timeIntervalSince(entry.date) < cacheValidityInterval else { return nil }
+            return entry.counts
+        }
+        if let cached { return cached }
+
+        let counts: [String: Int] = await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                let fetchOptions = PHFetchOptions()
+                fetchOptions.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+                    NSPredicate(format: "mediaType == %d", mediaType.rawValue),
+                    NSPredicate(format: "(mediaSubtypes & %d) != 0", subtype.rawValue)
+                ])
+
+                let assets = PHAsset.fetchAssets(with: fetchOptions)
+                let dateManager = DateFormatterManager.shared
+                var counts: [String: Int] = [:]
+                assets.enumerateObjects { asset, _, _ in
+                    guard let creationDate = asset.creationDate else { return }
+                    counts[dateManager.monthKey(from: creationDate), default: 0] += 1
+                }
+                continuation.resume(returning: counts)
+            }
+        }
+        cacheQueue.sync {
+            subtypeCountsCache[cacheKey] = (counts, Date())
+        }
+        return counts
+    }
+
+    private func subtypeCacheKey(mediaType: PHAssetMediaType, subtype: PHAssetMediaSubtype) -> String {
+        "\(mediaType.rawValue)_\(subtype.rawValue)"
+    }
+
+    /// The subtypes the Lucky picker weighs, preloaded with the month buckets.
+    private static let preloadedSubtypes: [(PHAssetMediaType, PHAssetMediaSubtype)] = [
+        (.image, .photoScreenshot),
+        (.video, .videoScreenRecording),
+        (.video, .videoHighFrameRate),
+        (.video, .videoTimelapse)
+    ]
 
     /// Check if a month contains any iCloud-only assets
     func hasICloudOnlyAssets(forMonthKey monthKey: String) async -> Bool {

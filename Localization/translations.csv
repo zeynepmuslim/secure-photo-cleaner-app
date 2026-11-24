@@ -18,8 +18,11 @@ askPermission.privacyOnDevice;Everything analyzed on-device;Her şey cihazınız
 askPermission.privacyNoInternet;No internet connection needed;İnternet bağlantısı gerekmez;;;;
 common.cancel;Cancel;İptal;;;;
 common.delete;Delete;Sil;;;;
+common.help;Help;Yardım;;;;
 common.ok;OK;Tamam;;;;
 common.remove;Remove;Kaldır;;;;
+common.storageTitle;Storage;Depolama;;;;
+common.thousandsSuffix;K;B;;;;
 dashboard.browsePhotos;Browse Photos;Fotoğrafları Gözat;;;;
 dashboard.browseVideos;Browse Videos;Videoları Gözat;;;;
 dashboard.browseSimilarPhotos;Browse Similar Photos;Benzer Fotoğraflara Gözat;;;;
@@ -86,10 +89,40 @@ filterCards.slowMotionTitle;Slow Motion;Ağır Çekim;;;;
 filterCards.store;Store;Depola;;;;
 filterCards.timeLapseSubtitle;Find time-lapse videos to review;İncelemek için hızlandırılmış videoları bulun;;;;
 filterCards.timeLapseTitle;Time-Lapse;Hızlandırılmış;;;;
+filterCards.yearDetails;Year Details;Yıl Detayları;;;;
+filterCards.continue;Continue;Devam et;;;;
+filterCards.allCaughtUp;All caught up;Hepsi tamamlandı;;;;
+filterCards.percentReviewed;%lld%% reviewed;%%%lld incelendi;;;;
+filterCards.notStarted;Not started;Başlanmadı;;;;
+filterCards.leftCaption;Left;Kaldı;;;;
+filterCards.percent;%lld%%;%%%lld;;;;
+filterCards.reviewedFraction;%1$lld / %2$lld;%1$lld / %2$lld;;;;
+filterCards.overviewAccessibility;%1$lld left, %2$lld%% reviewed, %3$lld of %4$lld, %5$lld delete, %6$lld keep, %7$lld store;%1$lld kaldı, %%%2$lld incelendi, %4$lld içinden %3$lld, %5$lld sil, %6$lld tut, %7$lld depola;;;;
+decisionRing.reviewed;reviewed;incelendi;;;;
+decisionRing.notCounted;Not counted yet;Henüz sayılmadı;;;;
+decisionRing.accessibility;%1$lld delete, %2$lld keep, %3$lld store, %4$lld left;%1$lld sil, %2$lld tut, %3$lld depola, %4$lld kaldı;;;;
+progressOverview.allCaughtUp;All caught up;Hepsi tamamlandı;;;;
+progressOverview.photoCount;;;%lld photo;%lld photos;%lld fotoğraf;%lld fotoğraf
+progressOverview.videoCount;;;%lld video;%lld videos;%lld video;%lld video
+progressOverview.reviewedOfTotal;%1$lld of %2$@;%2$@ içinden %1$lld;;;;
+progressOverview.leftToReview;;;%lld left to review;%lld left to review;%lld öge incelenecek;%lld öge incelenecek
+progressOverview.chipAccessibility;%1$lld %2$@;%1$lld %2$@;;;;
+progressOverview.keep;Keep;Tut;;;;
+progressOverview.store;Store;Depola;;;;
 historyDetail.delete;Delete;Sil;;;;
+historyDetail.enlarge;Enlarge;Büyüt;;;;
+historyDetail.enlargedPhoto;Enlarged photo;Büyütülmüş fotoğraf;;;;
+historyDetail.enlargedVideo;Enlarged video;Büyütülmüş video;;;;
 historyDetail.keep;Keep;Tut;;;;
 historyDetail.store;Store;Depola;;;;
 home.browseByMonth;Browse by Month;Aya Göre Gözat;;;;
+home.luckyItem;Feeling Lucky;Şanslı hissediyorum;;;;
+home.luckySubtitle;A random month and filter;Rastgele bir ay ve filtre;;;;
+home.startReviewing;Start Reviewing;İncelemeye Başlayın;;;;
+home.resumeTitle;Continue Where You Left Off;Kaldığınız Yerden Devam Edin;;;;
+home.photosToReview;;;%lld photo to review;%lld photos to review;%lld fotoğraf incelenecek;%lld fotoğraf incelenecek
+home.videosToReview;;;%lld video to review;%lld videos to review;%lld video incelenecek;%lld video incelenecek
+home.itemsCount;;;%lld item;%lld items;%lld öğe;%lld öğe
 home.navTitle;Home;Ana Sayfa;;;;
 home.photosTitle;Photos;Fotoğraflar;;;;
 home.videosTitle;Videos;Videolar;;;;
@@ -98,13 +131,18 @@ iCloudWarning.mediaUnavailable;%@ Unavailable;%@ Kullanılamıyor;;;;
 iCloudWarning.photoUnavailableMessage;This photo is stored in iCloud and can't be downloaded right now. Connect to the internet or enable internet access in Settings to view it.;Bu fotoğraf iCloud'da saklanıyor ve şu anda indirilemiyor. Görüntülemek için internete bağlanın veya Ayarlar'dan internet erişimini etkinleştirin.;;;;
 iCloudWarning.videoUnavailableMessage;This video is stored in iCloud and can't be downloaded right now. Connect to the internet or enable internet access in Settings to view it.;Bu video iCloud'da saklanıyor ve şu anda indirilemiyor. Görüntülemek için internete bağlanın veya Ayarlar'dan internet erişimini etkinleştirin.;;;;
 iCloudWarning.viewingLowQuality;Viewing in Low Quality;Düşük Kalitede Görüntüleniyor;;;;
+impactStats.emptyMessage;Swipe left on what you don't need. The space you free shows up here.;İhtiyacınız olmayanı sola kaydırın. Açtığınız alan burada görünür.;;;;
+impactStats.emptyTitle;Your impact starts here;Yer açmak için hemen kaydırmaya başlayın;;;;
 impactStats.emptyStats;Start reviewing to see your stats!;İstatistiklerinizi görmek için incelemeye başlayın!;;;;
 impactStats.itemsStored;Items Stored;Depolanan Ögeler;;;;
 impactStats.photos;Photos;Fotoğraflar;;;;
+impactStats.savedHint;Swipe left to free space;Yer açmak için sola kaydırın;;;;
 impactStats.reviewedDeleted;%d reviewed · %d deleted;%d incelenen · %d silinen;;;;
 impactStats.spaceSaved;Space Saved;Kazanılan Alan;;;;
+impactStats.startSwiping;Start swiping;Fotoğraflara git;;;;
 impactStats.totalReviewed;Total Reviewed;Toplam İncelenen;;;;
 impactStats.videos;Videos;Videolar;;;;
+luckyPicker.columnHint;Swipe up or down, or double-tap, to roll.;Çevirmek için yukarı veya aşağı kaydırın ya da iki kez dokunun.;;;;
 luckyPicker.eyesClosed;Eyes Closed;Gözler Kapalı;;;;
 luckyPicker.filter;Filter;Filtre;;;;
 luckyPicker.filterAll;All;Tümü;;;;
@@ -126,6 +164,10 @@ luckyPicker.title;I Feel Lucky!;Şanslı Hissediyorum!;;;;
 luckyPicker.videos;Videos;Videolar;;;;
 mainTabBar.deleteAll;Delete All;Tümünü Sil;;;;
 mediaPreview.deleteNow;Delete Now;Şimdi Sil;;;;
+mediaPreview.enlarge;Enlarge;Büyüt;;;;
+mediaPreview.enlargedPhoto;Enlarged photo;Büyütülmüş fotoğraf;;;;
+mediaPreview.enlargedVideo;Enlarged video;Büyütülmüş video;;;;
+mediaPreview.leaveInBin;Leave in Bin;Çöpte Kalsın;;;;
 mediaPreview.removeFromBin;Remove from Bin;Çöp kutusundan kaldır;;;;
 mediaType.photo;Photo;Fotoğraf;;;;
 mediaType.video;Video;Video;;;;
@@ -140,6 +182,7 @@ monthHelpers.noResultsTitle;No Results Found;Sonuç Bulunamadı;;;;
 monthHelpers.tryAnotherMonth;Try Another Month;Başka Bir Ay Deneyin;;;;
 monthHelpers.viewDeleteBin;View Delete Bin;Çöp Kutusunu Gör;;;;
 monthReview.eyesClosedTitle;Eyes Closed · %@;Gözler Kapalı · %@;;;;
+monthReview.history;History;Geçmiş;;;;
 monthReview.keep;Keep;Tut;;;;
 monthReview.largePhotosTitle;Large Photos · %@;Büyük Fotoğraflar · %@;;;;
 monthReview.largeVideosTitle;Large Videos · %@;Büyük Videolar · %@;;;;
@@ -147,29 +190,35 @@ monthReview.screenRecordingsTitle;Screen Recordings · %@;Ekran Kayıtları · %
 monthReview.screenshotsTitle;Screenshots · %@;Ekran Görüntüleri · %@;;;;
 monthReview.slowMotionTitle;Slow Motion · %@;Ağır Çekim · %@;;;;
 monthReview.store;Store;Depola;;;;
+monthReview.statsAccessibility;Reviewed %1$lld of %2$lld. Marked for deletion: %3$lld, kept: %4$lld, stored: %5$lld.;%2$lld öğeden %1$lld tanesi incelendi. Silinecek: %3$lld, tutulan: %4$lld, depolanan: %5$lld.;;;;
+monthReview.tableLayout;Layout;Düzen;;;;
+monthReview.tableLayoutButtons;Buttons;Düğmeler;;;;
+monthReview.tableLayoutSwipeArea;Swipe area;Kaydırma alanı;;;;
 monthReview.timeLapseTitle;Time-Lapse · %@;Hızlandırılmış · %@;;;;
-monthsList.accessDenied;Photo access is denied. Please enable it in Settings to use the app.;Fotoğraf erişimi reddedildi. Uygulamayı kullanmak için lütfen Ayarlar'dan etkinleştirin.;;;;
+monthReview.trackpadHint;Swipe here · the photo above follows your finger;Burada kaydır · üstteki fotoğraf parmağını takip eder;;;;
+monthReview.undo;Undo;Geri Al;;;;
 monthsList.allYears;All Years;Tüm Yıllar;;;;
-monthsList.allowAccessMessage;To help you clean up your photo library, we need access to your photos.;Fotoğraf kütüphanenizi temizlemenize yardımcı olmak için fotoğraflarınıza erişim izni gerekiyor.;;;;
 monthsList.allowPhotoAccess;Continue;Devam Et;;;;
 monthsList.filter;Filter;Filtre;;;;
-monthsList.limitedAccessPhotos;Your photo access is limited. Select more photos to start reviewing by month.;Fotoğraf erişiminiz sınırlı. Aylara göre incelemeye başlamak için daha fazla fotoğraf seçin.;;;;
-monthsList.limitedAccessVideos;Your photo access is limited. Select more videos to start reviewing by month.;Fotoğraf erişiminiz sınırlı. Aylara göre incelemeye başlamak için daha fazla video seçin.;;;;
-monthsList.noContentPhotos;Take some photos or import them to your library to get started!;Başlamak için fotoğraf çekin veya kütüphanenize aktarın!;;;;
-monthsList.noContentVideos;Take some videos or import them to your library to get started!;Başlamak için video çekin veya kütüphanenize aktarın!;;;;
-monthsList.noPhotosYet;No Photos Yet;Henüz Fotoğraf Yok;;;;
-monthsList.noVideosYet;No Videos Yet;Henüz Video Yok;;;;
+monthsList.noPhotosYet;No photos yet;Henüz fotoğraf yok;;;;
+monthsList.noVideosYet;No videos yet;Henüz video yok;;;;
 monthsList.older;Older;Daha Eski;;;;
 monthsList.openSettings;Open Settings;Ayarları Aç;;;;
 monthsList.photos;Photos;Fotoğraflar;;;;
+monthsList.resetFilters;Reset Filters;Filtreleri Sıfırla;;;;
 monthsList.selectPhotos;Select Photos;Fotoğraf Seç;;;;
 monthsList.selectVideos;Select Videos;Video Seç;;;;
 monthsList.status;Status;Durum;;;;
 monthsList.videos;Videos;Videolar;;;;
 monthsList.year;Year;Yıl;;;;
-monthsList.yearDone;Done;Tamamlandı;;;;
+videoPlayer.mute;Mute;Sesi Kapat;;;;
+videoPlayer.unmute;Unmute;Sesi Aç;;;;
 yearCell.itemsCount;%d items;%d öğe;;;;
-yearDetailSheet.months;%d months;%d ay;;;;
+yearDetailSheet.months;;;%lld month;%lld months;%lld ay;%lld ay
+yearDetailSheet.note;Years with few items are reviewed in one session.;Az öğesi olan yıllar tek oturumda incelenir.;;;;
+yearDetailSheet.itemsCount;;;%lld item;%lld items;%lld öğe;%lld öğe
+yearDetailSheet.reviewedAccessibility;%1$lld of %2$lld reviewed;%2$lld içinden %1$lld incelendi;;;;
+yearDetailSheet.allCaughtUp;All caught up!;Hepsi tamamlandı!;;;;
 motivation.catVideos;Make room for more cat videos!;Daha fazla kedi videosu için yer açın!;;;;
 motivation.littleRoom;Make a little room today;Bugün biraz yer açın;;;;
 motivation.memoriesOnTheWay;New memories are on the way!;Yeni anılar yolda!;;;;
@@ -207,12 +256,14 @@ notification.title.totalDeleted;Look how far you've come;Ne kadar da çok yol ka
 notification.title.totalReviewed;Whoa! ;Vay be!;;;;
 notification.title.fallback;Photo Cleanup;Fotoğraf Temizliği;;;;
 onboarding.gotIt;Got It!;Anladım!;;;;
+onboarding.keep;Keep;Tut;;;;
+onboarding.store;Store;Depola;;;;
 onboarding.subtitle;Review your photos by swiping. It's quick, easy, and safe!;Fotoğraflarınızı kaydırarak inceleyin. Hızlı, kolay ve güvenli!;;;;
 onboarding.swipeLeftInfo;You can review and confirm before anything is deleted.;Silinmeden önce inceleyip onaylayabilirsiniz;;;;
 onboarding.swipeLeftTitle;Swipe Left to Delete;Silmek İçin Sola Kaydırın;;;;
 onboarding.swipeRightInfo;It remains in your photo library;Fotoğraf kütüphanenizde kalır;;;;
 onboarding.swipeRightTitle;Swipe Right to Keep;Tutmak İçin Sağa Kaydırın;;;;
-onboarding.swipeUpInfo; It is added to the “Will Be Stored” album in Photos;"Fotoğraflardaki ""Depolanacak"" albümüne eklenir";;;;
+onboarding.swipeUpInfo;It is added to the “Will Be Stored” album in Photos;"Fotoğraflardaki ""Depolanacak"" albümüne eklenir";;;;
 onboarding.swipeUpTitle;Swipe Up to Store;Depolamak İçin Yukarı Kaydırın;;;;
 onboarding.title;Welcome to Purgio;Purgio'a Hoş Geldiniz;;;;
 processing.analyzingFileSizes;Analyzing file sizes...;Dosya boyutları analiz ediliyor...;;;;
@@ -250,6 +301,8 @@ settings.languageButton;Change Language;Dili Değiştir;;;;
 settings.internetOnMessage;Internet access enabled;İnternet erişimi etkinleştirildi;;;;
 settings.internetSubtitle;When enabled, iCloud photos can be downloaded for full-quality review.;Etkinleştirildiğinde, iCloud fotoğrafları tam kalitede inceleme için indirilebilir.;;;;
 settings.internetTitle;Internet Access;İnternet Erişimi;;;;
+settings.internetSubtitleShort;iCloud photos download in full quality.;iCloud fotoğrafları tam kalitede indirilir.;;;;
+settings.skipICloudSubtitleShort;iCloud-only photos are skipped.;Yalnızca iCloud'daki fotoğraflar atlanır.;;;;
 settings.madeBy;Made by Zeynep Müslim;Zeynep Müslim tarafından yapıldı;;;;
 settings.monthly;Monthly;Aylık;;;;
 settings.navTitle;Settings;Ayarlar;;;;
@@ -265,14 +318,17 @@ settings.skipICloudOnMessage;iCloud-only photos will be skipped;Yalnızca iCloud
 settings.skipICloudSubtitle;When enabled, photos stored only in iCloud will be skipped during review.;Etkinleştirildiğinde, yalnızca iCloud'da saklanan fotoğraflar inceleme sırasında atlanacaktır.;;;;
 settings.skipICloudTitle;Skip iCloud Photos;iCloud Fotoğraflarını Atla;;;;
 settings.storageAnalysis;Storage Analysis;Depolama Analizi;;;;
+settings.storageCardTitle;Your Storage;Depolama Durumunuz;;;;
 settings.storeText;"Swiping up saves a photo to the ""Will Be Stored"" album. You can review them later.";"Yukarı kaydırmak fotoğrafı ""Depolanacak"" albümüne kaydeder. Daha sonra inceleyebilirsiniz.";;;;
 settings.storeTitle;Store Feature;Depolama Özelliği;;;;
 settings.support;Support;Destek;;;;
 settings.supportButton;Leave a Tip;Bahşiş Bırak;;;;
-settings.supportText;If you enjoy using the app, you can leave a tip to support development.;Uygulamayı kullanmaktan memnunsanız, geliştirmeyi desteklemek için bahşiş bırakabilirsiniz.;;;;
+settings.supportText;Purgio is ad-free and completely free. Your support helps its development.;Purgio reklamsız ve tamamen ücretsizdir. Desteğin geliştirilmesine destek olur.;;;;
 settings.supportTitle;Support the Project;Projeyi Destekleyin;;;;
 settings.rateAppTitle;Rate the App;Uygulamayı Puanla;;;;
 settings.giveFeedbackTitle;Give Feedback;Geri Bildirim Gönder;;;;
+settings.rateShortTitle;Rate;Puanla;;;;
+settings.feedbackShortTitle;Feedback;Geri Bildirim;;;;
 settings.feedbackSubject;Purgio Feedback;Purgio Geri Bildirim;;;;
 settings.mailUnavailableTitle;Mail Not Available;E-posta Kullanılamıyor;;;;
 settings.mailUnavailableMessage;Please set up a mail account in the Mail app, or email us at zeynep.muslim@icloud.com.;Lütfen Mail uygulamasında bir e-posta hesabı tanımlayın veya bize zeynep.muslim@icloud.com adresinden ulaşın.;;;;
@@ -301,7 +357,6 @@ similarHelp.storeHint;Tap the button to select storage;Depolama seçimi için bu
 similarHelp.tapToToggle;Tap to toggle between Keep / Delete;Tut  / Sil arasında geçiş yapmak için dokun;;;;
 similarPhotos.alreadyProcessedMessage;This group has already been processed. You can undo it if needed.;Bu grup zaten işlendi. Gerekirse geri alabilirsiniz.;;;;
 similarPhotos.alreadyProcessedTitle;Already Processed;Zaten İşlendi;;;;
-similarPhotos.batchBinTitle;Confirm All Groups;Tüm Grupları Onayla;;;;
 similarPhotos.batchConfirmAction;Add to Bin;Çöpe Ekle;;;;
 similarPhotos.batchConfirmTitle;Confirm All Groups?;Tüm Gruplar Onaylansın mı?;;;;
 similarPhotos.confirm;Confirm;Onayla;;;;
@@ -359,7 +414,12 @@ storageLite.usageLabel;Usage: %@ / %@;Kullanım: %@ / %@;;;;
 storageLite.used;Used;Kullanılan;;;;
 storageLite.videos;Videos;Videolar;;;;
 storageSheet.analyzing;Analyzing...;Analiz ediliyor...;;;;
+storageSheet.photoCount;;;%d photo;%d photos;%d fotoğraf;%d fotoğraf
+storageSheet.refresh;Refresh;Yenile;;;;
+storageSheet.usedAccessibility;%1$@ of %2$@ used;%2$@ alanın %1$@ kadarı kullanılıyor;;;;
+storageSheet.videoCount;;;%d video;%d videos;%d video;%d video
 storageSheet.progressLabel;%1$@... %2$d%%;%1$@... %%%2$d;;;;
+storageSheet.totalOf;/ %@;/ %@;;;;
 storageSheet.title;Storage Analysis;Depolama Analizi;;;;
 storeTutorial.albumFavorites;Favorites;Favoriler;;;;
 storeTutorial.albumRecents;Recents;Son Kaydedilenler;;;;
@@ -389,18 +449,21 @@ timeAgo.sevenPlusDays;7+ days ago;7+ gün önce;;;;
 monthCell.allCaughtUp;All caught up!;Hepsi tamamlandı!;;;;
 monthCell.photosToReview;;;%lld photo to review;%lld photos to review;%lld fotoğraf incelenecek;%lld fotoğraf incelenecek
 monthCell.videosToReview;;;%lld video to review;%lld videos to review;%lld video incelenecek;%lld video incelenecek
+monthCell.leftCount;;;%lld left;%lld left;%lld kaldı;%lld kaldı
+monthCell.done;Done;Bitti;;;;
+monthCell.accessibilityReviewed;%1$lld of %2$lld reviewed;%2$lld içinden %1$lld incelendi;;;;
 tipJar.title;Support the Project;Projeyi Destekle;;;;
 tipJar.subtitle;Your tips help keep Purgio free and ad-free.;Bahşişleriniz Purgio'nun ücretsiz ve reklamsız kalmasına yardımcı olur.;;;;
 tipJar.thankYou;Thank you for your support!;Desteğin için teşekkürler!;;;;
+tipJar.thankYouDetail;%1$@ · %2$@;%1$@ · %2$@;;;;
 tipJar.loading;Loading…;Yükleniyor…;;;;
-tipJar.openSourceNote;Free, ad-free, and open source. Tips fund development.;Ücretsiz, reklamsız ve açık kaynak. Bahşişler geliştirmeyidestekler.;;;;
+tipJar.openSourceNote;Free, ad-free, and open source. Tips fund development.;Ücretsiz, reklamsız ve açık kaynak. Bahşişler geliştirmeyi destekler.;;;;
 tipJar.selectAmount;Select an amount;Bir miktar seç;;;;
 tipJar.sendTipFormat;Send tip · %@;Bahşiş Bırak · %@;;;;
 tipJar.tier.small;Small\nTip;Küçük\nBahşiş;;;;
 tipJar.tier.medium;Medium\nTip;Orta\nBahşiş;;;;
 tipJar.tier.large;Large\nTip;Büyük\nBahşiş;;;;
 tipJar.error;Something went wrong;Bir sorun oluştu;;;;
-tipJar.securePayment;Processed securely through Apple. Your photos and data are never accessed.;Apple'ın güvenli ödeme sistemi üzerinden gerçekleşir. Fotoğraflarınıza veya verilerinize erişilmez.;;;;
 tipJar.retry;Try Again;Tekrar Dene;;;;
 tipJar.gate.title;Internet Access Required;İnternet Erişimi Gerekli;;;;
 tipJar.gate.subtitle;Leaving a tip contacts only Apple's App Store servers. Internet access will be turned off automatically after your transaction.;Bahşiş bıraktığında sadece Apple'ın App Store sunucularıyla iletişim kurulur. İşlem tamamlandığında internet erişimi otomatik olarak kapatılır.;;;;
@@ -417,10 +480,127 @@ undoHistory.store;Store;Depola;;;;
 undoHistory.undo;Undo;Geri Al;;;;
 undoHistory.undoAllMessage;This will undo all actions in the current session. Photos will be removed from the delete bin and store list.;Bu, geçerli oturumdaki tüm işlemleri geri alacaktır. Fotoğraflar silme kutusundan ve depolama listesinden kaldırılacaktır.;;;;
 undoHistory.undoAllTitle;Undo All;Tümünü Geri Al;;;;
-undoHistory.itemCount;;;%lld item  •  ;%lld items  •  ;%lld öge  •  ;%lld öge  •  
+undoHistory.done;Done;Bitti;;;;
+undoHistory.itemCount;;;%lld item;%lld items;%lld öge;%lld öge
 widget.analyzed;Analyzed;Analiz Edildi;;;;
 widget.analysisComplete;Analysis complete!;Analiz tamamlandı!;;;;
 widget.scanningPhotos;Scanning photos...;Fotoğraflar taranıyor...;;;;
 widget.scanningVideos;Scanning videos...;Videolar taranıyor...;;;;
 widget.storage;Storage;Depolama;;;;
 widget.storageAnalysis;Storage Analysis;Depolama Analizi;;;;
+floatingBin.title;Bin;Çöp Kutusu;;;;
+floatingBin.titleWithCount;Bin · %@;Çöp Kutusu · %@;;;;
+monthReview.emptyFilterTitle;No %@ here;Hiç %@ yok;;;;
+monthReview.emptyFilterMessage;%1$@ has no %2$@, so this filter is done.;%1$@ döneminde %2$@ bulunmadığı için bu filtre tamamlandı.;;;;
+monthReview.backToMonth;Back to %@;%@ ayına dön;;;;
+monthReview.backToYear;Back to %@;%@ yılına dön;;;;
+monthReview.completeTitle;%@ is done;%@ tamamlandı;;;;
+monthReview.completeMessagePhotos;;;You reviewed %lld photo.;You reviewed all %lld photos.;%lld fotoğrafı incelediniz.;%lld fotoğrafın tümünü incelediniz.
+monthReview.completeMessageVideos;;;You reviewed %lld video.;You reviewed all %lld videos.;%lld videoyu incelediniz.;%lld videonun tümünü incelediniz.
+monthReview.filterCompleteTitle;Nothing left in %@;%@ filtresinde öge kalmadı;;;;
+monthReview.filterCompleteMessage;;;You reviewed the %lld item in this filter.;You reviewed all %lld items in this filter.;Bu filtredeki %lld ögeyi incelediniz.;Bu filtredeki %lld ögenin tümünü incelediniz.
+filterName.similar;similar photos;benzer fotoğraf;;;;
+filterName.screenshots;screenshots;ekran görüntüsü;;;;
+filterName.largePhotos;large photos;büyük fotoğraf;;;;
+filterName.largeVideos;large videos;büyük video;;;;
+filterName.eyesClosed;closed-eye photos;gözü kapalı fotoğraf;;;;
+filterName.screenRecordings;screen recordings;ekran kaydı;;;;
+filterName.slowMotion;slow-motion videos;ağır çekim video;;;;
+filterName.timeLapse;time-lapse videos;hızlandırılmış video;;;;
+filterName.photos;photos;fotoğraf;;;;
+filterName.videos;videos;video;;;;
+nextSteps.keepGoing;Keep going in %@;%@ ayında devam et;;;;
+similarPhotos.noneTitle;Every photo is one of a kind;Her fotoğraf benzersiz;;;;
+similarPhotos.comparedCount;;;%lld photo;%lld photos;%lld fotoğraf;%lld fotoğraf
+similarPhotos.noneMessage;We compared %1$@ in %2$@ and found no similar sets.;%2$@ içindeki %1$@ karşılaştırıldı, benzer set bulunamadı.;;;;
+similarPhotos.noneMessageLibrary;We compared %@ in your library and found no similar sets.;Kütüphanenizdeki %@ karşılaştırıldı, benzer set bulunamadı.;;;;
+similarPhotos.noneMessageLibraryUncounted;We compared the photos in your library and found no similar sets.;Kütüphanenizdeki fotoğraflar karşılaştırıldı, benzer set bulunamadı.;;;;
+deleteBin.emptyHint;Swipe left on a photo to put it here. Nothing is deleted until you empty the bin.;Buraya koymak için bir fotoğrafı sola kaydırın. Çöp kutusunu boşaltana kadar hiçbir şey silinmez.;;;;
+deleteBin.cleanedMessage;;;%lld item went to Recently Deleted. You can restore it there for 30 days.;%lld items went to Recently Deleted. You can restore them there for 30 days.;%lld öge Son Silinenler klasörüne taşındı. 30 gün boyunca oradan geri yükleyebilirsiniz.;%lld öge Son Silinenler klasörüne taşındı. 30 gün boyunca oradan geri yükleyebilirsiniz.
+deleteBin.youFreed;You freed;Açılan alan;;;;
+deleteBin.reviewAnother;Review another month;Başka bir ayı incele;;;;
+deleteBin.reviewMonth;Review %@;%@ ayını incele;;;;
+deleteBin.reviewPhotos;Review photos;Fotoğrafları incele;;;;
+deleteBin.done;Done;Bitti;;;;
+reviewSplit.accessibility;%1$lld delete, %2$lld keep, %3$lld store;%1$lld sil, %2$lld tut, %3$lld depola;;;;
+monthsList.noVideosMessage;Videos you record or save show up here, one card per month.;Çektiğiniz veya kaydettiğiniz videolar burada, her ay için bir kart olarak görünür.;;;;
+monthsList.noPhotosMessage;Photos you take or save show up here, one card per month.;Çektiğiniz veya kaydettiğiniz fotoğraflar burada, her ay için bir kart olarak görünür.;;;;
+monthsList.meanwhileInPhotos;Meanwhile in Photos;Bu arada Fotoğraflar'da;;;;
+monthsList.meanwhileInVideos;Meanwhile in Videos;Bu arada Videolar'da;;;;
+monthsList.reviewPhotos;Review photos;Fotoğrafları incele;;;;
+monthsList.reviewVideos;Review videos;Videoları incele;;;;
+monthsList.emptyLibraryTitle;Nothing to clean yet;Henüz temizlenecek bir şey yok;;;;
+monthsList.emptyLibraryMessage;Your library has no photos or videos. Come back once you've taken some.;Kütüphanenizde fotoğraf veya video yok. Biraz çektikten sonra tekrar gelin.;;;;
+monthsList.limitedNoVideosTitle;No videos selected;Seçili video yok;;;;
+monthsList.limitedNoPhotosTitle;No photos selected;Seçili fotoğraf yok;;;;
+monthsList.limitedNoVideosMessage;None of the items you picked are videos.;Seçtiğiniz öğelerin hiçbiri video değil.;;;;
+monthsList.limitedNoPhotosMessage;None of the items you picked are photos.;Seçtiğiniz öğelerin hiçbiri fotoğraf değil.;;;;
+monthsList.limitedNothingTitle;Nothing selected yet;Henüz bir şey seçilmedi;;;;
+monthsList.limitedNothingMessage;Choose items to review, or let Purgio see your whole library.;İncelenecek öğeleri seçin ya da Purgio'nun tüm kütüphanenizi görmesine izin verin.;;;;
+monthsList.selectPhotosAndVideos;Select photos & videos;Fotoğraf ve video seç;;;;
+monthsList.askTitle;Let Purgio see your library;Purgio kütüphanenizi görsün;;;;
+monthsList.askVideosMessage;Purgio groups your videos by month so you can clean them up one swipe at a time.;"Purgio videolarınızı aya göre gruplar; böylece onları tek tek kaydırarak temizleyebilirsiniz.";;;;
+monthsList.askPhotosMessage;Purgio groups your photos by month so you can clean them up one swipe at a time.;"Purgio fotoğraflarınızı aya göre gruplar; böylece onları tek tek kaydırarak temizleyebilirsiniz.";;;;
+monthsList.allowAccess;Allow access;Erişime izin ver;;;;
+monthsList.deniedTitle;Purgio can't see your library;Purgio kütüphanenizi göremiyor;;;;
+monthsList.deniedVideosMessage;Turn access on in Settings to review your videos.;Videolarınızı incelemek için Ayarlar'dan erişimi açın.;;;;
+monthsList.deniedPhotosMessage;Turn access on in Settings to review your photos.;Fotoğraflarınızı incelemek için Ayarlar'dan erişimi açın.;;;;
+accessCard.fullTitle;Full access;Tam erişim;;;;
+accessCard.fullMessage;Purgio sees your whole library. Nothing ever leaves your iPhone.;Purgio tüm kütüphanenizi görür. Hiçbir şey iPhone'unuzdan çıkmaz.;;;;
+accessCard.limitedTitle;Limited access;Sınırlı erişim;;;;
+accessCard.limitedNoneMessage;"Purgio sees no items yet. Full access shows every month; nothing ever leaves your iPhone.";"Purgio henüz hiçbir öğe görmüyor. Tam erişim tüm ayları gösterir; hiçbir şey iPhone'unuzdan çıkmaz.";;;;
+accessCard.allowFullAccess;Allow full access;Tam erişime izin ver;;;;
+accessCard.notAskedTitle;Not allowed yet;Henüz izin verilmedi;;;;
+accessCard.notAskedMessage;You choose: the whole library or only some items. Nothing ever leaves your iPhone.;Seçim sizin: tüm kütüphane ya da yalnızca bazı öğeler. Hiçbir şey iPhone'unuzdan çıkmaz.;;;;
+accessCard.offTitle;Access off;Erişim kapalı;;;;
+accessCard.offMessage;Selected items only is enough to start. Nothing ever leaves your iPhone.;Başlamak için yalnızca seçili öğeler yeterli. Hiçbir şey iPhone'unuzdan çıkmaz.;;;;
+accessCard.limitedMessage;;;"Purgio sees the %lld item you picked. Full access shows every month; nothing ever leaves your iPhone.";"Purgio sees the %lld items you picked. Full access shows every month; nothing ever leaves your iPhone.";"Purgio seçtiğiniz %lld öğeyi görüyor. Tam erişim tüm ayları gösterir; hiçbir şey iPhone'unuzdan çıkmaz.";"Purgio seçtiğiniz %lld öğeyi görüyor. Tam erişim tüm ayları gösterir; hiçbir şey iPhone'unuzdan çıkmaz."
+similarPhotos.summarySets;;;%lld set to check;%lld sets to check;%lld set kontrol edilecek;%lld set kontrol edilecek
+similarPhotos.summaryDone;%lld done;%lld bitti;;;;
+similarPhotos.summaryFree;~%@ to free;~%@ boşalacak;;;;
+similarGroup.subtitle;;;%1$lld photo · %2$@;%1$lld photos · %2$@;%1$lld fotoğraf · %2$@;%1$lld fotoğraf · %2$@
+similarGroup.storeDone;Done;Bitti;;;;
+similarGroup.keptPart;Kept %lld;%lld tutuldu;;;;
+similarGroup.binPart;%lld to the bin;%lld çöpe;;;;
+similarGroup.storedPart;%lld stored;%lld depolandı;;;;
+similarGroup.notConfirmed;not confirmed;onaylanmadı;;;;
+similarGroup.confirmedState;confirmed;onaylandı;;;;
+similarPhotos.confirmAll;;;Confirm all · %lld set;Confirm all · %lld sets;Tümünü onayla · %lld set;Tümünü onayla · %lld set
+similarPhotos.allCheckedTitle;Every set is checked;Tüm setler kontrol edildi;;;;
+similarPhotos.allCheckedMessage;;;%1$lld set in %2$@. ~%3$@ waits in the bin until you empty it.;%1$lld sets in %2$@. ~%3$@ waits in the bin until you empty it.;%2$@ içinde %1$lld set. ~%3$@ sen boşaltana kadar çöpte bekliyor.;%2$@ içinde %1$lld set. ~%3$@ sen boşaltana kadar çöpte bekliyor.
+similarPhotos.allCheckedMessageLibrary;;;%1$lld set in your library. ~%2$@ waits in the bin until you empty it.;%1$lld sets in your library. ~%2$@ waits in the bin until you empty it.;Kütüphanende %1$lld set. ~%2$@ sen boşaltana kadar çöpte bekliyor.;Kütüphanende %1$lld set. ~%2$@ sen boşaltana kadar çöpte bekliyor.
+similarHelp.title;Try it on this set;Bu sette dene;;;;
+similarHelp.subtitle;Tap a photo to switch it, then Confirm.;Değiştirmek için bir fotoğrafa dokun, sonra Onayla'ya bas.;;;;
+similarHelp.hintTapLead;Tap a photo;Bir fotoğrafa dokun;;;;
+similarHelp.hintTapText;to switch keep ↔ delete;ve tut ↔ sil arasında geçiş yap;;;;
+similarHelp.hintStoreLead;Store, then photos;Önce Depola'ya, sonra fotoğraflara dokun;;;;
+similarHelp.hintStoreText;to save them to an album;ve onları bir albüme kaydet;;;;
+similarHelp.hintConfirmLead;Confirm;Onayla;;;;
+similarHelp.hintConfirmText;sends each one where it belongs;her birini ait olduğu yere gönderir;;;;
+similarHelp.hintDone;Done;Tamamlandı;;;;
+similarHelp.targetPhotos;Photos;Fotoğraflar;;;;
+similarHelp.targetBin;Bin;Çöp Kutusu;;;;
+similarHelp.targetStored;Stored;Depolanan;;;;
+similarHelp.photoAccessibility;Photo %1$d, %2$@;Fotoğraf %1$d, %2$@;;;;
+similarHelp.targetAccessibility;%1$@, %2$d;%1$@, %2$d;;;;
+processing.itemCountPhotos;;;%lld photo;%lld photos;%lld fotoğraf;%lld fotoğraf
+processing.itemCountVideos;;;%lld video;%lld videos;%lld video;%lld video
+processing.scopeEyesClosed;Looking for closed eyes in %1$@ in %2$@;%2$@ içindeki %1$@ arasında kapalı göz aranıyor;;;;
+processing.scopeLargest;Sorting by size in %1$@ in %2$@;%2$@ içindeki %1$@ boyuta göre sıralanıyor;;;;
+processing.checkedCount;%1$lld / %2$lld checked;%1$lld / %2$lld kontrol edildi;;;;
+processing.checkedCountPending;– / %lld checked;– / %lld kontrol edildi;;;;
+processing.legendFound;Found;Bulunan;;;;
+processing.legendOverThreshold;Over %@;%@ üzeri;;;;
+processing.legendChecked;Checked;Kontrol edilen;;;;
+processing.legendLeft;Left;Kalan;;;;
+processing.timeLeftSeconds;;;About %lld s left;About %lld s left;Yaklaşık %lld sn kaldı;Yaklaşık %lld sn kaldı
+processing.timeLeftMinutes;;;About %lld min left;About %lld min left;Yaklaşık %lld dk kaldı;Yaklaşık %lld dk kaldı
+processing.timeLeftSecondsAccessibility;;;about %lld second left;about %lld seconds left;yaklaşık %lld saniye kaldı;yaklaşık %lld saniye kaldı
+processing.timeLeftMinutesAccessibility;;;about %lld minute left;about %lld minutes left;yaklaşık %lld dakika kaldı;yaklaşık %lld dakika kaldı
+processing.gettingReadyPhotos;Getting photos ready;Fotoğraflar hazırlanıyor;;;;
+processing.gettingReadyVideos;Getting videos ready;Videolar hazırlanıyor;;;;
+processing.openingPhoto;Opening the first photo…;İlk fotoğraf açılıyor…;;;;
+processing.openingVideo;Opening the first video…;İlk video açılıyor…;;;;
+processing.meterAccessibility;%1$@, %2$lld of %3$lld checked, %4$lld found, %5$@;%1$@, %3$lld öğeden %2$lld tanesi kontrol edildi, %4$lld bulundu, %5$@;;;;
+common.close;Close;Kapat;;;;
+launch.wordmark;Purgio;Purgio;;;;

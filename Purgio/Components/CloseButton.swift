@@ -25,6 +25,7 @@ final class CloseButton: UIButton {
         tintColor = .textPrimary
         backgroundColor = .textSecondaryReverse
         layer.cornerRadius = 22
+        layer.cornerCurve = .continuous
 
         NSLayoutConstraint.activate([
             widthAnchor.constraint(equalToConstant: 44),

@@ -36,6 +36,21 @@ private enum WithoutContentTimings {
     static let dismissDelay: TimeInterval = 1.0
 }
 
+private enum Layout {
+    static let itemCount = 6
+    static let columnChoices = [2, 3]
+    static let sectionInset: CGFloat = 24
+    static let interitemSpacing: CGFloat = 16
+    static let lineSpacing: CGFloat = 20
+    static let bottomSpacing: CGFloat = 40
+    static let compactBottomSpacing: CGFloat = 16
+    static let logoTopClearance: CGFloat = 24
+    static let logoSize: CGFloat = 80
+    static let logoClearance: CGFloat = 12
+    static let gradientViewRatio: CGFloat = 0.5
+    static let gradientGridRatio: CGFloat = 0.6
+}
+
 final class StoreTutorialSheetViewController: UIViewController {
 
     private struct AlbumItem {
@@ -43,6 +58,18 @@ final class StoreTutorialSheetViewController: UIViewController {
         let sfSymbol: String
         let tint: UIColor
         let showBadge: Bool
+    }
+
+    /// Everything size-dependent, recomputed on each layout pass and applied only when it changes.
+    private struct GridGeometry: Equatable {
+        var cellSize: CGFloat
+        var columns: Int
+        var leadingInset: CGFloat
+        var columnSpacing: CGFloat
+        var collectionTop: CGFloat
+        var collectionHeight: CGFloat
+        var logoCenterY: CGFloat
+        var isHorizontalSplit: Bool
     }
 
     private let storedAsset: PHAsset?
@@ -77,18 +104,22 @@ final class StoreTutorialSheetViewController: UIViewController {
         return imageView
     }()
 
-    private lazy var collectionView: UICollectionView = {
-        let layout = UICollectionViewFlowLayout()
-        layout.minimumInteritemSpacing = 16
-        layout.minimumLineSpacing = 20
-        layout.sectionInset = UIEdgeInsets(top: 24, left: 24, bottom: 24, right: 24)
+    private let gridLayout = AlbumGridLayout()
+    private var appliedGeometry: GridGeometry?
+    private var appliedGradientTraitsKey: String?
+    private var isLayoutFrozen = false
+    private var collectionTopConstraint: NSLayoutConstraint?
+    private var collectionHeightConstraint: NSLayoutConstraint?
+    private var logoCenterYConstraint: NSLayoutConstraint?
+    private var gradientViewHeightConstraint: NSLayoutConstraint?
+    private var gradientGridHeightConstraint: NSLayoutConstraint?
 
-        let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
+    private lazy var collectionView: UICollectionView = {
+        let collectionView = UICollectionView(frame: .zero, collectionViewLayout: gridLayout)
         collectionView.backgroundColor = .clear
         collectionView.isScrollEnabled = false
         collectionView.isUserInteractionEnabled = false
         collectionView.dataSource = self
-        collectionView.delegate = self
         collectionView.register(FakeAlbumCell.self, forCellWithReuseIdentifier: FakeAlbumCell.reuseIdentifier)
         collectionView.translatesAutoresizingMaskIntoConstraints = false
         return collectionView
@@ -116,14 +147,43 @@ final class StoreTutorialSheetViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
-        topGradient.colors = [
-            .systemBackground,
-            .systemBackground.withAlphaComponent(0.0)
-        ]
         configureSheet()
         setupInitialAlbums()
         setupUI()
-        setupConstraints()
+        setupConstraint()
+
+        if #available(iOS 17.0, *) {
+            registerForTraitChanges([UITraitUserInterfaceStyle.self, UITraitUserInterfaceLevel.self]) {
+                (self: StoreTutorialSheetViewController, _) in
+                self.updateGradientColors()
+            }
+        }
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        // iOS 17+ uses registerForTraitChanges
+        if #available(iOS 17.0, *) { return }
+        if traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
+            updateGradientColors()
+        }
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        updateGradientColors()
+        updateGridLayout()
+    }
+
+    /// Resolves the fade against the sheet's own traits: a sheet is elevated, so in dark mode its
+    /// background is gray, and an unresolved `.systemBackground` would draw a black band.
+    private func updateGradientColors() {
+        let traits = traitCollection
+        let key = "\(traits.userInterfaceStyle.rawValue)-\(traits.userInterfaceLevel.rawValue)"
+        guard key != appliedGradientTraitsKey else { return }
+        appliedGradientTraitsKey = key
+        let background = UIColor.systemBackground.resolvedColor(with: traits)
+        topGradient.colors = [background, background.withAlphaComponent(0.0)]
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -131,8 +191,16 @@ final class StoreTutorialSheetViewController: UIViewController {
         startAnimationSequence()
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        isLayoutFrozen = false
+    }
+
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        // While the sheet slides away the fold moves through it, which would
+        // briefly switch the grid to another layout; keep the one on screen.
+        isLayoutFrozen = true
         cancelAllWorkItems()
     }
 
@@ -160,41 +228,216 @@ final class StoreTutorialSheetViewController: UIViewController {
         view.addSubview(logoImageView)
     }
 
-    private func setupConstraints() {
-        let screenWidth = UIScreen.main.bounds.width
-        let cellSize = (screenWidth - 24 - 24 - 16) / 2
-        let collectionHeight = 24 + (cellSize * 3) + (20 * 2) + 24
-
-        let topAreaGuide = UILayoutGuide()
-        view.addLayoutGuide(topAreaGuide)
+    private func setupConstraint() {
+        let collectionTop = collectionView.topAnchor.constraint(equalTo: view.topAnchor)
+        let collectionHeight = collectionView.heightAnchor.constraint(equalToConstant: 0)
+        let logoCenterY = logoImageView.centerYAnchor.constraint(equalTo: view.topAnchor)
+        let gradientViewHeight = topGradient.heightAnchor.constraint(
+            equalTo: view.heightAnchor, multiplier: Layout.gradientViewRatio)
+        gradientGridHeightConstraint = topGradient.heightAnchor.constraint(
+            equalTo: collectionView.heightAnchor, multiplier: Layout.gradientGridRatio)
+        collectionTopConstraint = collectionTop
+        collectionHeightConstraint = collectionHeight
+        logoCenterYConstraint = logoCenterY
+        gradientViewHeightConstraint = gradientViewHeight
 
         NSLayoutConstraint.activate([
-            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -40),
-            collectionView.heightAnchor.constraint(equalToConstant: collectionHeight),
-
-            topAreaGuide.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            topAreaGuide.bottomAnchor.constraint(equalTo: collectionView.topAnchor),
-            topAreaGuide.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            topAreaGuide.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            collectionView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            collectionView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            collectionTop,
+            collectionHeight,
 
             topGradient.topAnchor.constraint(equalTo: collectionView.topAnchor),
             topGradient.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             topGradient.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            topGradient.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.5),
+            gradientViewHeight,
 
-            logoImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            logoImageView.widthAnchor.constraint(equalToConstant: 80),
-            logoImageView.heightAnchor.constraint(equalToConstant: 80)
+            logoImageView.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
+            logoCenterY,
+            logoImageView.widthAnchor.constraint(equalToConstant: Layout.logoSize),
+            logoImageView.heightAnchor.constraint(equalToConstant: Layout.logoSize)
         ])
+    }
 
-        let isSmallScreen = UIScreen.main.bounds.height <= 667
-        if isSmallScreen {
-            logoImageView.centerYAnchor.constraint(equalTo: collectionView.topAnchor).isActive = true
+    // MARK: - Grid Layout
+
+    /// Sizes the album grid to fit both the sheet's width and its height, and splits it
+    /// at the iPhone Duo's fold. On iPhones the width-based 2-column grid already fits,
+    /// so the result there matches the original design.
+    private func updateGridLayout() {
+        let bounds = view.bounds
+        guard bounds.width > 0, bounds.height > 0 else { return }
+        guard !isLayoutFrozen || appliedGeometry == nil else { return }
+
+        let insets = view.safeAreaInsets
+        let gridWidth = bounds.width - insets.left - insets.right
+        let isFolded = FoldRegion.activeFold(in: view) != nil
+        let fold = FoldRegion.splittingFold(in: view)
+
+        let geometry: GridGeometry
+        if let fold, fold.height > fold.width {
+            geometry = fittedGeometry(viewHeight: bounds.height, safeTop: insets.top) { gridBottom in
+                self.verticalSplitGeometry(
+                    fold: fold, isFolded: isFolded, gridWidth: gridWidth, gridBottom: gridBottom, insets: insets)
+            }
+        } else if let fold, traitCollection.horizontalSizeClass == .regular {
+            geometry = horizontalSplitGeometry(
+                fold: fold, isFolded: isFolded, gridWidth: gridWidth,
+                gridBottom: bounds.height - Layout.bottomSpacing, safeTop: insets.top)
         } else {
-            logoImageView.centerYAnchor.constraint(equalTo: topAreaGuide.centerYAnchor).isActive = true
+            geometry = fittedGeometry(viewHeight: bounds.height, safeTop: insets.top) { gridBottom in
+                self.singleGeometry(gridWidth: gridWidth, gridBottom: gridBottom, safeTop: insets.top)
+            }
         }
+
+        guard geometry != appliedGeometry else { return }
+        appliedGeometry = geometry
+
+        collectionTopConstraint?.constant = geometry.collectionTop
+        collectionHeightConstraint?.constant = geometry.collectionHeight
+        logoCenterYConstraint?.constant = geometry.logoCenterY
+        gradientViewHeightConstraint?.isActive = !geometry.isHorizontalSplit
+        gradientGridHeightConstraint?.isActive = geometry.isHorizontalSplit
+
+        gridLayout.cellSize = geometry.cellSize
+        gridLayout.columns = geometry.columns
+        gridLayout.leadingInset = geometry.leadingInset
+        gridLayout.columnSpacing = geometry.columnSpacing
+        gridLayout.invalidateLayout()
+    }
+
+    /// One column of content: the logo above a bottom-anchored grid.
+    private func singleGeometry(gridWidth: CGFloat, gridBottom: CGFloat, safeTop: CGFloat) -> GridGeometry {
+        let availableHeight = gridBottom - safeTop - minimumLogoReserve
+        let (columns, cellSize) = bestFit(width: gridWidth, height: availableHeight)
+        let height = gridHeight(columns: columns, cellSize: cellSize)
+        let top = gridBottom - height
+        return GridGeometry(
+            cellSize: cellSize,
+            columns: columns,
+            leadingInset: centeredInset(width: gridWidth, columns: columns, cellSize: cellSize),
+            columnSpacing: Layout.interitemSpacing,
+            collectionTop: top,
+            collectionHeight: height,
+            logoCenterY: logoCenterY(safeTop: safeTop, gridTop: top),
+            isHorizontalSplit: false
+        )
+    }
+
+    /// Upright inner display: the logo on the raised half, the grid on the base.
+    /// The gap is centered on the fold line while open and clears the fold region while folded.
+    private func horizontalSplitGeometry(
+        fold: CGRect, isFolded: Bool, gridWidth: CGFloat, gridBottom: CGFloat, safeTop: CGFloat
+    ) -> GridGeometry {
+        let halfGap = GeneralConstants.Spacer.foldGap / 2
+        let raisedBottom = isFolded ? fold.minY : fold.midY - halfGap
+        let baseTop = isFolded ? fold.maxY : fold.midY + halfGap
+        let (columns, cellSize) = bestFit(width: gridWidth, height: gridBottom - baseTop)
+        let height = gridHeight(columns: columns, cellSize: cellSize)
+        return GridGeometry(
+            cellSize: cellSize,
+            columns: columns,
+            leadingInset: centeredInset(width: gridWidth, columns: columns, cellSize: cellSize),
+            columnSpacing: Layout.interitemSpacing,
+            collectionTop: gridBottom - height,
+            collectionHeight: height,
+            logoCenterY: (safeTop + raisedBottom) / 2,
+            isHorizontalSplit: true
+        )
+    }
+
+    /// Inner display held sideways: two columns, one on each side of the fold,
+    /// so no tile sits on it.
+    private func verticalSplitGeometry(
+        fold: CGRect, isFolded: Bool, gridWidth: CGFloat, gridBottom: CGFloat, insets: UIEdgeInsets
+    ) -> GridGeometry {
+        let columns = 2
+        var foldCenter = fold.midX - insets.left
+        if view.effectiveUserInterfaceLayoutDirection == .rightToLeft {
+            foldCenter = gridWidth - foldCenter
+        }
+        let gap = isFolded ? max(Layout.interitemSpacing, fold.width) : Layout.interitemSpacing
+        let leadingRoom = foldCenter - gap / 2 - Layout.sectionInset
+        let trailingRoom = gridWidth - foldCenter - gap / 2 - Layout.sectionInset
+        let availableHeight = gridBottom - insets.top - minimumLogoReserve
+        let cellSize = max(0, min(leadingRoom, trailingRoom, heightFit(columns: columns, height: availableHeight)))
+        let height = gridHeight(columns: columns, cellSize: cellSize)
+        let top = gridBottom - height
+        return GridGeometry(
+            cellSize: cellSize,
+            columns: columns,
+            leadingInset: foldCenter - gap / 2 - cellSize,
+            columnSpacing: gap,
+            collectionTop: top,
+            collectionHeight: height,
+            logoCenterY: logoCenterY(safeTop: insets.top, gridTop: top),
+            isHorizontalSplit: false
+        )
+    }
+
+    /// The column count with the largest square tile that fits; ties keep 2 columns.
+    private func bestFit(width: CGFloat, height: CGFloat) -> (columns: Int, cellSize: CGFloat) {
+        var best = (columns: Layout.columnChoices[0], cellSize: -CGFloat.greatestFiniteMagnitude)
+        for columns in Layout.columnChoices {
+            let widthFit = (width - 2 * Layout.sectionInset - CGFloat(columns - 1) * Layout.interitemSpacing)
+                / CGFloat(columns)
+            let cellSize = min(widthFit, heightFit(columns: columns, height: height))
+            if cellSize > best.cellSize {
+                best = (columns, cellSize)
+            }
+        }
+        return (best.columns, max(0, best.cellSize))
+    }
+
+    private func rows(columns: Int) -> Int {
+        (Layout.itemCount + columns - 1) / columns
+    }
+
+    private func heightFit(columns: Int, height: CGFloat) -> CGFloat {
+        let rows = rows(columns: columns)
+        return (height - 2 * Layout.sectionInset - CGFloat(rows - 1) * Layout.lineSpacing) / CGFloat(rows)
+    }
+
+    private func gridHeight(columns: Int, cellSize: CGFloat) -> CGFloat {
+        let rows = rows(columns: columns)
+        return 2 * Layout.sectionInset + CGFloat(rows) * cellSize + CGFloat(rows - 1) * Layout.lineSpacing
+    }
+
+    private func centeredInset(width: CGFloat, columns: Int, cellSize: CGFloat) -> CGFloat {
+        (width - CGFloat(columns) * cellSize - CGFloat(columns - 1) * Layout.interitemSpacing) / 2
+    }
+
+    /// Lays out with the standard bottom space; when that leaves the logo short of room
+    /// (a short sheet: the cover display, Split View), gives the bottom space to the grid instead.
+    private func fittedGeometry(
+        viewHeight: CGFloat, safeTop: CGFloat, make: (CGFloat) -> GridGeometry
+    ) -> GridGeometry {
+        let roomy = make(viewHeight - Layout.bottomSpacing)
+        guard roomy.collectionTop - safeTop < roomyLogoSpace else { return roomy }
+        return make(viewHeight - Layout.compactBottomSpacing)
+    }
+
+    /// Room above the grid's frame in which the logo is simply centered (the iPhone look).
+    private var roomyLogoSpace: CGFloat {
+        Layout.logoTopClearance + Layout.logoSize + Layout.logoClearance
+    }
+
+    /// The least room above the grid's frame that keeps the logo clear of the grabber above it
+    /// and the first row below it, sharing the grid's top inset.
+    private var minimumLogoReserve: CGFloat {
+        Layout.logoTopClearance + Layout.logoSize + Layout.logoClearance - Layout.sectionInset
+    }
+
+    /// Centered in the space above the grid when it fits, otherwise between the grabber's
+    /// clearance and the first row, so it never overlaps the tiles or crowds the grabber.
+    private func logoCenterY(safeTop: CGFloat, gridTop: CGFloat) -> CGFloat {
+        let space = gridTop - safeTop
+        if space >= roomyLogoSpace {
+            return safeTop + space / 2
+        }
+        let top = safeTop + Layout.logoTopClearance
+        let bottom = gridTop + Layout.sectionInset - Layout.logoClearance
+        return (top + bottom) / 2
     }
 
     private func startAnimationSequence() {
@@ -315,6 +558,7 @@ final class StoreTutorialSheetViewController: UIViewController {
         flyingView.contentMode = .scaleAspectFill
         flyingView.clipsToBounds = true
         flyingView.layer.cornerRadius = 12
+        flyingView.layer.cornerCurve = .continuous
 
         let startWidth = targetFrame.width
         let startHeight = targetFrame.height
@@ -403,15 +647,53 @@ extension StoreTutorialSheetViewController: UICollectionViewDataSource {
     }
 }
 
+// MARK: - AlbumGridLayout
 
-extension StoreTutorialSheetViewController: UICollectionViewDelegateFlowLayout {
-    func collectionView(
-        _ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout,
-        sizeForItemAt indexPath: IndexPath
-    ) -> CGSize {
-        let width = (collectionView.bounds.width - 24 - 24 - 16) / 2
-        let height = width
-        return CGSize(width: width, height: height)
+/// Places the album tiles at fixed grid positions: square tiles, a leading inset and a
+/// column spacing the sheet computes, so a partly filled last row stays left-aligned
+/// and the new tile pops in exactly where it ends up.
+private final class AlbumGridLayout: UICollectionViewLayout {
+    var cellSize: CGFloat = 0
+    var columns = 2
+    var leadingInset: CGFloat = Layout.sectionInset
+    var columnSpacing: CGFloat = Layout.interitemSpacing
+
+    private var cachedAttributes: [UICollectionViewLayoutAttributes] = []
+
+    override var flipsHorizontallyInOppositeLayoutDirection: Bool { true }
+
+    override func prepare() {
+        super.prepare()
+        cachedAttributes = []
+        guard let collectionView, collectionView.numberOfSections > 0, cellSize > 0, columns > 0 else { return }
+        for item in 0..<collectionView.numberOfItems(inSection: 0) {
+            let attributes = UICollectionViewLayoutAttributes(forCellWith: IndexPath(item: item, section: 0))
+            let column = item % columns
+            let row = item / columns
+            attributes.frame = CGRect(
+                x: leadingInset + CGFloat(column) * (cellSize + columnSpacing),
+                y: Layout.sectionInset + CGFloat(row) * (cellSize + Layout.lineSpacing),
+                width: cellSize,
+                height: cellSize
+            )
+            cachedAttributes.append(attributes)
+        }
+    }
+
+    override var collectionViewContentSize: CGSize {
+        collectionView?.bounds.size ?? .zero
+    }
+
+    override func layoutAttributesForElements(in rect: CGRect) -> [UICollectionViewLayoutAttributes]? {
+        cachedAttributes.filter { $0.frame.intersects(rect) }
+    }
+
+    override func layoutAttributesForItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
+        cachedAttributes.first { $0.indexPath == indexPath }
+    }
+
+    override func shouldInvalidateLayout(forBoundsChange newBounds: CGRect) -> Bool {
+        newBounds.size != collectionView?.bounds.size
     }
 }
 

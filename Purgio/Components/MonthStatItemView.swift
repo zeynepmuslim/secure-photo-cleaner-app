@@ -12,6 +12,7 @@ final class MonthStatItemView: UIView {
     private let dotView: UIView = {
         let view = UIView()
         view.layer.cornerRadius = 4
+        view.layer.cornerCurve = .continuous
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
     }()

@@ -13,6 +13,7 @@ final class SkeletonMonthRowView: UIView {
         let view = UIView()
         view.backgroundColor = UIColor.systemGray5
         view.layer.cornerRadius = 4
+        view.layer.cornerCurve = .continuous
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
     }()
@@ -21,6 +22,7 @@ final class SkeletonMonthRowView: UIView {
         let view = UIView()
         view.backgroundColor = UIColor.systemGray5
         view.layer.cornerRadius = 4
+        view.layer.cornerCurve = .continuous
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
     }()
@@ -29,6 +31,7 @@ final class SkeletonMonthRowView: UIView {
         let view = UIView()
         view.backgroundColor = UIColor.systemGray5
         view.layer.cornerRadius = 3
+        view.layer.cornerCurve = .continuous
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
     }()

@@ -108,6 +108,7 @@ private struct SettingsLinkRowPreview: UIViewRepresentable {
         let host = UIView()
         host.backgroundColor = .cardBackground
         host.layer.cornerRadius = 14
+        host.layer.cornerCurve = .continuous
         host.clipsToBounds = true
         host.addSubview(row)
         row.translatesAutoresizingMaskIntoConstraints = false

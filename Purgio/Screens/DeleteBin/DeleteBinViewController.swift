@@ -22,7 +22,19 @@ private enum Strings {
     static let deletingProgress = NSLocalizedString("deleteBin.deletingProgress", comment: "Deleting progress label")
     static let deleteCannotUndo = NSLocalizedString("deleteBin.deleteCannotUndo", comment: "Delete warning about Recently Deleted folder")
     static let yourDeleteBin = NSLocalizedString("deleteBin.yourDeleteBin", comment: "Your Delete Bin title")
-    static let deleteBinEmptyMessage = NSLocalizedString("deleteBin.emptyMessage", comment: "Empty delete bin explanation message")
+    static let emptyHint = NSLocalizedString("deleteBin.emptyHint", comment: "Empty delete bin: how items get here and when they're deleted")
+    static let youFreed = NSLocalizedString("deleteBin.youFreed", comment: "Label over the space freed by the last deletion")
+    static let reviewAnother = NSLocalizedString("deleteBin.reviewAnother", comment: "Button after emptying the bin: review another month")
+    static let reviewPhotos = NSLocalizedString("deleteBin.reviewPhotos", comment: "Button on the empty bin: go review photos")
+    static let done = NSLocalizedString("deleteBin.done", comment: "Button after emptying the bin: leave the bin")
+    static func reviewMonth(_ month: String) -> String {
+        String(format: NSLocalizedString("deleteBin.reviewMonth", comment: "Button on the empty bin, e.g. 'Review August'"), month)
+    }
+    static func cleanedMessage(count: Int) -> String {
+        String.localizedStringWithFormat(
+            NSLocalizedString("deleteBin.cleanedMessage", comment: "After emptying the bin: how many items went to Recently Deleted"),
+            count)
+    }
     static let successTitle = NSLocalizedString("deleteBin.successTitle", comment: "Success alert title")
     static let allDeletedMessage = NSLocalizedString("deleteBin.allDeletedMessage", comment: "All items deleted success message")
     static let errorTitle = NSLocalizedString("deleteBin.errorTitle", comment: "Error alert title")
@@ -72,13 +84,6 @@ private enum Strings {
         String(format: NSLocalizedString("deleteBin.binCountTitle", comment: "Bin count title, e.g. 'Bin · 5'"), count)
     }
     static let allCleanedTitle = NSLocalizedString("deleteBin.allCleanedTitle", comment: "All cleaned up title")
-    static let goBack = NSLocalizedString("deleteBin.goBack", comment: "Go back button")
-    static func freshEmptyMessage(assets: [PHAsset], size: String) -> String {
-        String(format: NSLocalizedString("deleteBin.freshEmptyMessage", comment: "Success message with size, e.g. 'You freed up 2.5 GB by deleting 3 photos.'"), size, mediaDescription(for: assets))
-    }
-    static func freshEmptyMessageNoSize(assets: [PHAsset]) -> String {
-        String(format: NSLocalizedString("deleteBin.freshEmptyMessageNoSize", comment: "Success message without size, e.g. 'You deleted 3 photos from your library.'"), mediaDescription(for: assets))
-    }
 }
 
 final class DeleteBinViewController: UIViewController {
@@ -93,6 +98,7 @@ final class DeleteBinViewController: UIViewController {
         label.textAlignment = .center
         label.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.95)
         label.layer.cornerRadius = 16
+        label.layer.cornerCurve = .continuous
         label.layer.masksToBounds = true
         return label
     }()
@@ -100,16 +106,19 @@ final class DeleteBinViewController: UIViewController {
     private let emptyStateView = EmptyStateView()
 
     private lazy var collectionView: UICollectionView = {
-        let layout = UICollectionViewFlowLayout()
-        layout.minimumInteritemSpacing = 2
-        layout.minimumLineSpacing = 2
+        let layout = FoldSplitFlowLayout()
+        layout.minimumInteritemSpacing = GridGeometry.spacing
+        layout.minimumLineSpacing = GridGeometry.spacing
         layout.sectionInset = UIEdgeInsets(top: 2, left: 2, bottom: 2, right: 2)
+        // Keep thumbnails out of side safe areas (vertical bars on iPhone Duo)
+        layout.sectionInsetReference = .fromSafeArea
         let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collectionView.backgroundColor = .systemBackground
         collectionView.register(PhotoThumbnailCell.self, forCellWithReuseIdentifier: "PhotoCell")
         collectionView.allowsMultipleSelection = false
         collectionView.contentInset = UIEdgeInsets(top: 50, left: 0, bottom: 100, right: 0)
         collectionView.scrollIndicatorInsets = collectionView.contentInset
+        collectionView.useSoftTopEdgeEffect()
         return collectionView
     }()
 
@@ -157,12 +166,37 @@ final class DeleteBinViewController: UIViewController {
 
     private var photoAssets: [PHAsset] = []
     private var thumbnailSize: CGSize = .zero
+    private var lastGridGeometry: GridGeometry?
+    private var skeletonLeadingConstraint: NSLayoutConstraint?
+    private var skeletonTrailingConstraint: NSLayoutConstraint?
+    private var headerCenterXConstraint: NSLayoutConstraint?
+    private var editButtonsEdges: DuoEdgeConstraints?
 
     private enum EmptyKind {
         case defaultEmpty
         case freshEmpty(assets: [PHAsset], bytes: Int64)
     }
     private var pendingEmptyKind: EmptyKind = .defaultEmpty
+    private var isShowingEmptyState = false
+
+    /// The month the empty bin points back to.
+    private struct ReviewTarget {
+        let key: String
+        let title: String
+        let mediaType: PHAssetMediaType
+    }
+
+    private enum EmptyLayout {
+        static let freedCardInsets = NSDirectionalEdgeInsets(
+            top: GeneralConstants.EdgePadding.cardInner, leading: GeneralConstants.EdgePadding.cardInner,
+            bottom: GeneralConstants.EdgePadding.cardInner, trailing: GeneralConstants.EdgePadding.cardInner)
+        static let freedLabelSize: CGFloat = 13
+        static let freedValueSize: CGFloat = 36
+    }
+
+    private var binController: FloatingBinButtonController? {
+        tabBarController as? FloatingBinButtonController
+    }
 
     private var isEditMode = false
     private var binSpacerWidthConstraint: NSLayoutConstraint?
@@ -192,6 +226,11 @@ final class DeleteBinViewController: UIViewController {
         setupUI()
         setupConstraint()
         calculateThumbnailSize()
+        if #available(iOS 17.0, *) {
+            registerForTraitChanges([UITraitDisplayScale.self]) { (self: DeleteBinViewController, _) in
+                self.calculateThumbnailSize()
+            }
+        }
 
         if skipAutoLoad {
             updateUI()
@@ -211,16 +250,42 @@ final class DeleteBinViewController: UIViewController {
         }
     }
 
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        // Width, rail and fold changes all change the geometry
+        guard gridContentWidth > 0 else { return }
+        let geometry = gridGeometry
+        guard geometry != lastGridGeometry else { return }
+        let isFirstLayout = lastGridGeometry == nil
+        lastGridGeometry = geometry
+        calculateThumbnailSize()
+        collectionView.collectionViewLayout.invalidateLayout()
+        if !isFirstLayout {
+            // Reload visible thumbnails at the new size; keeps edit-mode selection
+            collectionView.reconfigureItems(at: collectionView.indexPathsForVisibleItems)
+        }
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        let railEdge = DuoLayout.railEdge(tabBarController, in: view)
+        editButtonsEdges?.update(railEdge: railEdge)
+        emptyStateView.update(railEdge: railEdge)
+        updateRailHeader()
         updateBinSpacerWidth(animated: false)
         headerLabel.layer.cornerRadius = headerLabel.bounds.height / 2
+        headerLabel.layer.cornerCurve = .continuous
     }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         DispatchQueue.main.async { [weak self] in
             self?.updateBinSpacerWidth(animated: false)
+        }
+        // Every push and pop lets the bin button show again; the empty states have their own
+        // bottom row where it would float
+        if isShowingEmptyState {
+            binController?.setBinButtonSuppressed(true)
         }
     }
 
@@ -229,8 +294,6 @@ final class DeleteBinViewController: UIViewController {
         if isEditMode {
             setEditing(false, animated: false)
         }
-        findFloatingBinButton()?.isEnabled = true
-        findFloatingBinButton()?.alpha = 1.0
     }
 
     private func setupUI() {
@@ -274,28 +337,38 @@ final class DeleteBinViewController: UIViewController {
         headerLabel.translatesAutoresizingMaskIntoConstraints = false
         editButtonsStack.translatesAutoresizingMaskIntoConstraints = false
 
+        let headerCenterX = headerLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+        headerCenterXConstraint = headerCenterX
+
         NSLayoutConstraint.activate([
             collectionView.topAnchor.constraint(equalTo: view.topAnchor),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
 
             headerLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12),
-            headerLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            headerCenterX,
             headerLabel.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor, constant: -32),
             headerLabel.heightAnchor.constraint(equalToConstant: 32),
 
             emptyStateView.topAnchor.constraint(equalTo: view.topAnchor),
-            emptyStateView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            emptyStateView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            emptyStateView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            emptyStateView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
             emptyStateView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
-            editButtonsStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            editButtonsStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            editButtonsStack.bottomAnchor.constraint(
-                equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -GeneralConstants.Spacer.buttonBottom),
             editButtonsStack.heightAnchor.constraint(equalToConstant: GeneralConstants.ButtonSize.large),
             removeSelectedButton.widthAnchor.constraint(equalTo: binSpacerView.widthAnchor)
         ])
+
+        // Side and bottom edges follow Home's vertical-rail padding on iPhone Duo; with the
+        // rail trailing, the leading edge matches the wide bin button's corner clearance
+        let edges = DuoEdgeConstraints(
+            item: editButtonsStack, in: view,
+            standardLeading: GeneralConstants.EdgePadding.content,
+            standardTrailing: GeneralConstants.EdgePadding.content,
+            railTrailingFarLeading: DuoLayout.RailPadding.cornerClearance,
+            standardBottom: GeneralConstants.Spacer.buttonBottom)
+        editButtonsEdges = edges
+        NSLayoutConstraint.activate(edges.initialConstraints)
 
         binSpacerWidthConstraint = binSpacerView.widthAnchor.constraint(equalToConstant: 0)
         binSpacerWidthConstraint?.priority = .defaultLow
@@ -305,40 +378,34 @@ final class DeleteBinViewController: UIViewController {
         collectionViewBottomConstraint.isActive = true
     }
 
+    // Titled standard items (no custom "more" menu): the system picks the
+    // representation and overflow on iPhone Duo; the ellipsis stays reserved for overflow.
     private func setupNavigationItems() {
-        if filterMonthKey != nil {
-            let menuButton = UIButton(type: .system)
-            menuButton.setImage(UIImage(systemName: "ellipsis.circle"), for: .normal)
-            menuButton.tintColor = .label
-            menuButton.showsMenuAsPrimaryAction = true
-            menuButton.menu = makeEditMenu()
-            navigationItem.rightBarButtonItem = UIBarButtonItem(customView: menuButton)
-        } else {
-            let editButton = UIBarButtonItem(
-                image: UIImage(systemName: "pencil"),
-                style: .plain,
-                target: self,
-                action: #selector(handleEditTap)
-            )
-            navigationItem.rightBarButtonItem = editButton
+        let editButton = UIBarButtonItem(
+            image: UIImage(systemName: "pencil"),
+            style: .plain,
+            target: self,
+            action: #selector(handleEditTap)
+        )
+        editButton.title = Strings.editMode
+
+        guard filterMonthKey != nil else {
+            navigationItem.rightBarButtonItems = [editButton]
+            return
         }
 
-    }
-
-    private func makeEditMenu() -> UIMenu {
-        let editAction = UIAction(
-            title: Strings.editMode,
-            image: UIImage(systemName: "pencil")
-        ) { [weak self] _ in
-            self?.handleEditTap()
+        let generalBinButton = UIBarButtonItem(
+            image: UIImage(systemName: "tray.full"),
+            style: .plain,
+            target: self,
+            action: #selector(handleShowWholeBin)
+        )
+        generalBinButton.title = Strings.goToGeneralBin
+        if #available(iOS 27.1, *) {
+            editButton.visibilityPriority = .high
+            generalBinButton.visibilityPriority = .low
         }
-        let showAllAction = UIAction(
-            title: Strings.goToGeneralBin,
-            image: UIImage(systemName: "tray.full")
-        ) { [weak self] _ in
-            self?.handleShowWholeBin()
-        }
-        return UIMenu(title: "", children: [editAction, showAllAction])
+        navigationItem.rightBarButtonItems = [editButton, generalBinButton]
     }
 
     @objc private func handleShowWholeBin() {
@@ -392,7 +459,7 @@ final class DeleteBinViewController: UIViewController {
         }
 
         if editing {
-            navigationItem.rightBarButtonItem = doneBarButtonItem
+            navigationItem.rightBarButtonItems = [doneBarButtonItem]
         } else {
             setupNavigationItems()
         }
@@ -529,18 +596,110 @@ final class DeleteBinViewController: UIViewController {
     }
 
     // MARK: - UI Updates
-    private func calculateThumbnailSize() {
-        let columns: CGFloat = 3
-        let spacing: CGFloat = 2
-        let insets: CGFloat = 4
-        let totalSpacing = (columns - 1) * spacing + insets
+    /// Grid width inside the side safe areas (matches `sectionInsetReference = .fromSafeArea`).
+    private var gridContentWidth: CGFloat {
         let containerWidth = collectionView.bounds.width > 0 ? collectionView.bounds.width : view.bounds.width
-        let width = (containerWidth - totalSpacing) / columns
-        thumbnailSize = CGSize(width: width * UIScreen.main.scale, height: width * UIScreen.main.scale)
+        return containerWidth - view.safeAreaInsets.left - view.safeAreaInsets.right
+    }
 
-        if let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
-            layout.itemSize = CGSize(width: width, height: width)
+    /// Physical side section insets, lined up with the wide bin button. On a vertical rail
+    /// (iPhone Duo only) the grid keeps 6pt from the rail. Across from a right-side rail the
+    /// safe area is ~0, so it keeps clear of the device's rounded corner; across from a
+    /// left-side rail (Split View, left half) it uses the bin button's standard padding.
+    /// Elsewhere the original 2pt insets.
+    private var gridSideInsets: (left: CGFloat, right: CGFloat) {
+        switch DuoLayout.railSide(tabBarController, in: view) {
+        case nil: return (2, 2)
+        case .right: return (DuoLayout.RailPadding.cornerClearance, DuoLayout.RailPadding.nextToRail)
+        case .left: return (DuoLayout.RailPadding.nextToRail, GeneralConstants.EdgePadding.medium)
         }
+    }
+
+    /// Vertical rail only: the header centers over the grid instead of the whole view
+    /// (the side insets differ).
+    private func updateRailHeader() {
+        var headerOffset: CGFloat = 0
+        if DuoLayout.isVerticalRail(tabBarController) {
+            let geometry = gridGeometry
+            let safeArea = view.safeAreaInsets
+            headerOffset = ((safeArea.left + geometry.leftInset) - (safeArea.right + geometry.rightInset)) / 2
+        }
+        if let headerCenterX = headerCenterXConstraint, headerCenterX.constant != headerOffset {
+            headerCenterX.constant = headerOffset
+        }
+    }
+
+    /// 3 columns in compact width; an even count in regular width so the grid
+    /// splits cleanly at the iPhone Duo fold (4, or 6 once cells would exceed 180pt).
+    private func gridColumnCount(for width: CGFloat) -> CGFloat {
+        guard traitCollection.horizontalSizeClass == .regular else { return 3 }
+        return width / 4 > 180 ? 6 : 4
+    }
+
+    /// Item size and physical side insets of the grid.
+    private struct GridGeometry: Equatable {
+        static let spacing: CGFloat = 2
+
+        var columns: Int
+        var side: CGFloat
+        var leftInset: CGFloat
+        var rightInset: CGFloat
+        /// Collection view x where the right half starts, when the grid splits at a fold.
+        var splitX: CGFloat?
+        /// Space added to the gap at `splitX` (0 while the device is fully open).
+        var extraGap: CGFloat = 0
+    }
+
+    /// The regular grid inside `gridSideInsets`. With a vertical iPhone Duo fold across it
+    /// (regular width, even column count), the two halves sit on either side of the fold
+    /// line instead: the regular 2pt gap centered on it while fully open, the whole fold
+    /// region while folded, so no thumbnail sits on the fold.
+    private var gridGeometry: GridGeometry {
+        let spacing = GridGeometry.spacing
+        let base = gridSideInsets
+        let width = gridContentWidth
+        let columns = Int(gridColumnCount(for: width))
+        let regularSide = floor((width - base.left - base.right - CGFloat(columns - 1) * spacing) / CGFloat(columns))
+        let regular = GridGeometry(columns: columns, side: regularSide, leftInset: base.left, rightInset: base.right)
+
+        guard columns.isMultiple(of: 2), traitCollection.horizontalSizeClass == .regular,
+              let fold = FoldRegion.splittingFold(in: view), fold.height > fold.width else { return regular }
+
+        let gap = FoldRegion.activeFold(in: view).map { max(spacing, $0.width) } ?? spacing
+        let safeLeft = view.safeAreaInsets.left
+        // Grid coordinates: from the safe area's left edge (`sectionInsetReference = .fromSafeArea`)
+        let foldCenter = fold.midX - safeLeft
+        let halfColumns = CGFloat(columns / 2)
+        let halfRoom = min(foldCenter - gap / 2 - base.left, width - base.right - (foldCenter + gap / 2))
+        let side = floor((halfRoom - (halfColumns - 1) * spacing) / halfColumns)
+        guard side > 0 else { return regular }
+
+        let halfWidth = halfColumns * side + (halfColumns - 1) * spacing
+        let leftInset = foldCenter - gap / 2 - halfWidth
+        let extraGap = gap - spacing
+        // The flow layout sees the regular spacing everywhere; the right inset leaves room
+        // for the right half's shift
+        let rightInset = width - leftInset - CGFloat(columns) * side - CGFloat(columns - 1) * spacing - extraGap
+        return GridGeometry(
+            columns: columns, side: side, leftInset: leftInset, rightInset: rightInset,
+            splitX: safeLeft + leftInset + halfWidth + spacing / 2, extraGap: extraGap)
+    }
+
+    private func calculateThumbnailSize() {
+        let geometry = gridGeometry
+        skeletonGridView?.columns = geometry.columns
+        let scale = traitCollection.displayScale
+        thumbnailSize = CGSize(width: geometry.side * scale, height: geometry.side * scale)
+
+        if let layout = collectionView.collectionViewLayout as? FoldSplitFlowLayout {
+            layout.itemSize = CGSize(width: geometry.side, height: geometry.side)
+            layout.sectionInset.left = geometry.leftInset
+            layout.sectionInset.right = geometry.rightInset
+            layout.splitX = geometry.splitX
+            layout.extraGap = geometry.extraGap
+        }
+        skeletonLeadingConstraint?.constant = geometry.leftInset
+        skeletonTrailingConstraint?.constant = -geometry.rightInset
     }
 
     // MARK: - Data Loading
@@ -617,15 +776,24 @@ final class DeleteBinViewController: UIViewController {
         headerLabel.isHidden = true
 
         if skeletonGridView == nil {
-            let skeleton = SkeletonGridView(columns: 3, rows: 5)
+            let geometry = gridGeometry
+            let skeleton = SkeletonGridView(columns: geometry.columns)
             skeleton.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview(skeleton)
             self.skeletonGridView = skeleton
 
+            // Same grid as the collection view: 50pt top content inset plus the section
+            // insets (wider leading on a vertical rail), inside the side safe areas (`sectionInsetReference = .fromSafeArea`)
+            let leading = skeleton.leadingAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: geometry.leftInset)
+            let trailing = skeleton.trailingAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -geometry.rightInset)
+            skeletonLeadingConstraint = leading
+            skeletonTrailingConstraint = trailing
             NSLayoutConstraint.activate([
-                skeleton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 50),
-                skeleton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 2),
-                skeleton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -2),
+                skeleton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 52),
+                leading,
+                trailing,
                 skeleton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20)
             ])
 
@@ -636,17 +804,20 @@ final class DeleteBinViewController: UIViewController {
     private func hideLoadingState() {
         skeletonGridView?.fadeOut { [weak self] in
             self?.skeletonGridView = nil
+            self?.skeletonLeadingConstraint = nil
+            self?.skeletonTrailingConstraint = nil
         }
     }
 
     private func updateUI() {
+        // Reload in both branches: a hidden grid that kept its old items crashed on the next
+        // size change, when viewWillLayoutSubviews reconfigured them past the emptied array
+        collectionView.reloadData()
         if photoAssets.isEmpty {
             showEmptyState()
         } else {
             hideEmptyState()
             updateHeader()
-            collectionView.reloadData()
-
         }
     }
 
@@ -674,39 +845,150 @@ final class DeleteBinViewController: UIViewController {
     }
 
     // MARK: - Empty State
+
+    /// Board "Empty & finished states · A + B": an empty bin says what it's for and points at
+    /// a month to review; a bin that was just emptied shows the stamp and the space freed.
     private func showEmptyState() {
         switch pendingEmptyKind {
         case .defaultEmpty:
+            let target = reviewTarget()
             emptyStateView.configure(
-                icon: "trash",
-                iconColor: .systemRed,
+                hero: .symbol("trash"),
                 title: filterMonthTitle.map { Strings.monthBinTitle(monthTitle: $0) } ?? Strings.yourDeleteBin,
-                message: Strings.deleteBinEmptyMessage,
-                actionTitle: nil,
-                onAction: nil
-            )
-        case .freshEmpty(let deletedAssets, let bytes):
-            let message = bytes > 0
-                ? Strings.freshEmptyMessage(assets: deletedAssets, size: bytes.formattedBytes())
-                : Strings.freshEmptyMessageNoSize(assets: deletedAssets)
-            emptyStateView.configure(
-                icon: "checkmark.circle.fill",
-                iconColor: .systemGreen,
-                title: Strings.allCleanedTitle,
-                message: message,
-                actionTitle: Strings.goBack,
+                message: Strings.emptyHint,
+                accessory: target.flatMap { makeMonthCard(for: $0) },
+                actionTitle: target.map { Strings.reviewMonth(shortName(of: $0)) } ?? Strings.reviewPhotos,
+                actionIcon: "play.fill",
                 onAction: { [weak self] in
+                    if let target {
+                        self?.openHub(for: target)
+                    } else {
+                        self?.openMonthsList()
+                    }
+                })
+        case .freshEmpty(let deletedAssets, let bytes):
+            emptyStateView.configure(
+                hero: .stamp,
+                title: Strings.allCleanedTitle,
+                message: Strings.cleanedMessage(count: deletedAssets.count),
+                accessory: bytes > 0 ? makeFreedCard(bytes: bytes) : nil,
+                actionTitle: Strings.reviewAnother,
+                actionIcon: "play.fill",
+                onAction: { [weak self] in self?.openMonthsList() },
+                secondaryTitle: Strings.done,
+                onSecondary: { [weak self] in
                     self?.navigationController?.popViewController(animated: true)
-                }
-            )
+                })
         }
+        isShowingEmptyState = true
+        // The states' cards are white; they sit on the grouped background
+        view.backgroundColor = .mainBackground
         emptyStateView.isHidden = false
+        emptyStateView.update(railEdge: DuoLayout.railEdge(tabBarController, in: view))
         emptyStateView.show(animated: true)
         collectionView.isHidden = true
         headerLabel.isHidden = true
-        navigationItem.rightBarButtonItem?.isEnabled = false
-        findFloatingBinButton()?.isEnabled = false
-        findFloatingBinButton()?.alpha = 0.5
+        navigationItem.rightBarButtonItems?.forEach { $0.isEnabled = false }
+        binController?.setBinButtonSuppressed(true)
+    }
+
+    /// The bin's own month while it has work left (photos first), else the newest month in
+    /// progress, else none.
+    private func reviewTarget() -> ReviewTarget? {
+        let progressStore = ReviewProgressStore.shared
+        if let key = filterMonthKey, let title = filterMonthTitle {
+            for mediaType in [PHAssetMediaType.image, .video] {
+                // Started or not, as long as its total is known and not all of it is reviewed
+                let hasTotal = progressStore.getProgress(forMonthKey: key, mediaType: mediaType).originalTotalCount > 0
+                if hasTotal, !progressStore.isComplete(monthKey: key, mediaType: mediaType) {
+                    return ReviewTarget(key: key, title: title, mediaType: mediaType)
+                }
+            }
+        }
+        guard let newest = DashboardCardManager.shared.newestInProgressMonth() else { return nil }
+        return ReviewTarget(
+            key: newest.monthKey,
+            title: DateFormatterManager.shared.displayMonth(fromMonthKey: newest.monthKey),
+            mediaType: newest.mediaType)
+    }
+
+    /// "August" for the button; the card shows the full title.
+    private func shortName(of target: ReviewTarget) -> String {
+        DateFormatterManager.shared.monthName(fromMonthKey: target.key) ?? target.title
+    }
+
+    /// The month's row as on the months list, in a tappable card.
+    private func makeMonthCard(for target: ReviewTarget) -> UIView? {
+        let card = MonthLinkCardView()
+        guard card.configure(title: target.title, monthKey: target.key, mediaType: target.mediaType) else {
+            return nil
+        }
+        card.onTap = { [weak self] in self?.openHub(for: target) }
+        return card
+    }
+
+    private func makeFreedCard(bytes: Int64) -> UIView {
+        let card = UIView()
+        card.backgroundColor = .cardBackground
+        card.layer.cornerRadius = GeneralConstants.CornerRadius.card
+        card.layer.cornerCurve = .continuous
+
+        let label = UILabel()
+        label.font = .systemFont(ofSize: EmptyLayout.freedLabelSize, weight: .regular)
+        label.textColor = .textSecondary
+        label.text = Strings.youFreed
+
+        let valueLabel = UILabel()
+        valueLabel.font = .monospacedDigitSystemFont(ofSize: EmptyLayout.freedValueSize, weight: .heavy)
+        valueLabel.textColor = .textPrimary
+        valueLabel.adjustsFontSizeToFitWidth = true
+        valueLabel.minimumScaleFactor = 0.6
+        valueLabel.text = bytes.formattedBytes()
+
+        let stack = UIStackView(arrangedSubviews: [label, valueLabel])
+        stack.axis = .vertical
+        stack.alignment = .leading
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(stack)
+
+        let insets = EmptyLayout.freedCardInsets
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: card.topAnchor, constant: insets.top),
+            stack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: insets.leading),
+            stack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -insets.trailing),
+            stack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -insets.bottom)
+        ])
+
+        card.isAccessibilityElement = true
+        card.accessibilityLabel = [Strings.youFreed, valueLabel.text].compactMap { $0 }.joined(separator: ", ")
+        return card
+    }
+
+    /// The month's hub on its own tab (Photos 1, Videos 2), with the months list under it.
+    private func openHub(for target: ReviewTarget) {
+        HapticFeedbackManager.shared.impact(intensity: .medium)
+        // Leave this tab's stack clean when the month's tab is another one
+        let index = target.mediaType == .video ? 2 : 1
+        if tabBarController?.viewControllers?[index] !== navigationController {
+            navigationController?.popToRootViewController(animated: false)
+        }
+        MonthsListViewController.openHub(
+            in: tabBarController, mediaType: target.mediaType, title: target.title, key: target.key)
+    }
+
+    /// The Photos tab's months list.
+    private func openMonthsList() {
+        guard let tabBarController,
+              let destination = tabBarController.viewControllers?[1] as? UINavigationController else { return }
+        HapticFeedbackManager.shared.impact(intensity: .medium)
+        if destination === navigationController {
+            destination.popToRootViewController(animated: true)
+        } else {
+            navigationController?.popToRootViewController(animated: false)
+            binController?.setBinButtonSuppressed(false)
+            tabBarController.selectedIndex = 1
+            destination.popToRootViewController(animated: false)
+        }
     }
 
     private func showErrorAlert() {
@@ -877,9 +1159,11 @@ final class DeleteBinViewController: UIViewController {
         emptyStateView.isHidden = true
         collectionView.isHidden = false
         headerLabel.isHidden = false
-        navigationItem.rightBarButtonItem?.isEnabled = true
-        findFloatingBinButton()?.isEnabled = true
-        findFloatingBinButton()?.alpha = 1.0
+        navigationItem.rightBarButtonItems?.forEach { $0.isEnabled = true }
+        guard isShowingEmptyState else { return }
+        isShowingEmptyState = false
+        view.backgroundColor = .systemBackground
+        binController?.setBinButtonSuppressed(false)
     }
 
     // MARK: - Preview sheeet
@@ -907,49 +1191,19 @@ final class DeleteBinViewController: UIViewController {
             }
         }
 
-        previewVC.onRemove = { [weak self] in
-            guard let self = self,
-                let currentIndex = self.photoAssets.firstIndex(of: asset)
-            else {
-                return
-            }
-            let currentIndexPath = IndexPath(item: currentIndex, section: 0)
-
-            self.deleteBinStore.removeAssetId(asset.localIdentifier)
+        // Keep or Store: the item leaves the bin as a review decision.
+        previewVC.onDecide = { [weak self] type in
+            guard let self, let currentIndex = self.photoAssets.firstIndex(of: asset) else { return }
+            BinDecision.apply(type, to: asset)
+            // The grid is updated here; the store's count change needs no reload.
+            self.needsReload = false
             self.photoAssets.remove(at: currentIndex)
-
             if self.photoAssets.isEmpty {
                 self.updateUI()
             } else {
-                self.collectionView.deleteItems(at: [currentIndexPath])
+                self.collectionView.deleteItems(at: [IndexPath(item: currentIndex, section: 0)])
                 self.updateHeader()
             }
-            print(
-                "[BIN SYNC] onRemove: done, arrayCount=\(self.photoAssets.count), cvCount=\(self.collectionView.numberOfItems(inSection: 0))"
-            )
-        }
-
-        // Set up undo callback
-        previewVC.onUndo = { [weak self] in
-            guard let self = self else { return }
-
-            guard !self.photoAssets.contains(asset) else {
-                print("[BIN SYNC] onUndo: asset already in array, skipping. arrayCount=\(self.photoAssets.count)")
-                return
-            }
-
-            print(
-                "[BIN SYNC] onUndo: inserting, arrayCount=\(self.photoAssets.count), cvCount=\(self.collectionView.numberOfItems(inSection: 0))"
-            )
-            self.deleteBinStore.addAssetId(asset.localIdentifier)
-            self.photoAssets.append(asset)
-            let insertIndexPath = IndexPath(item: self.photoAssets.count - 1, section: 0)
-
-            self.collectionView.insertItems(at: [insertIndexPath])
-            self.updateHeader()
-            print(
-                "[BIN SYNC] onUndo: done, arrayCount=\(self.photoAssets.count), cvCount=\(self.collectionView.numberOfItems(inSection: 0))"
-            )
         }
 
         previewVC.onDeleteNow = { [weak self] in
@@ -1119,8 +1373,10 @@ extension DeleteBinViewController: UICollectionViewDataSource {
             for: asset,
             quality: .thumbnail,
             screenSize: CGSize(
-                width: thumbnailSize.width / UIScreen.main.scale, height: thumbnailSize.height / UIScreen.main.scale),
-            allowNetworkAccess: SettingsStore.shared.allowInternetAccess
+                width: thumbnailSize.width / traitCollection.displayScale,
+                height: thumbnailSize.height / traitCollection.displayScale),
+            allowNetworkAccess: SettingsStore.shared.allowInternetAccess,
+            traitCollection: traitCollection
         ) { image, isInCloud, _ in
             guard cell.representedAssetIdentifier == asset.localIdentifier else { return }
 

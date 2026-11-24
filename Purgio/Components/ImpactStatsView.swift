@@ -108,6 +108,7 @@ final class ImpactStatsView: UIView {
     private func setupUI() {
         backgroundColor = .cardBackground
         layer.cornerRadius = 14
+        layer.cornerCurve = .continuous
         translatesAutoresizingMaskIntoConstraints = false
 
         addSubview(statsStack)

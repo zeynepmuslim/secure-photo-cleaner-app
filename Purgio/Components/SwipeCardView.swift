@@ -42,6 +42,32 @@ final class SwipeCardView: UIView {
     var onSkipTap: (() -> Void)?
     var assetIdentifier: String?
     var mediaType: MediaType = .photo
+    /// Width / height of the asset shown, so a layout can hug it (iPhone Duo sideways).
+    var contentAspectRatio: CGFloat?
+    private weak var embeddedVideoLayer: CALayer?
+
+    enum InfoChipPlacement {
+        case topLeading
+        case bottomLeading
+    }
+
+    private enum InfoChipLayout {
+        static let height: CGFloat = 26
+        /// From the card's edges, the same inset as the other badges.
+        static let edgeInset: CGFloat = 12
+        static let horizontalPadding: CGFloat = 12
+        static let spacing: CGFloat = 6
+    }
+
+    private var infoChipTopConstraint: NSLayoutConstraint?
+    private var infoChipBottomConstraint: NSLayoutConstraint?
+    private var infoChipLeadingToCardConstraint: NSLayoutConstraint?
+    private var infoChipLeadingToICloudConstraint: NSLayoutConstraint?
+    private var infoChipPlacement: InfoChipPlacement = .bottomLeading
+    /// Only the top card of a stack shows its chip.
+    var showsInfoChip = true {
+        didSet { updateInfoChipVisibility() }
+    }
 
     private let backgroundImageView: UIImageView = {
         let imageView = UIImageView()
@@ -166,6 +192,7 @@ final class SwipeCardView: UIView {
         let view = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
         view.translatesAutoresizingMaskIntoConstraints = false
         view.layer.cornerRadius = 12
+        view.layer.cornerCurve = .continuous
         view.layer.masksToBounds = true
         view.alpha = 0
         return view
@@ -184,6 +211,7 @@ final class SwipeCardView: UIView {
         let view = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
         view.translatesAutoresizingMaskIntoConstraints = false
         view.layer.cornerRadius = 16
+        view.layer.cornerCurve = .continuous
         view.layer.masksToBounds = true
         view.alpha = 0
         view.setContentHuggingPriority(.defaultLow, for: .vertical)
@@ -209,6 +237,43 @@ final class SwipeCardView: UIView {
         label.font = .systemFont(ofSize: 11, weight: .medium)
         label.textColor = .white
         return label
+    }()
+
+    private let infoChipContainer: UIView = {
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.backgroundColor = UIColor.black.withAlphaComponent(0.42)
+        view.layer.cornerRadius = InfoChipLayout.height / 2
+        view.layer.cornerCurve = .continuous
+        view.isUserInteractionEnabled = false
+        view.isHidden = true
+        return view
+    }()
+
+    private let infoChipIcon: UIImageView = {
+        let imageView = UIImageView()
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.tintColor = .white
+        imageView.contentMode = .scaleAspectFit
+        imageView.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 11, weight: .semibold)
+        return imageView
+    }()
+
+    private let infoChipLabel: UILabel = {
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.font = .monospacedDigitSystemFont(ofSize: 12, weight: .semibold)
+        label.textColor = .white
+        return label
+    }()
+
+    private lazy var infoChipStack: UIStackView = {
+        let stack = UIStackView(arrangedSubviews: [infoChipIcon, infoChipLabel])
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.axis = .horizontal
+        stack.spacing = InfoChipLayout.spacing
+        stack.alignment = .center
+        return stack
     }()
 
     private lazy var iCloudStack: UIStackView = {
@@ -266,6 +331,9 @@ final class SwipeCardView: UIView {
 
         iCloudBadgeContainer.contentView.addSubview(iCloudStack)
         addSubview(iCloudBadgeContainer)
+
+        infoChipContainer.addSubview(infoChipStack)
+        addSubview(infoChipContainer)
     }
 
     private func setupConstraint() {
@@ -330,8 +398,69 @@ final class SwipeCardView: UIView {
             iCloudTopConstraint,
             iCloudLeadingConstraint,
             iCloudBadgeContainer.heightAnchor.constraint(equalToConstant: 32),
-            iCloudBadgeContainer.widthAnchor.constraint(greaterThanOrEqualToConstant: 50)
+            iCloudBadgeContainer.widthAnchor.constraint(greaterThanOrEqualToConstant: 50),
+
+            infoChipContainer.heightAnchor.constraint(equalToConstant: InfoChipLayout.height),
+            infoChipContainer.trailingAnchor.constraint(
+                lessThanOrEqualTo: trailingAnchor, constant: -InfoChipLayout.edgeInset),
+            infoChipStack.leadingAnchor.constraint(
+                equalTo: infoChipContainer.leadingAnchor, constant: InfoChipLayout.horizontalPadding),
+            infoChipStack.trailingAnchor.constraint(
+                equalTo: infoChipContainer.trailingAnchor, constant: -InfoChipLayout.horizontalPadding),
+            infoChipStack.centerYAnchor.constraint(equalTo: infoChipContainer.centerYAnchor)
         ])
+
+        let edgeInset = InfoChipLayout.edgeInset
+        infoChipTopConstraint = infoChipContainer.topAnchor.constraint(equalTo: topAnchor, constant: edgeInset)
+        infoChipBottomConstraint = infoChipContainer.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -edgeInset)
+        infoChipLeadingToCardConstraint = infoChipContainer.leadingAnchor.constraint(
+            equalTo: leadingAnchor, constant: edgeInset)
+        infoChipLeadingToICloudConstraint = infoChipContainer.leadingAnchor.constraint(
+            equalTo: iCloudBadgeContainer.trailingAnchor, constant: InfoChipLayout.spacing)
+        infoChipBottomConstraint?.isActive = true
+        infoChipLeadingToCardConstraint?.isActive = true
+    }
+
+    // MARK: - Info Chip
+
+    /// A small chip inside the card (date · size). Nil text hides it.
+    func configureInfoChip(text: String?, systemImage: String? = nil, placement: InfoChipPlacement) {
+        guard let text = text, !text.isEmpty else {
+            infoChipLabel.text = nil
+            updateInfoChipVisibility()
+            return
+        }
+        infoChipLabel.text = text
+        infoChipIcon.image = systemImage.flatMap { UIImage(systemName: $0) }
+        infoChipIcon.isHidden = systemImage == nil
+        infoChipPlacement = placement
+        updateInfoChipVisibility()
+
+        let isTop = placement == .topLeading
+        if isTop {
+            infoChipBottomConstraint?.isActive = false
+            infoChipTopConstraint?.isActive = true
+        } else {
+            infoChipTopConstraint?.isActive = false
+            infoChipBottomConstraint?.isActive = true
+        }
+        updateInfoChipLeading()
+    }
+
+    private func updateInfoChipVisibility() {
+        infoChipContainer.isHidden = !showsInfoChip || (infoChipLabel.text ?? "").isEmpty
+    }
+
+    /// At the top it sits beside the iCloud badge instead of under it.
+    private func updateInfoChipLeading() {
+        let besideICloud = infoChipPlacement == .topLeading && iCloudBadgeContainer.alpha > 0
+        if besideICloud {
+            infoChipLeadingToCardConstraint?.isActive = false
+            infoChipLeadingToICloudConstraint?.isActive = true
+        } else {
+            infoChipLeadingToICloudConstraint?.isActive = false
+            infoChipLeadingToCardConstraint?.isActive = true
+        }
     }
 
     func configure(with image: UIImage?) {
@@ -396,6 +525,7 @@ final class SwipeCardView: UIView {
         if sizeLabel.text != nil {
             sizeBadgeContainer.alpha = alpha
         }
+        infoChipContainer.alpha = alpha
     }
 
     var isPlaceholderVisible: Bool {
@@ -408,11 +538,24 @@ final class SwipeCardView: UIView {
 
     func setICloudBadgeVisible(_ visible: Bool) {
         iCloudBadgeContainer.alpha = visible ? 1.0 : 0
+        updateInfoChipLeading()
     }
 
     func embedVideoLayer(_ videoLayer: CALayer) {
         videoLayer.frame = bounds
         layer.insertSublayer(videoLayer, above: imageView.layer)
+        embeddedVideoLayer = videoLayer
+    }
+
+    /// Keeps the video sized to the card when the display changes (iPhone Duo open/close).
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard let videoLayer = embeddedVideoLayer, videoLayer.superlayer === layer,
+              videoLayer.frame != bounds else { return }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        videoLayer.frame = bounds
+        CATransaction.commit()
     }
 
     func reset() {
@@ -420,6 +563,7 @@ final class SwipeCardView: UIView {
         backgroundImageView.image = nil
         blurOverlay.isHidden = true
         assetIdentifier = nil
+        contentAspectRatio = nil
 
         transform = .identity
         alpha = 1.0
@@ -429,6 +573,10 @@ final class SwipeCardView: UIView {
         sizeLabel.text = nil
         sizeBadgeContainer.alpha = 0
         iCloudBadgeContainer.alpha = 0
+        infoChipContainer.alpha = 1
+        infoChipLabel.text = nil
+        updateInfoChipVisibility()
+        updateInfoChipLeading()
 
         imageView.setNeedsLayout()
     }

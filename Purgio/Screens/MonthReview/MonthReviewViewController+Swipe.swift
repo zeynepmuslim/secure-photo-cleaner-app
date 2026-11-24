@@ -17,7 +17,7 @@ extension MonthReviewViewController {
     }
 
     @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
-        guard !isLoadingPhotos else { return }
+        guard !isLoadingPhotos, !isShowingEndState else { return }
         guard !isAnimatingSwipe else { return }
 
         guard let topCard = cardStack.last(where: { !$0.isHidden }) else { return }
@@ -39,6 +39,7 @@ extension MonthReviewViewController {
             let rotation = translation.x / view.bounds.width * 0.2
             topCard.transform = CGAffineTransform(translationX: translation.x, y: translation.y)
                 .rotated(by: rotation)
+            updateTablePosePreview()
             
             let absX = abs(translation.x)
             let absY = abs(translation.y)
@@ -75,6 +76,11 @@ extension MonthReviewViewController {
             }
 
         case .ended, .cancelled:
+            // The table layout ended under a trackpad drag (+TablePose): put the card back
+            if isCancelledTrackpadDrag(gesture) {
+                springBackTopCard(topCard)
+                return
+            }
             let threshold: CGFloat = 100
             let velocityThreshold: CGFloat = 800
 
@@ -100,27 +106,33 @@ extension MonthReviewViewController {
                     completeSwipe(direction: isRightSwipe ? .right : .left)
                 } else {
                     // Not enough movement, spring back
-                    UIView.animate(withDuration: 0.6, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.3, options: [.allowUserInteraction], animations: {
-                        topCard.transform = .identity
-                        self.leftGradient.alpha = 0
-                        self.rightGradient.alpha = 0
-                        self.topGradient.alpha = 0
-
-                        // Show video controls again if it's a video
-                        if self.currentIndex < self.reviewAssets.count {
-                            let asset = self.reviewAssets[self.currentIndex].asset
-                            if asset.mediaType == .video {
-                                self.videoController.playPauseButton.alpha = 1.0
-                                self.videoController.controlsContainer.alpha = self.videoController.isPlaying ? 0.5 : 1.0
-                            }
-                        }
-
-                        topCard.setBadgeAlpha(1.0)
-                    })
+                    springBackTopCard(topCard)
                 }
             }
         default: break
         }
+    }
+
+    /// Returns the top card to its place and clears the edge gradients.
+    func springBackTopCard(_ topCard: SwipeCardView) {
+        UIView.animate(withDuration: 0.6, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.3, options: [.allowUserInteraction], animations: {
+            topCard.transform = .identity
+            self.updateTablePosePreview()
+            self.leftGradient.alpha = 0
+            self.rightGradient.alpha = 0
+            self.topGradient.alpha = 0
+
+            // Show video controls again if it's a video
+            if self.currentIndex < self.reviewAssets.count {
+                let asset = self.reviewAssets[self.currentIndex].asset
+                if asset.mediaType == .video {
+                    self.videoController.playPauseButton.alpha = 1.0
+                    self.videoController.controlsContainer.alpha = self.videoController.isPlaying ? 0.5 : 1.0
+                }
+            }
+
+            topCard.setBadgeAlpha(1.0)
+        })
     }
 
     func completeSwipe(direction: SwipeDirection) {
@@ -130,12 +142,21 @@ extension MonthReviewViewController {
 
         guard let topCard = cardStack.last else { return }
 
+        // The cards behind move into their new places (straighten, turn, resize) while the top
+        // card flies off, instead of after it's gone
+        isPromotingDeck = true
+        UIView.animate(withDuration: 0.4, delay: 0, options: [.curveEaseOut, .beginFromCurrentState]) {
+            self.animateDeckToNewTopCard()
+            self.layoutCards()
+        }
+
         switch direction {
         case .left:
             let offScreenX: CGFloat = -(view.bounds.width + 100)
             UIView.animate(withDuration: 0.4, animations: {
                 topCard.transform = CGAffineTransform(translationX: offScreenX, y: 50).rotated(by: -0.2)
                 self.leftGradient.alpha = 1.0
+                self.updateTablePosePreview()
             }) { _ in
                 self.advanceToNext(markForDeletion: true, willBeStored: false)
             }
@@ -145,6 +166,7 @@ extension MonthReviewViewController {
             UIView.animate(withDuration: 0.4, animations: {
                 topCard.transform = CGAffineTransform(translationX: offScreenX, y: 50).rotated(by: 0.2)
                 self.rightGradient.alpha = 1.0
+                self.updateTablePosePreview()
             }) { _ in
                 self.advanceToNext(markForDeletion: false, willBeStored: false)
             }
@@ -154,6 +176,7 @@ extension MonthReviewViewController {
             UIView.animate(withDuration: 0.4, animations: {
                 topCard.transform = CGAffineTransform(translationX: 0, y: offScreenY)
                 self.topGradient.alpha = 1.0
+                self.updateTablePosePreview()
             }) { _ in
                 self.advanceToNext(markForDeletion: false, willBeStored: true)
             }
@@ -161,6 +184,7 @@ extension MonthReviewViewController {
     }
 
     func advanceToNext(markForDeletion: Bool, willBeStored: Bool) {
+        isPromotingDeck = false
         guard currentIndex < reviewAssets.count else { return }
         let reviewAsset = reviewAssets[currentIndex]
         let asset = reviewAsset.asset
@@ -208,12 +232,10 @@ extension MonthReviewViewController {
 
         statsStore.recordReview(for: mediaType)
         currentIndex += 1
-        let indexBeforeSkip = currentIndex
 
         // Assets already processed in another filter session (similar, screenshots, etc.)
         // are skipped here too, so the index may jump by more than one.
         advanceToFirstUnprocessedIndex()
-        let didSkip = currentIndex > indexBeforeSkip
         updateTitleForYearSession()
 
         saveProgress()
@@ -241,24 +263,42 @@ extension MonthReviewViewController {
         cardStack.insert(recycledCard, at: 0)
         cardContainerView.sendSubviewToBack(recycledCard)
 
-        let newBottomIndex = currentIndex + 2
-        configureCard(recycledCard, at: newBottomIndex)
+        let n = cardStack.count
+        let indices = deckIndices(count: n)
+        configureCard(recycledCard, at: indices[n - 1])
 
-        // Stale cards still point to skipped indices, reconfigure for the new position.
-        if didSkip {
-            let n = cardStack.count
-            if n > 2 { configureCard(cardStack[n - 1], at: currentIndex) }
-            if n > 1 { configureCard(cardStack[n - 2], at: currentIndex + 1) }
+        // The cards still in the deck were lined up for the old position. Reconfigure any that no
+        // longer shows the asset for its place (e.g. one was processed elsewhere in between),
+        // handing over an image already on screen so it doesn't show empty while its own loads.
+        var shownImages: [String: UIImage] = [:]
+        for card in cardStack where !card.isHidden {
+            if let id = card.assetIdentifier, let image = card.imageView.image { shownImages[id] = image }
+        }
+        for depth in 0 ..< n - 1 {
+            let card = cardStack[n - 1 - depth]
+            let index = indices[depth]
+            let expectedId = index < reviewAssets.count ? reviewAssets[index].asset.localIdentifier : nil
+            if expectedId == nil || card.isHidden || card.assetIdentifier != expectedId {
+                configureCard(card, at: index, placeholderImages: shownImages)
+            }
         }
 
-        let bottomReverseIndex = CGFloat(cardStack.count - 1)
-        let bottomScale = 1.0 - (bottomReverseIndex * 0.05)
-        let bottomTranslationY = bottomReverseIndex * 10
-        recycledCard.transform = CGAffineTransform(scaleX: bottomScale, y: bottomScale)
-            .translatedBy(x: 0, y: bottomTranslationY)
-        recycledCard.alpha = 1.0
+        // The card joining the back of the deck fades in, growing slightly into its place
+        let bottomReverseIndex = cardStack.count - 1
+        recycledCard.transform = stackTransform(reverseIndex: bottomReverseIndex)
+            .scaledBy(x: Layout.deckEntryScale, y: Layout.deckEntryScale)
+        recycledCard.alpha = 0
+        recycledCard.showsInfoChip = false
+        // Size it for its new photo up front, so it doesn't also morph from the old top card's size
+        if usesFannedDeckLayout {
+            UIView.performWithoutAnimation {
+                applyCardSizing()
+                cardContainerView.layoutIfNeeded()
+            }
+        }
         
         UIView.animate(withDuration: 0.3, animations: {
+            self.animateDeckToNewTopCard()
             self.layoutCards()
             self.leftGradient.alpha = 0
             self.rightGradient.alpha = 0

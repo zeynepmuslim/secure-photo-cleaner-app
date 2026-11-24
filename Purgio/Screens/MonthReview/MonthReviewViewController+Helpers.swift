@@ -8,23 +8,6 @@
 import Photos
 import UIKit
 
-private enum Strings {
-    static let noResultsTitle = NSLocalizedString("monthHelpers.noResultsTitle", comment: "No results title")
-    static let noResultsMessage = NSLocalizedString("monthHelpers.noResultsMessage", comment: "No results message with suggestion")
-    static let clearFilter = NSLocalizedString("monthHelpers.clearFilter", comment: "Clear filter button")
-    static let backToMonths = NSLocalizedString("monthHelpers.backToMonths", comment: "Back to months button")
-    static let tryAnotherMonth = NSLocalizedString("monthHelpers.tryAnotherMonth", comment: "Try another month button")
-    static let monthEmptyMessage = NSLocalizedString("monthHelpers.monthEmptyMessage", comment: "Month empty message")
-    static let monthCompleteTitle = NSLocalizedString("monthHelpers.monthCompleteTitle", comment: "Month complete title")
-    static let viewDeleteBin = NSLocalizedString("monthHelpers.viewDeleteBin", comment: "View delete bin button")
-    static func noPhotosInMonth(monthTitle: String) -> String {
-        String(format: NSLocalizedString("monthHelpers.noPhotosInMonth", comment: "No photos in month title, e.g. 'No Photos in January 2025'"), monthTitle)
-    }
-    static func monthCompleteMessage(count: Int, monthTitle: String) -> String {
-        String(format: NSLocalizedString("monthHelpers.monthCompleteMessage", comment: "Month complete message, e.g. 'You reviewed all 42 photos in January 2025.'"), count, monthTitle)
-    }
-}
-
 extension MonthReviewViewController {
 
     // MARK: - Year Session Title
@@ -41,102 +24,6 @@ extension MonthReviewViewController {
               currentIndex < reviewAssets.count,
               let date = reviewAssets[currentIndex].asset.creationDate else { return }
         title = Self.yearSessionMonthFormatter.string(from: date)
-    }
-
-    func showEmptyState() {
-        // Year sessions set preSortedAssets but aren't a "filter active" context for .none filter
-        let isFilterActive = (preSortedAssets != nil && !monthKey.hasPrefix("year-")) || filterContext != .none
-        let showTryAnother = isFilterActive && (navigationSource == .dashboard || navigationSource == .luckyPicker)
-
-        if isFilterActive {
-            markEmptyFilterFinished()
-            if showTryAnother {
-                emptyStateView.configure(
-                    icon: "line.3.horizontal.decrease.circle",
-                    iconColor: .systemGreen,
-                    title: Strings.noResultsTitle,
-                    message: Strings.noResultsMessage,
-                    actionTitle: Strings.tryAnotherMonth,
-                    onAction: { [weak self] in self?.tryAnotherMonth() }
-                )
-            } else {
-                emptyStateView.configure(
-                    icon: "line.3.horizontal.decrease.circle",
-                    iconColor: .systemGreen,
-                    title: Strings.noResultsTitle,
-                    message: Strings.noResultsMessage,
-                    actionTitle: Strings.clearFilter,
-                    onAction: { [weak self] in
-                        self?.navigationController?.popViewController(animated: true)
-                    }
-                )
-            }
-        } else {
-            // Month is empty
-            emptyStateView.configure(
-                icon: "calendar",
-                iconColor: .systemGray,
-                title: Strings.noPhotosInMonth(monthTitle: monthTitle),
-                message: Strings.monthEmptyMessage,
-                actionTitle: Strings.backToMonths,
-                onAction: { [weak self] in
-                    self?.navigationController?.popViewController(animated: true)
-                }
-            )
-        }
-
-        emptyStateView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(emptyStateView)
-
-        NSLayoutConstraint.activate([
-            emptyStateView.topAnchor.constraint(equalTo: view.topAnchor),
-            emptyStateView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            emptyStateView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            emptyStateView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        ])
-
-        emptyStateView.show(animated: true)
-
-        cleanupVideo()
-        cardContainerView.alpha = 0
-        videoController.playPauseButton.alpha = 0
-        videoController.controlsContainer.alpha = 0
-    }
-
-    func tryAnotherMonth() {
-        let service = PhotoLibraryService.shared
-
-        if let buckets = service.getCachedMonthBuckets(mediaType: mediaType) {
-            navigateToRandomMonth(from: buckets)
-            return
-        }
-
-        Task { [weak self] in
-            guard let self = self else { return }
-            let buckets = await service.loadMonthBuckets(mediaType: self.mediaType)
-            await MainActor.run { [weak self] in
-                self?.navigateToRandomMonth(from: buckets)
-            }
-        }
-    }
-
-    private func navigateToRandomMonth(from buckets: [PhotoLibraryService.MonthBucket]) {
-        let otherBuckets = buckets.filter { $0.key != monthKey }
-        guard let picked = otherBuckets.randomElement() else { return }
-
-        let newVC = MonthReviewViewController(
-            monthTitle: picked.title,
-            monthKey: picked.key,
-            mediaType: mediaType,
-            filterContext: filterContext
-        )
-        newVC.navigationSource = navigationSource
-
-        guard let nav = navigationController else { return }
-        var vcs = nav.viewControllers
-        vcs.removeLast()
-        vcs.append(newVC)
-        nav.setViewControllers(vcs, animated: true)
     }
 
     func showInitialICloudWarning() {
@@ -256,65 +143,39 @@ extension MonthReviewViewController {
     }
 
     func markEmptyFilterFinished() {
-        switch filterContext {
-        case .screenshots:
-            MonthFilterStatusStore.shared.markFilterFinished(monthKey: monthKey, filter: .screenshots)
-        case .largeFiles:
-            MonthFilterStatusStore.shared.markFilterFinished(monthKey: monthKey, filter: .largeFiles)
-        case .eyesClosed:
-            MonthFilterStatusStore.shared.markFilterFinished(monthKey: monthKey, filter: .eyesClosed)
-        case .screenRecordings:
-            MonthFilterStatusStore.shared.markFilterFinished(monthKey: monthKey, filter: .screenRecordings)
-        case .slowMotion:
-            MonthFilterStatusStore.shared.markFilterFinished(monthKey: monthKey, filter: .slowMotion)
-        case .timeLapse:
-            MonthFilterStatusStore.shared.markFilterFinished(monthKey: monthKey, filter: .timeLapse)
-        case .none:
-            break
-        }
+        guard filterContext != .none else { return }
+        MonthFilterStatusStore.shared.markFilterFinished(
+            monthKey: monthKey, filter: MonthFilterStatusStore.FilterType(filterContext: filterContext))
     }
 
     func markNonEmptyFilterNotFinished() {
-        switch filterContext {
-        case .screenshots:
-            MonthFilterStatusStore.shared.markFilterNotFinished(monthKey: monthKey, filter: .screenshots)
-        case .largeFiles:
-            MonthFilterStatusStore.shared.markFilterNotFinished(monthKey: monthKey, filter: .largeFiles)
-        case .eyesClosed:
-            MonthFilterStatusStore.shared.markFilterNotFinished(monthKey: monthKey, filter: .eyesClosed)
-        case .screenRecordings:
-            MonthFilterStatusStore.shared.markFilterNotFinished(monthKey: monthKey, filter: .screenRecordings)
-        case .slowMotion:
-            MonthFilterStatusStore.shared.markFilterNotFinished(monthKey: monthKey, filter: .slowMotion)
-        case .timeLapse:
-            MonthFilterStatusStore.shared.markFilterNotFinished(monthKey: monthKey, filter: .timeLapse)
-        case .none:
-            break
-        }
+        guard filterContext != .none else { return }
+        MonthFilterStatusStore.shared.markFilterNotFinished(
+            monthKey: monthKey, filter: MonthFilterStatusStore.FilterType(filterContext: filterContext))
     }
 
     @objc func handleUndo() {
         guard let action = historyManager.undoLastAction() else { return }
         haptics.success()
 
-        currentIndex = action.index
-
-        let asset = reviewAssets[currentIndex].asset
-
+        let identifier = action.assetLocalIdentifier
         switch action.actionType {
         case .store:
-            willBeStoredStore.removeAssetId(asset.localIdentifier)
-            storedCount -= 1
+            willBeStoredStore.removeAssetId(identifier)
         case .delete:
-            deleteBinStore.removeAssetId(asset.localIdentifier)
-            deletedCount -= 1
+            deleteBinStore.removeAssetId(identifier)
             statsStore.undoDeletion(for: mediaType, bytes: action.assetSize)
             sessionIncrementCount = max(0, sessionIncrementCount - 1)
             updateGlobalBinButtonIncrement()
         case .keep:
-            KeptAssetsStore.shared.removeAssetId(asset.localIdentifier)
-            keptCount -= 1
+            KeptAssetsStore.shared.removeAssetId(identifier)
         }
+
+        // Back to the undone asset when this deck holds it (see `deckIndex(of:)`); otherwise stay put
+        if let index = deckIndex(of: action) {
+            currentIndex = index
+        }
+        recalculateCountsFromStores()
 
         statsStore.undoReview(for: mediaType)
         saveProgress()
@@ -330,12 +191,15 @@ extension MonthReviewViewController {
 
         undoButton.isEnabled = count > 0
         historyButton.isEnabled = count > 0
-        historyBadge.isHidden = count == 0
+        // An end state covers the row (+EndStates); hidden, not only transparent, so nothing
+        // fades it back in under the end state's glass buttons
+        historyBadge.isHidden = count == 0 || isShowingEndState
 
         if count > 0 {
             undoButton.tintColor = .label
             historyButton.tintColor = .label
-            historyBadge.alpha = 1.0
+            // An end state covers the row (+EndStates)
+            historyBadge.alpha = isShowingEndState ? 0 : 1.0
 
             let newText = "\(count)"
             historyBadge.text = newText
@@ -359,6 +223,8 @@ extension MonthReviewViewController {
 
     // MARK: - Bin Button Management
     func updateBinSpacerWidth(animated: Bool) {
+        // Sideways on iPhone Duo the bin has its own slot in the row (+Landscape)
+        guard !isLandscapeDeckActive else { return }
         guard let binButton = findFloatingBinButton() else { return }
         let isVisible = !binButton.isHidden && binButton.alpha > 0.01
         let measuredWidth = max(binButton.bounds.width, binButton.intrinsicContentSize.width)
@@ -396,7 +262,11 @@ extension MonthReviewViewController {
     }
 
     func configureGlobalBinButton() {
-        //        let actualBinCount = DeleteBinStore.shared.count
+        // An empty or finished state owns the bin (+EndStates)
+        guard !isShowingEndState else {
+            configureEndStateBinButton()
+            return
+        }
         binController?.configureBinButton(
             mode: .increment(sessionIncrementCount),
             monthKey: monthKey,
@@ -409,6 +279,7 @@ extension MonthReviewViewController {
     }
 
     func updateGlobalBinButtonIncrement() {
+        guard !isShowingEndState else { return }
         binController?.configureBinButton(
             mode: .increment(sessionIncrementCount),
             monthKey: monthKey,
@@ -509,6 +380,11 @@ extension MonthReviewViewController {
     }
 
     func saveProgress() {
+        // Nothing is loaded yet (still loading, or the deck came up empty). The counts are still the
+        // initial zeros, so saving would overwrite the stored record (currentIndex, counts and total)
+        // with zeros. A month that really became empty is resynced by MonthsList / MonthFilterCards.
+        guard !reviewAssets.isEmpty else { return }
+
         let progressKey = makeProgressKey()
         let previousProgress = progressStore.getProgress(forMonthKey: progressKey, mediaType: mediaType)
 
@@ -700,56 +576,14 @@ extension MonthReviewViewController {
         attributedText.append(NSAttributedString(string: " \(displayStored.compactFormatted)", attributes: textAttributes))
 
         statsLabel.attributedText = attributedText
+        updateStatsPill(.init(
+            reviewed: reviewed, total: displayTotal,
+            deleted: displayDeleted, kept: displayKept, stored: displayStored))
 
         if let ring = navProgressRing, originalTotalCount > 0 {
             let filterReviewed = deletedCount + keptCount + storedCount
             let progress = CGFloat(filterReviewed) / CGFloat(originalTotalCount)
             ring.setProgress(min(1.0, max(0.0, progress)))
         }
-    }
-
-    func showCompletionSummary() {
-        saveProgress()
-
-        let progressKey = makeProgressKey()
-        progressStore.markComplete(
-            forMonthKey: progressKey,
-            mediaType: mediaType,
-            totalCount: originalTotalCount,
-            deletedCount: deletedCount,
-            keptCount: keptCount,
-            storedCount: storedCount,
-            originalTotalCount: originalTotalCount
-        )
-        markEmptyFilterFinished()
-        ReminderDataCenter.shared.markReviewActivity(
-            monthKey: monthKey,
-            mediaType: mediaType,
-            reviewedCount: originalTotalCount,
-            totalCount: originalTotalCount
-        )
-        UIView.animate(withDuration: 0.3) {
-            self.leftGradient.alpha = 0
-            self.rightGradient.alpha = 0
-            self.topGradient.alpha = 0
-            self.cardContainerView.alpha = 0
-        }
-        let alert = UIAlertController(
-            title: Strings.monthCompleteTitle,
-            message: Strings.monthCompleteMessage(count: originalTotalCount, monthTitle: monthTitle),
-            preferredStyle: .alert)
-        alert.addAction(
-            UIAlertAction(title: Strings.backToMonths, style: .default) { [weak self] _ in
-                self?.navigationController?.popViewController(animated: true)
-            })
-        alert.addAction(
-            UIAlertAction(title: Strings.viewDeleteBin, style: .default) { [weak self] _ in
-                guard let self = self, let nav = self.navigationController else { return }
-                let binViewController = DeleteBinViewController()
-                nav.pushViewController(binViewController, animated: true)
-                // Remove MonthReviewVC from stack -> bin's back button go to month list/filter
-                nav.viewControllers.removeAll { $0 === self }
-            })
-        present(alert, animated: true)
     }
 }

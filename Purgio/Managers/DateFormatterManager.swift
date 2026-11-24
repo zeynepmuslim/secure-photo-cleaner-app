@@ -26,6 +26,13 @@ final class DateFormatterManager {
         return formatter
     }()
 
+    /// January (standalone month name)
+    private lazy var monthNameFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "LLLL"
+        return formatter
+    }()
+
     /// 01.2026
     private lazy var monthShortFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -49,6 +56,13 @@ final class DateFormatterManager {
         return formatter
     }()
 
+    /// 12 Oct, 18:30 (localized order and clock)
+    private lazy var dayMonthTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.setLocalizedDateFormatFromTemplate("dMMMjmm")
+        return formatter
+    }()
+
     // MARK: - Month Key Operations
 
     func date(fromMonthKey monthKey: String) -> Date? {
@@ -66,6 +80,15 @@ final class DateFormatterManager {
         guard let date = date(fromMonthKey: monthKey) else { return monthKey }
         return monthDisplayFormatter.string(from: date)
     }
+
+    /// 2026-01 → January; nil for keys that aren't months (year sessions)
+    func monthName(fromMonthKey monthKey: String) -> String? {
+        guard let date = date(fromMonthKey: monthKey) else { return nil }
+        return monthNameFormatter.string(from: date)
+    }
+
+    /// Jan…Dec (standalone short names in the user's calendar), always 12
+    private(set) lazy var shortStandaloneMonthSymbols: [String] = monthNameFormatter.shortStandaloneMonthSymbols
 
     /// 2026-01 → 01.2026
     func shortMonth(fromMonthKey monthKey: String) -> String {
@@ -95,6 +118,11 @@ final class DateFormatterManager {
     /// Jan 31, 2026
     func mediumDate(from date: Date) -> String {
         return dateMediumFormatter.string(from: date)
+    }
+
+    /// 12 Oct, 18:30
+    func dayMonthTime(from date: Date) -> String {
+        return dayMonthTimeFormatter.string(from: date)
     }
 
     // MARK: - Video Duration
@@ -129,5 +157,18 @@ final class DateFormatterManager {
             return nil
         }
         return (monthStart, monthEnd)
+    }
+
+    /// Get the start and end dates for a year session key ("year-2026"), in the current calendar like
+    /// the month buckets the year is built from.
+    func yearDateRange(forYearKey yearKey: String) -> (start: Date, end: Date)? {
+        guard yearKey.hasPrefix("year-"), let year = Int(yearKey.dropFirst("year-".count)) else { return nil }
+        let calendar = Calendar.current
+        guard let yearStart = calendar.date(from: DateComponents(year: year, month: 1, day: 1)),
+            let yearEnd = calendar.date(byAdding: .year, value: 1, to: yearStart)
+        else {
+            return nil
+        }
+        return (yearStart, yearEnd)
     }
 }

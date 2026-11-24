@@ -9,13 +9,39 @@ import Foundation
 import UIKit.UIView
 
 extension Int {
+    /// A count in at most 4 characters: "950", "1.5K", "12K". The thousands suffix and the
+    /// decimal separator follow the app's language, so Turkish reads "1,5B", "12B".
     var compactFormatted: String {
-        if self >= 10_000 { return "\(self / 1_000)K" }
-        if self >= 1_000 {
-            let s = String(format: "%.1fK", Double(self) / 1_000)
-            return s.hasSuffix(".0K") ? s.replacingOccurrences(of: ".0K", with: "K") : s
-        }
-        return "\(self)"
+        guard self >= 1_000 else { return "\(self)" }
+        let suffix = CommonStrings.thousandsSuffix
+        if self >= 10_000 { return "\(self / 1_000)\(suffix)" }
+        let thousands = NSNumber(value: Double(self) / 1_000)
+        let number = Self.compactThousandsFormatter.string(from: thousands) ?? "\(self / 1_000)"
+        return number + suffix
+    }
+
+    /// One fraction digit at most, rounded down so a count is never overstated, in the
+    /// app's language rather than the region's
+    private static let compactThousandsFormatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.locale = Locale(identifier: Bundle.main.preferredLocalizations.first ?? "en")
+        formatter.usesGroupingSeparator = false
+        formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = 1
+        formatter.roundingMode = .down
+        return formatter
+    }()
+}
+
+extension Int {
+    /// This count as a rounded percent of `total`, the one figure every progress text shows.
+    /// While some but not all of it is done it stays within 1…99, so "0%" never means started
+    /// and "100%" never comes with items left.
+    func roundedPercent(of total: Int) -> Int {
+        guard total > 0, self > 0 else { return 0 }
+        guard self < total else { return 100 }
+        return Swift.min(99, Swift.max(1, Int((Double(self) * 100 / Double(total)).rounded())))
     }
 }
 
@@ -74,5 +100,13 @@ extension UIImage {
         return renderer.image { _ in
             self.draw(in: CGRect(origin: .zero, size: size))
         }
+    }
+}
+
+extension UIImage {
+    /// The first of these SF Symbol names this iOS has; the last one when none resolves.
+    /// For symbols newer than iOS 15: `availableSymbolName("photo.stack", "photo.on.rectangle.angled")`.
+    static func availableSymbolName(_ candidates: String...) -> String {
+        candidates.first { UIImage(systemName: $0) != nil } ?? candidates.last ?? ""
     }
 }

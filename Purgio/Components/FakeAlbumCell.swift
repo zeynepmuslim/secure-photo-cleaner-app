@@ -14,6 +14,7 @@ final class FakeAlbumCell: UICollectionViewCell {
     private let thumbnailView: UIView = {
         let view = UIView()
         view.layer.cornerRadius = 16
+        view.layer.cornerCurve = .continuous
         view.clipsToBounds = true
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
@@ -50,6 +51,8 @@ final class FakeAlbumCell: UICollectionViewCell {
         label.textAlignment = .left
         label.textColor = .white
         label.numberOfLines = 1
+        label.adjustsFontSizeToFitWidth = true
+        label.minimumScaleFactor = 0.75
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()

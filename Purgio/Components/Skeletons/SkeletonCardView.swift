@@ -12,6 +12,7 @@ final class SkeletonCardView: UIView {
     private let shimmerLayer: ShimmerLayer = {
         let layer = ShimmerLayer()
         layer.cornerRadius = 16
+        layer.cornerCurve = .continuous
         return layer
     }()
 

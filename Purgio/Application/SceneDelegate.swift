@@ -10,6 +10,10 @@ import UIKit
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
+    private var splashWindow: UIWindow?
+    private var hasPendingSplash = false
+    /// How long the system's cross-fade into the app takes (measured on the simulator: about 0.3 s).
+    private static let launchFadeInWait: TimeInterval = 0.35
 
     func scene(
         _ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions
@@ -64,6 +68,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.makeKeyAndVisible()
         self.window = window
 
+        showLaunchSplash(in: windowScene)
+
         ReminderNotificationService.shared.syncScheduleIfNeeded()
 //        #if DEBUG
 //            ReminderNotificationService.shared.debugPrintSampleReminders()
@@ -75,6 +81,37 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             name: .notificationDeepLinkToDeleteBin,
             object: nil
         )
+    }
+
+    /// Cold launch only: plays the splash in its own window above Home, so Home's onboarding or
+    /// permission sheet (presented from its `viewDidAppear`) stays underneath and is revealed with it.
+    private func showLaunchSplash(in windowScene: UIWindowScene) {
+        let splashViewController = LaunchSplashViewController()
+        let splashWindow = UIWindow(windowScene: windowScene)
+        splashWindow.windowLevel = .normal + 1
+        splashWindow.rootViewController = splashViewController
+        splashWindow.isHidden = false
+        self.splashWindow = splashWindow
+        splashWindow.layoutIfNeeded()
+        // Plays from `sceneDidBecomeActive`: before that the window may not be on screen yet,
+        // and the slide would run unseen.
+        hasPendingSplash = true
+    }
+
+    private func playPendingLaunchSplash() {
+        guard hasPendingSplash,
+              let splashView = (splashWindow?.rootViewController as? LaunchSplashViewController)?.splashView
+        else { return }
+        hasPendingSplash = false
+        // When the system has no launch-screen snapshot (the iPhone Duo, a fresh install) it cross-fades
+        // into the app from black as the scene becomes active; wait that out so the slide starts on a
+        // fully visible icon. Where the storyboard did show, this is just a longer still frame.
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.launchFadeInWait) { [weak self] in
+            splashView.play {
+                self?.splashWindow?.isHidden = true
+                self?.splashWindow = nil
+            }
+        }
     }
 
     @objc private func handleDeepLinkToDeleteBin() {
@@ -98,6 +135,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func sceneDidBecomeActive(_ scene: UIScene) {
         // Called when the scene has moved from an inactive state to an active state.
         // Use this method to restart any tasks that were paused (or not yet started) when the scene was inactive.
+        playPendingLaunchSplash()
     }
 
     func sceneWillResignActive(_ scene: UIScene) {
@@ -116,4 +154,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // to restore the scene back to its current state.
     }
 
+}
+
+// MARK: - LaunchSplashViewController
+
+/// The splash window's root: its view is the `LaunchSplashView`.
+private final class LaunchSplashViewController: UIViewController {
+    let splashView = LaunchSplashView()
+
+    override func loadView() {
+        view = splashView
+    }
 }

@@ -24,16 +24,7 @@ struct UndoAction: Codable {
     let timestamp: Date
     let sessionId: UUID
 
-    var displayTitle: String {
-        switch actionType {
-        case .delete:
-            return NSLocalizedString("undoAction.markedForDeletion", comment: "Undo action: marked for deletion")
-        case .keep:
-            return NSLocalizedString("undoAction.keptPhoto", comment: "Undo action: kept photo")
-        case .store:
-            return NSLocalizedString("undoAction.willBeStored", comment: "Undo action: will be stored")
-        }
-    }
+    var displayTitle: String { actionType.displayTitle }
 
     var displayIcon: String {
         switch actionType {
@@ -46,15 +37,37 @@ struct UndoAction: Codable {
         }
     }
 
-    var displayColor: UIColor {
-        switch actionType {
+    var displayColor: UIColor { actionType.displayColor }
+}
+
+extension UndoAction.ActionType {
+
+    /// What the action did, as the history rows and the detail sheet's title show it.
+    var displayTitle: String {
+        switch self {
         case .delete:
-            return .systemRed
+            return NSLocalizedString("undoAction.markedForDeletion", comment: "Undo action: marked for deletion")
         case .keep:
-            return .systemGreen
+            return NSLocalizedString("undoAction.keptPhoto", comment: "Undo action: kept photo")
         case .store:
-            return .systemYellow
+            return NSLocalizedString("undoAction.willBeStored", comment: "Undo action: will be stored")
         }
+    }
+
+    /// The action's color: the one source for the capsules and the detail sheet's segments.
+    var displayColor: UIColor {
+        switch self {
+        case .delete: return ThemeManager.Colors.statusRed
+        case .keep: return ThemeManager.Colors.statusGreen
+        case .store: return ThemeManager.Colors.statusYellow
+        }
+    }
+
+    /// The glyph color on the action's fill: black on yellow, white on red and green, in both
+    /// appearances. The one source for the capsules, the detail sheet's chosen segment and the
+    /// history toolbar's solid buttons.
+    var displayInk: UIColor {
+        self == .store ? .black : .white
     }
 }
 

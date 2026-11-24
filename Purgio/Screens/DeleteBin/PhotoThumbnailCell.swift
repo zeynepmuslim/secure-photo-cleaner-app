@@ -29,6 +29,7 @@ final class PhotoThumbnailCell: UICollectionViewCell {
         imageView.tintColor = .systemBlue
         imageView.backgroundColor = .white
         imageView.layer.cornerRadius = 16
+        imageView.layer.cornerCurve = .continuous
         imageView.layer.masksToBounds = true
         imageView.isHidden = true
         return imageView
@@ -52,6 +53,7 @@ final class PhotoThumbnailCell: UICollectionViewCell {
         imageView.backgroundColor = UIColor.black.withAlphaComponent(0.5)
         imageView.contentMode = .center
         imageView.layer.cornerRadius = 12
+        imageView.layer.cornerCurve = .continuous
         imageView.layer.masksToBounds = true
         imageView.isHidden = true
         return imageView

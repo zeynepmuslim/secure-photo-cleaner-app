@@ -35,6 +35,7 @@ final class SkeletonStatsView: UIView {
     private func setupUI() {
         backgroundColor = UIColor.systemGray5
         layer.cornerRadius = 6
+        layer.cornerCurve = .continuous
         clipsToBounds = true
         layer.addSublayer(shimmerLayer)
     }

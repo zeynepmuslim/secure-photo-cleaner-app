@@ -44,6 +44,15 @@ enum FilterContext {
     case timeLapse
 }
 
+/// Which control fills the base in the iPhone Duo table layout (see +TablePose).
+/// Persisted in `SettingsStore.tablePoseControlsLayout`.
+enum TablePoseControlsLayout: String {
+    /// A swipe area that drives the raised card like a direct swipe.
+    case trackpad
+    /// A Store key over Delete and Keep keys.
+    case keys
+}
+
 final class MonthReviewViewController: UIViewController {
 
     public var isFilterResultMode = false
@@ -72,6 +81,11 @@ final class MonthReviewViewController: UIViewController {
     let loadingIndicator = UIActivityIndicatorView(style: .large)
 
     lazy var emptyStateView = EmptyStateView()
+    /// An empty or finished state covers the deck (+EndStates); the deck's own controls stay out.
+    var isShowingEndState = false
+    /// The finished month's bottom row holds the global bin in a slot beside its primary button.
+    var endStateUsesBinSlot = false
+    var nextMonthTask: Task<Void, Never>?
 
     var skeletonStack: SkeletonStackView?
     var skeletonStatsView: SkeletonStatsView?
@@ -116,6 +130,108 @@ final class MonthReviewViewController: UIViewController {
     var historyBadgeWidthConstraint: NSLayoutConstraint!
     var binSpacerWidthConstraint: NSLayoutConstraint?
 
+    enum Layout {
+        /// Between the card and the bottom controls row (also the skeleton's bottom).
+        static let cardToControlsGap: CGFloat = 20
+        /// Between the undo, history and bin spacer in the standard bottom row.
+        static let controlsSpacing: CGFloat = GeneralConstants.EdgePadding.medium
+        /// Narrowest the split video capsules get before falling back to two equal halves
+        /// (play + scrubber + time | mute + duration).
+        static let videoLeadingCapsuleMinWidth: CGFloat = 160
+        static let videoTrailingCapsuleMinWidth: CGFloat = 100
+        /// Same gap in the iPhone Duo sideways layout (see +Landscape).
+        static let landscapeCardToRowGap: CGFloat = 12
+        /// Room the sideways card area keeps around a photo card so the cards behind it can fan out.
+        static let landscapeDeckInset = NSDirectionalEdgeInsets(top: 10, leading: 34, bottom: 10, trailing: 34)
+        /// Scale a card starts at as it fades in at the back of the deck.
+        static let deckEntryScale: CGFloat = 0.92
+        /// Width / height range every sideways photo card is shown in (9:16 to 16:9); a photo
+        /// outside it is fitted inside the card over its blurred backdrop.
+        static let landscapeCardRatioRange: ClosedRange<CGFloat> = (9.0 / 16.0)...(16.0 / 9.0)
+        /// Clearance between the iPhone Duo fold and the content on either side of it (see +Fold, +TablePose).
+        static let foldGap: CGFloat = GeneralConstants.Spacer.foldGap
+        /// Upright inner display fully open (table layout): the base's height over the deck's, so the
+        /// deck gets about 70% and the keys 30% of the room between the stats and the bottom row.
+        static let openTableBaseToDeckRatio: CGFloat = 0.3 / 0.7
+    }
+
+    // iPhone Duo fold layout (see +Fold): constraint sets swapped by pose
+    var flatLayoutConstraints: [NSLayoutConstraint] = []
+    var tablePoseLayoutConstraints: [NSLayoutConstraint] = []
+    /// Inside the table layout: the split at the fold (partly folded) or the 70/30 split (fully open).
+    var tableFoldedConstraints: [NSLayoutConstraint] = []
+    var tableOpenConstraints: [NSLayoutConstraint] = []
+    var cardBottomToFoldConstraint: NSLayoutConstraint?
+    var playPauseCenterXConstraint: NSLayoutConstraint?
+    var undoHistoryEqualWidthConstraint: NSLayoutConstraint?
+    var undoTrailingToFoldConstraint: NSLayoutConstraint?
+    /// The table layout is showing: the table pose, or the upright inner display fully open (+TablePose).
+    var isTableLayoutActive = false
+    /// The table layout is showing while partly folded (the table pose), not fully open.
+    var isTableLayoutFolded = false
+    var duoEdges: [DuoEdgeConstraints] = []
+    /// Edges of the loading skeleton; cleared when it's removed.
+    var skeletonDuoEdges: [DuoEdgeConstraints] = []
+    var cardBottomToControlsConstraint: NSLayoutConstraint?
+    var overlayPlayButtonConstraints: [NSLayoutConstraint] = []
+    var videoControlsOverlayConstraints: [NSLayoutConstraint] = []
+    var videoControlsSplitConstraints: [NSLayoutConstraint] = []
+
+    // iPhone Duo inner display held sideways (see +Landscape)
+    var isLandscapeDeckActive = false
+    var hasSetupLandscapeViews = false
+    let leftGrip: ActionGripView = {
+        let grip = ActionGripView()
+        grip.translatesAutoresizingMaskIntoConstraints = false
+        return grip
+    }()
+    let rightGrip: ActionGripView = {
+        let grip = ActionGripView()
+        grip.translatesAutoresizingMaskIntoConstraints = false
+        return grip
+    }()
+    let statsPill: ReviewStatsPillView = {
+        let pill = ReviewStatsPillView()
+        pill.translatesAutoresizingMaskIntoConstraints = false
+        return pill
+    }()
+    // Inner display: the stats as a capsule (see +Landscape, Stats Pill)
+    var hasSetupStatsPill = false
+    var statsLabelPillHeightConstraint: NSLayoutConstraint?
+    let binSlotGuide = UILayoutGuide()
+    var landscapeConstraints: [NSLayoutConstraint] = []
+    var rowSplitConstraint: NSLayoutConstraint?
+    var binSlotLeadingConstraint: NSLayoutConstraint?
+    var rowEqualWidthConstraint: NSLayoutConstraint?
+    var cardFillConstraints: [ObjectIdentifier: [NSLayoutConstraint]] = [:]
+    var cardHugConstraints: [ObjectIdentifier: CardHugConstraints] = [:]
+    var lastSentBinSlot: CGRect?
+    /// True while the top card flies off: the cards behind already move into their new places.
+    var isPromotingDeck = false
+    var didRequestBarRelayoutForCamera = false
+
+    // iPhone Duo table layout (see +TablePose): the controls on the base below the fold
+    let tableBaseGuide = UILayoutGuide()
+    let tableBaseContainerView: UIView = {
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.isHidden = true
+        return view
+    }()
+    let tablePoseKeysView: TablePoseKeysView = {
+        let keys = TablePoseKeysView()
+        keys.translatesAutoresizingMaskIntoConstraints = false
+        return keys
+    }()
+    let tablePoseTrackpadView: TablePoseTrackpadView = {
+        let trackpad = TablePoseTrackpadView()
+        trackpad.translatesAutoresizingMaskIntoConstraints = false
+        return trackpad
+    }()
+    var tableLayoutBarItem: UIBarButtonItem?
+    var tableBaseTopConstraint: NSLayoutConstraint?
+    var hasSetupTablePoseViews = false
+
     let monthTitle: String
     let monthKey: String
     let mediaType: PHAssetMediaType
@@ -143,7 +259,7 @@ final class MonthReviewViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = screenBackgroundColor
         navigationItem.largeTitleDisplayMode = .never
 
         switch filterContext {
@@ -213,11 +329,29 @@ final class MonthReviewViewController: UIViewController {
             advanceToFirstUnprocessedIndex()
             refreshStack()
         }
+
+        // The tab bar controller resets the bin button's placement on every push and pop
+        if isLandscapeDeckActive || isShowingEndState {
+            lastSentBinSlot = nil
+            view.setNeedsLayout()
+        }
+        if isShowingEndState {
+            applyEndStateBinButton()
+        }
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        updateLandscapeDeckLayout()
+        updateStatsPillVisibility()
         updateBinSpacerWidth(animated: false)
+        let railEdge = DuoLayout.railEdge(tabBarController, in: view)
+        (duoEdges + skeletonDuoEdges).forEach { $0.update(railEdge: railEdge) }
+        updateFoldLayout()
+        if usesFannedDeckLayout {
+            applyCardSizing()
+        }
+        updateEndStateLayout(railEdge: railEdge)
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -235,7 +369,8 @@ final class MonthReviewViewController: UIViewController {
 
                 advanceToFirstUnprocessedIndex()
                 refreshStack()
-            } else if hasSetupUI && reviewAssets.isEmpty {
+            } else if hasSetupUI && reviewAssets.isEmpty && !isShowingEndState {
+                // An empty deck that already shows its end state has nothing to reload
                 loadPhotos()
             }
         }
@@ -251,6 +386,7 @@ final class MonthReviewViewController: UIViewController {
         saveProgress()
 
         loadingTask?.cancel()
+        nextMonthTask?.cancel()
 
         for (_, requestID) in imageRequestIDs {
             imageCache.cancelRequest(requestID)
@@ -262,6 +398,9 @@ final class MonthReviewViewController: UIViewController {
         }
 
         cleanupVideo()
+
+        lastSentBinSlot = nil
+        binController?.setBinButtonPlacement(.standard)
 
         if isMovingFromParent {
             binController?.hideBinButton()

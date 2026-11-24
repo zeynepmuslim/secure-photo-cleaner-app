@@ -21,9 +21,6 @@ extension MonthReviewViewController {
 
         loadingTask = Task {
             let reviewAssets: [ReviewAsset]
-            let deleteBin = DeleteBinStore.shared
-            let keptStore = KeptAssetsStore.shared
-            let willBeStored = WillBeStoredStore.shared
             let skipICloud = SettingsStore.shared.skipICloudPhotos && !SettingsStore.shared.allowInternetAccess
             let savedProgress = ReviewProgressStore.shared.getProgress(
                 forMonthKey: currentProgressKey, mediaType: currentMediaType)
@@ -67,21 +64,13 @@ extension MonthReviewViewController {
                         break
                     case .initialBatchReady(let partial):
                         guard !Task.isCancelled else { return }
-                        guard savedProgress.currentIndex < partial.count else { break }
 
-                        var earlyStart = savedProgress.currentIndex
-                        for i in earlyStart ..< partial.count {
-                            let id = partial[i].localIdentifier
-                            let processed = deleteBin.hasAssetId(id) || keptStore.hasAssetId(id) || willBeStored.hasAssetId(id)
-                            let skip = processed || (skipICloud && partial[i].isCloudOnly)
-                            if !skip { earlyStart = i; break }
-                            if i == partial.count - 1 { earlyStart = partial.count }
-                        }
-
-                        guard earlyStart < partial.count else { break }
-
-                        await MainActor.run { [weak self] in
-                            guard let self, self.reviewAssets.isEmpty else { return }
+                        let didShow = await MainActor.run { [weak self] () -> Bool in
+                            guard let self, self.reviewAssets.isEmpty else { return false }
+                            // Start at the first unprocessed asset, not the saved index (see `firstUnprocessedIndex`).
+                            // When the whole early batch is done, wait for the full list instead.
+                            let earlyStart = Self.firstUnprocessedIndex(in: partial, skipICloud: skipICloud)
+                            guard earlyStart < partial.count else { return false }
                             self.reviewAssets = partial
                             self.currentIndex = earlyStart
                             self.recalculateCountsFromStores()
@@ -89,22 +78,16 @@ extension MonthReviewViewController {
                             self.originalTotalCount = storedTotal > 0 ? storedTotal : partial.count
                             self.saveProgress()
                             self.refreshStack()
-                            self.updateTitleForYearSession()
                             self.hideSkeletonLoading()
-
-                            // All remaining assets were already processed
-                            if self.currentIndex >= self.reviewAssets.count {
-                                self.showCompletionSummary()
-                                return
-                            }
 
                             self.showInitialICloudWarning()
                             Task {
                                 try? await Task.sleep(nanoseconds: 500_000_000)
                                 self.prefetchUpcoming()
                             }
+                            return true
                         }
-                        shownInitialBatch = true
+                        if didShow { shownInitialBatch = true }
 
                     case .completed(let assets):
                         processedAssets = assets
@@ -141,27 +124,6 @@ extension MonthReviewViewController {
 
             if Task.isCancelled { return }
 
-            let maxIndex = max(0, reviewAssets.count - 1)
-            var startIndex = min(savedProgress.currentIndex, maxIndex)
-
-            for i in startIndex ..< reviewAssets.count {
-                let reviewAsset = reviewAssets[i]
-                let id = reviewAsset.localIdentifier
-                let isProcessed = deleteBin.hasAssetId(id) || keptStore.hasAssetId(id) || willBeStored.hasAssetId(id)
-                let isCloud = skipICloud && reviewAsset.isCloudOnly
-
-                if !(isProcessed || isCloud) {
-                    startIndex = i
-                    break
-                }
-
-                if i == reviewAssets.count - 1 {
-                    startIndex = reviewAssets.count
-                }
-            }
-
-            if Task.isCancelled { return }
-
             await MainActor.run { [weak self] in
                 guard let self = self else { return }
                 self.loadingIndicator.stopAnimating()
@@ -173,7 +135,8 @@ extension MonthReviewViewController {
                 } else {
                     self.markNonEmptyFilterNotFinished()
 
-                    self.currentIndex = startIndex
+                    // Start at the first unprocessed asset, not the saved index (see `firstUnprocessedIndex`)
+                    self.currentIndex = Self.firstUnprocessedIndex(in: reviewAssets, skipICloud: skipICloud)
                     self.recalculateCountsFromStores()
 
                     if currentFilterContext != .none {
@@ -186,7 +149,6 @@ extension MonthReviewViewController {
 
                     self.saveProgress()
                     self.refreshStack()
-                    self.updateTitleForYearSession()
                     self.hideSkeletonLoading()
 
                     if self.currentIndex >= reviewAssets.count {
@@ -203,6 +165,25 @@ extension MonthReviewViewController {
                 }
             }
         }
+    }
+
+    /// Index of the first asset still to review: not in the bin, kept or stored, and not an iCloud-only
+    /// asset being skipped. `assets.count` when every asset is done.
+    ///
+    /// The deck always starts from index 0 rather than the saved `currentIndex`, because the asset
+    /// array can change between sessions: an older photo is imported (it sorts in before the saved
+    /// index), assets before it are really deleted (everything shifts left), or iCloud-only assets
+    /// that were skipped become reachable. The stores already decide what is processed, so a scan
+    /// from the start never leaves an unreviewed asset behind the deck.
+    static func firstUnprocessedIndex(in assets: [ReviewAsset], skipICloud: Bool) -> Int {
+        let deleteBin = DeleteBinStore.shared
+        let keptStore = KeptAssetsStore.shared
+        let willBeStored = WillBeStoredStore.shared
+        return assets.firstIndex { reviewAsset in
+            let id = reviewAsset.localIdentifier
+            let isProcessed = deleteBin.hasAssetId(id) || keptStore.hasAssetId(id) || willBeStored.hasAssetId(id)
+            return !(isProcessed || (skipICloud && reviewAsset.isCloudOnly))
+        } ?? assets.count
     }
 
     /// Check if an asset has already been processed (kept, deleted, or stored)
@@ -257,12 +238,28 @@ extension MonthReviewViewController {
 
     // MARK: - Stack Management
 
-    func refreshStack() {
-        for (i, card) in cardStack.enumerated() {
-            let offset = (cardStack.count - 1) - i
-            let indexToLoad = currentIndex + offset
-            configureCard(card, at: indexToLoad)
+    /// Indices of the next `count` assets the deck shows, from the current one on. Assets already
+    /// processed (or skipped iCloud ones) are left out, so the cards behind the top one show the
+    /// next assets still to review rather than hiding. `reviewAssets.count` pads the rest, which
+    /// hides those cards.
+    func deckIndices(count: Int) -> [Int] {
+        var indices: [Int] = []
+        var index = currentIndex
+        while indices.count < count && index < reviewAssets.count {
+            if !shouldSkipAsset(reviewAssets[index]) { indices.append(index) }
+            index += 1
         }
+        while indices.count < count { indices.append(reviewAssets.count) }
+        return indices
+    }
+
+    func refreshStack() {
+        let indices = deckIndices(count: cardStack.count)
+        for (i, card) in cardStack.enumerated() {
+            configureCard(card, at: indices[(cardStack.count - 1) - i])
+        }
+        // Undo and the history sheet move the deck back too, so the year session's title follows
+        updateTitleForYearSession()
 
         layoutCards()
         updateStats()
@@ -286,7 +283,9 @@ extension MonthReviewViewController {
         }
     }
 
-    func configureCard(_ card: SwipeCardView, at index: Int) {
+    /// `placeholderImages` (asset id → image already on screen) fills the card until its own
+    /// image loads.
+    func configureCard(_ card: SwipeCardView, at index: Int, placeholderImages: [String: UIImage] = [:]) {
         guard index < reviewAssets.count else {
             card.configure(with: nil)
             card.isHidden = true
@@ -305,7 +304,12 @@ extension MonthReviewViewController {
         card.isHidden = false
         card.assetIdentifier = asset.localIdentifier
         card.mediaType = asset.mediaType == .video ? .video : .photo
+        card.contentAspectRatio = asset.pixelHeight > 0
+            ? CGFloat(asset.pixelWidth) / CGFloat(asset.pixelHeight) : nil
         card.setPlaceholder(.none)
+        if let image = placeholderImages[asset.localIdentifier] {
+            card.configure(with: image)
+        }
 
         if let oldRequestID = imageRequestIDs[card.assetIdentifier ?? ""] {
             imageCache.cancelRequest(oldRequestID)
@@ -356,17 +360,12 @@ extension MonthReviewViewController {
             imageRequestIDs[asset.localIdentifier] = requestID
         }
 
-        // file size badge
-        let isLargeFilesMode = filterContext == .largeFiles
-        let isVideo = asset.mediaType == .video
-
-        if isLargeFilesMode || isVideo || isSizeBadgeOpen {
-            let formattedSize = reviewAsset.fileSize.formattedBytes()
-            card.configureSize(formattedSize)
-        } else {
-            card.configureSize(nil)
+        applyBadges(to: card, reviewAsset: reviewAsset)
+        if usesFannedDeckLayout {
+            applyCardSizing()
         }
 
+        let isVideo = asset.mediaType == .video
         if isVideo && isCloudOnly && !settingsStore.allowInternetAccess {
             card.setICloudBadgeVisible(true)
         }
@@ -408,15 +407,10 @@ extension MonthReviewViewController {
     }
 
     func prefetchUpcoming() {
-        let prefetchCount = min(3, reviewAssets.count - currentIndex - 1)
-        guard prefetchCount > 0 else { return }
-
-        var assetsToPrefetch: [PHAsset] = []
-        for offset in 1 ... prefetchCount {
-            let nextIndex = currentIndex + offset
-            guard nextIndex < reviewAssets.count else { break }
-            assetsToPrefetch.append(reviewAssets[nextIndex].asset)
-        }
+        let assetsToPrefetch = deckIndices(count: 4).dropFirst()
+            .filter { $0 < reviewAssets.count }
+            .map { reviewAssets[$0].asset }
+        guard !assetsToPrefetch.isEmpty else { return }
 
         let screenSize = view.bounds.size
         imageCache.startCaching(assets: assetsToPrefetch, quality: .preview, screenSize: screenSize)

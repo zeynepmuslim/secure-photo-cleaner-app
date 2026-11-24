@@ -83,6 +83,7 @@ final class SettingsInfoCardView: UIView {
     private func setup(config: SettingsInfoCardConfig) {
         backgroundColor = .cardBackground
         layer.cornerRadius = 14
+        layer.cornerCurve = .continuous
         translatesAutoresizingMaskIntoConstraints = false
 
         let symbolConfig = UIImage.SymbolConfiguration(

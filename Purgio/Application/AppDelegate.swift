@@ -12,12 +12,22 @@ import UserNotifications
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
+    /// True while the app hosts the `PurgioTests` bundle. The app then skips its normal launch work
+    /// (background tasks, PhotoKit preload, notifications, StoreKit) and `SceneDelegate` makes no window.
+    /// The XCUITest runner doesn't set this variable in the app's process, so UI tests launch normally.
+    static let isRunningUnitTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
 
+        // Before any store loads: a `-uiTesting` launch starts from a clean slate.
+        UITestingLaunchMode.prepareIfNeeded()
+
         ThemeManager.configureNavigationBarAppearance()
+
+        guard !Self.isRunningUnitTests else { return true }
 
         SettingsStore.shared.endTemporaryInternetOverride()
 

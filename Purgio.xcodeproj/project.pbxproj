@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D7B7E51A2FC0000100000001 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = D7B7E5192FC0000100000001 /* SnapshotTesting */; };
 		D7DBE3832F72E5D5000147CF /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = D7DBE3822F72E5D5000147CF /* Localizable.xcstrings */; };
 		D7DBE3842F72E5D5000147CF /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = D7DBE3822F72E5D5000147CF /* Localizable.xcstrings */; };
 		D7E939312F2BFBDD002BE331 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D7E939302F2BFBDD002BE331 /* WidgetKit.framework */; };
@@ -17,6 +18,20 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		D7B7E50E2FC0000100000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D71132922F088869006A030E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D71132992F088869006A030E;
+			remoteInfo = Purgio;
+		};
+		D7B7E5102FC0000100000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D71132922F088869006A030E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D71132992F088869006A030E;
+			remoteInfo = Purgio;
+		};
 		D7E939402F2BFBE0002BE331 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = D71132922F088869006A030E /* Project object */;
@@ -42,6 +57,8 @@
 
 /* Begin PBXFileReference section */
 		D711329A2F088869006A030E /* Purgio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Purgio.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D7B7E5042FC0000100000001 /* PurgioTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PurgioTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		D7B7E5052FC0000100000001 /* PurgioUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PurgioUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D7DBE3822F72E5D5000147CF /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		D7E9392E2F2BFBDD002BE331 /* StorageAnalysisWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = StorageAnalysisWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		D7E939302F2BFBDD002BE331 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
@@ -76,6 +93,16 @@
 			path = Purgio;
 			sourceTree = "<group>";
 		};
+		D7B7E5012FC0000100000001 /* PurgioTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = PurgioTests;
+			sourceTree = "<group>";
+		};
+		D7B7E5022FC0000100000001 /* PurgioUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = PurgioUITests;
+			sourceTree = "<group>";
+		};
 		D7E939342F2BFBDD002BE331 /* StorageAnalysisWidget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -93,6 +120,21 @@
 			files = (
 				D7EC5C922F90D532004D5B83 /* StoreKit.framework in Frameworks */,
 				D7F1A0022F9A000000000001 /* PhotosUI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D7B7E5092FC0000100000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D7B7E51A2FC0000100000001 /* SnapshotTesting in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D7B7E50C2FC0000100000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -114,6 +156,8 @@
 				D7DBE3822F72E5D5000147CF /* Localizable.xcstrings */,
 				D711329C2F088869006A030E /* Purgio */,
 				D7E939342F2BFBDD002BE331 /* StorageAnalysisWidget */,
+				D7B7E5012FC0000100000001 /* PurgioTests */,
+				D7B7E5022FC0000100000001 /* PurgioUITests */,
 				D7E9392F2F2BFBDD002BE331 /* Frameworks */,
 				D711329B2F088869006A030E /* Products */,
 			);
@@ -124,6 +168,8 @@
 			children = (
 				D711329A2F088869006A030E /* Purgio.app */,
 				D7E9392E2F2BFBDD002BE331 /* StorageAnalysisWidgetExtension.appex */,
+				D7B7E5042FC0000100000001 /* PurgioTests.xctest */,
+				D7B7E5052FC0000100000001 /* PurgioUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -169,6 +215,53 @@
 			productReference = D711329A2F088869006A030E /* Purgio.app */;
 			productType = "com.apple.product-type.application";
 		};
+		D7B7E5062FC0000100000001 /* PurgioTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D7B7E5122FC0000100000001 /* Build configuration list for PBXNativeTarget "PurgioTests" */;
+			buildPhases = (
+				D7B7E5082FC0000100000001 /* Sources */,
+				D7B7E5092FC0000100000001 /* Frameworks */,
+				D7B7E50A2FC0000100000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D7B7E50F2FC0000100000001 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				D7B7E5012FC0000100000001 /* PurgioTests */,
+			);
+			name = PurgioTests;
+			packageProductDependencies = (
+				D7B7E5192FC0000100000001 /* SnapshotTesting */,
+			);
+			productName = PurgioTests;
+			productReference = D7B7E5042FC0000100000001 /* PurgioTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		D7B7E5072FC0000100000001 /* PurgioUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D7B7E5152FC0000100000001 /* Build configuration list for PBXNativeTarget "PurgioUITests" */;
+			buildPhases = (
+				D7B7E50B2FC0000100000001 /* Sources */,
+				D7B7E50C2FC0000100000001 /* Frameworks */,
+				D7B7E50D2FC0000100000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D7B7E5112FC0000100000001 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				D7B7E5022FC0000100000001 /* PurgioUITests */,
+			);
+			name = PurgioUITests;
+			packageProductDependencies = (
+			);
+			productName = PurgioUITests;
+			productReference = D7B7E5052FC0000100000001 /* PurgioUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		D7E9392D2F2BFBDD002BE331 /* StorageAnalysisWidgetExtension */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = D7E939432F2BFBE0002BE331 /* Build configuration list for PBXNativeTarget "StorageAnalysisWidgetExtension" */;
@@ -204,6 +297,14 @@
 					D71132992F088869006A030E = {
 						CreatedOnToolsVersion = 16.3;
 					};
+					D7B7E5062FC0000100000001 = {
+						CreatedOnToolsVersion = 26.2;
+						TestTargetID = D71132992F088869006A030E;
+					};
+					D7B7E5072FC0000100000001 = {
+						CreatedOnToolsVersion = 26.2;
+						TestTargetID = D71132992F088869006A030E;
+					};
 					D7E9392D2F2BFBDD002BE331 = {
 						CreatedOnToolsVersion = 26.2;
 					};
@@ -219,6 +320,9 @@
 			);
 			mainGroup = D71132912F088869006A030E;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				D7B7E5182FC0000100000001 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = D711329B2F088869006A030E /* Products */;
 			projectDirPath = "";
@@ -226,6 +330,8 @@
 			targets = (
 				D71132992F088869006A030E /* Purgio */,
 				D7E9392D2F2BFBDD002BE331 /* StorageAnalysisWidgetExtension */,
+				D7B7E5062FC0000100000001 /* PurgioTests */,
+				D7B7E5072FC0000100000001 /* PurgioUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -236,6 +342,20 @@
 			buildActionMask = 2147483647;
 			files = (
 				D7DBE3832F72E5D5000147CF /* Localizable.xcstrings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D7B7E50A2FC0000100000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D7B7E50D2FC0000100000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -319,6 +439,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D7B7E5082FC0000100000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D7B7E50B2FC0000100000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D7E9392A2F2BFBDD002BE331 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -329,6 +463,16 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		D7B7E50F2FC0000100000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D71132992F088869006A030E /* Purgio */;
+			targetProxy = D7B7E50E2FC0000100000001 /* PBXContainerItemProxy */;
+		};
+		D7B7E5112FC0000100000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D71132992F088869006A030E /* Purgio */;
+			targetProxy = D7B7E5102FC0000100000001 /* PBXContainerItemProxy */;
+		};
 		D7E939412F2BFBE0002BE331 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = D7E9392D2F2BFBDD002BE331 /* StorageAnalysisWidgetExtension */;
@@ -542,6 +686,84 @@
 			};
 			name = Release;
 		};
+		D7B7E5132FC0000100000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9N5WN36F7P;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.zeynepmuslim.purgio.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Purgio.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Purgio";
+			};
+			name = Debug;
+		};
+		D7B7E5142FC0000100000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9N5WN36F7P;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.zeynepmuslim.purgio.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Purgio.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Purgio";
+			};
+			name = Release;
+		};
+		D7B7E5162FC0000100000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9N5WN36F7P;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.zeynepmuslim.purgio.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Purgio;
+			};
+			name = Debug;
+		};
+		D7B7E5172FC0000100000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9N5WN36F7P;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.zeynepmuslim.purgio.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Purgio;
+			};
+			name = Release;
+		};
 		D7E939442F2BFBE0002BE331 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -625,6 +847,24 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		D7B7E5122FC0000100000001 /* Build configuration list for PBXNativeTarget "PurgioTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D7B7E5132FC0000100000001 /* Debug */,
+				D7B7E5142FC0000100000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D7B7E5152FC0000100000001 /* Build configuration list for PBXNativeTarget "PurgioUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D7B7E5162FC0000100000001 /* Debug */,
+				D7B7E5172FC0000100000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		D7E939432F2BFBE0002BE331 /* Build configuration list for PBXNativeTarget "StorageAnalysisWidgetExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -635,6 +875,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		D7B7E5182FC0000100000001 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-snapshot-testing";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.19.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		D7B7E5192FC0000100000001 /* SnapshotTesting */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D7B7E5182FC0000100000001 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */;
+			productName = SnapshotTesting;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = D71132922F088869006A030E /* Project object */;
 }
